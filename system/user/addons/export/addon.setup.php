@@ -1,24 +1,24 @@
 <?php
 
-use Mithra62\Export\Services\LoggerService;
 use Mithra62\Export\Services\ActionsService;
-use Mithra62\Export\Services\ParamsService;
+use Mithra62\Export\Services\EntryService;
 use Mithra62\Export\Services\ExcelService;
 use Mithra62\Export\Services\ExportService;
-use Mithra62\Export\Services\EntryService;
+use Mithra62\Export\Services\LoggerService;
+use Mithra62\Export\Services\OutputService;
+use Mithra62\Export\Services\ParamsService;
+use Mithra62\Export\Services\SourcesService;
+
 
 return [
-    'name'              => 'Export',
-    'description'       => 'Export description',
-    'version'           => '1.0.0',
-    'author'            => 'mithra62',
-    'author_url'        => 'fdsa',
-    'namespace'         => 'Mithra62\Export',
-    'settings_exist'    => false,
+    'name' => 'Export',
+    'description' => 'Export description',
+    'version' => '1.0.0',
+    'author' => 'mithra62',
+    'author_url' => 'fdsa',
+    'namespace' => 'Mithra62\Export',
+    'settings_exist' => false,
     'services' => [
-        'ParamsService' => function ($addon) {
-            return new ParamsService();
-        },
         'LoggerService' => function ($addon) {
             return new LoggerService();
         },
@@ -26,7 +26,20 @@ return [
             return new ExcelService();
         },
         'ExportService' => function ($addon) {
-            return new ExportService(ee('export:ParamsService'));
+            $export = new ExportService();
+            $export->setParams(ee('export:ParamsService'));
+            $export->setSources(ee('export:SourcesService'));
+            $export->setOutput(ee('export:OutputService'));
+            return $export;
+        },
+        'ParamsService' => function ($addon) {
+            return new ParamsService();
+        },
+        'SourcesService' => function ($addon) {
+            return new SourcesService();
+        },
+        'OutputService' => function ($addon) {
+            return new OutputService();
         },
     ],
     'services.singletons' => [

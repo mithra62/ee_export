@@ -8,5 +8,7 @@ class Download extends AbstractDestination
     /**
      * @var array|string[]
      */
-    public array $rules = [];
+    public array $rules = [
+        'filename' => 'required',
+    ];
 }

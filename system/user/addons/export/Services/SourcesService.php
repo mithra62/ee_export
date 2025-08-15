@@ -9,6 +9,11 @@ class SourcesService extends AbstractService
 {
     use ParamsTrait;
 
+    public function run()
+    {
+
+    }
+
     /**
      * @return AbstractSource
      * @throws SourcesServiceException

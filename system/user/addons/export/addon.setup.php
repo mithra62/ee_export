@@ -9,6 +9,7 @@ use Mithra62\Export\Services\LoggerService;
 use Mithra62\Export\Services\OutputService;
 use Mithra62\Export\Services\ParamsService;
 use Mithra62\Export\Services\SourcesService;
+use ExpressionEngine\Service\Logger\File;
 
 require_once __DIR__ . "/vendor/autoload.php";
 

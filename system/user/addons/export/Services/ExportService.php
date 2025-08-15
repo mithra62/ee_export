@@ -1,11 +1,13 @@
 <?php
+
 namespace Mithra62\Export\Services;
 
-use Mithra62\Export\Traits\ParamsTrait;
 use Mithra62\Export\Exceptions\Services\ExportServiceException;
+use Mithra62\Export\Exceptions\Services\FormatsServiceException;
 use Mithra62\Export\Exceptions\Services\OutputServiceException;
 use Mithra62\Export\Exceptions\Services\SourcesServiceException;
-use Mithra62\Export\Exceptions\Services\FormatsServiceException;
+use Mithra62\Export\Exceptions\Sources\NoDataException;
+use Mithra62\Export\Traits\ParamsTrait;
 
 class ExportService extends AbstractService
 {
@@ -31,19 +33,42 @@ class ExportService extends AbstractService
      */
     protected array $errors = [];
 
-    public function __construct(ParamsService $params = null, OutputService $output = null, SourcesService $sources = null)
+    /**
+     * @var string
+     */
+    protected string $cache_file = '';
+
+    /**
+     * @param ParamsService|null $params
+     * @param OutputService|null $output
+     * @param SourcesService|null $sources
+     * @param FormatsService|null $formats
+     */
+    public function __construct(ParamsService $params = null, OutputService $output = null, SourcesService $sources = null, FormatsService $formats = null)
     {
-        if($params !== null) {
+        if ($params !== null) {
             $this->params = $params;
         }
 
-        if($output !== null) {
+        if ($output !== null) {
             $this->output = $output;
         }
 
-        if($sources !== null) {
+        if ($sources !== null) {
             $this->sources = $sources;
         }
+
+        if ($formats !== null) {
+            $this->formats = $formats;
+        }
+    }
+
+    /**
+     * @return array
+     */
+    public function getErrors(): array
+    {
+        return $this->errors;
     }
 
     /**
@@ -62,7 +87,7 @@ class ExportService extends AbstractService
      */
     public function setOutput(OutputService $output = null): ExportService
     {
-        if(is_null($this->getParams())) {
+        if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
         }
 
@@ -86,7 +111,7 @@ class ExportService extends AbstractService
      */
     public function setSources(SourcesService $sources = null): ExportService
     {
-        if(is_null($this->getParams())) {
+        if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
         }
 
@@ -109,7 +134,7 @@ class ExportService extends AbstractService
      */
     public function setFormats(FormatsService $formats = null): ExportService
     {
-        if(is_null($this->getParams())) {
+        if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
         }
 
@@ -128,6 +153,7 @@ class ExportService extends AbstractService
     /**
      * @return bool
      * @throws ExportServiceException
+     * @throws FormatsServiceException
      * @throws OutputServiceException
      * @throws SourcesServiceException
      */
@@ -151,4 +177,30 @@ class ExportService extends AbstractService
         return count($this->errors) == 0;
     }
 
+    /**
+     * @return ExportService
+     * @throws SourcesServiceException
+     * @throws NoDataException
+     */
+    public function build(): ExportService
+    {
+        $source = $this->getSources()->getSource();
+        $this->cache_file = realpath($source->compile());
+        return $this;
+    }
+
+    /**
+     * @return void
+     * @throws ExportServiceException
+     */
+    public function out(): void
+    {
+        if(!$this->cache_file) {
+            throw new ExportServiceException("No cache file is set");
+        }
+
+        echo 'fdsa';
+        exit;
+
+    }
 }

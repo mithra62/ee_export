@@ -45,9 +45,7 @@ trait ValidateTrait
      */
     public function check(array $post_data = []): ValidateResult
     {
-        // return $this->getValidator()->validate($post_data);
         $this->data = $post_data;
-
         return $this->getValidator()->validate($post_data);
     }
 

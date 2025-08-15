@@ -2,6 +2,8 @@
 
 namespace Mithra62\Export\Tags;
 
+use Mithra62\Export\Exceptions\Exception;
+
 class Query extends AbstractTag
 {
     public function process()
@@ -13,10 +15,15 @@ class Query extends AbstractTag
             $export = ee('export:ExportService')->setParameters($params);
 
             if ($export->validate()) {
-                $export->build()->output();
+
+                try {
+                    $export->build()->out();
+                } catch(Exception $e) {
+                    show_error($e->getMessage());
+                }
+
             } else {
-                echo 'errors';
-                exit;
+                show_error(print_r($export->getErrors(), true));
             }
         }
     }

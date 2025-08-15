@@ -29,9 +29,33 @@ class ParamsService
         return $this;
     }
 
+    /**
+     * @param array $params
+     * @return $this
+     */
     public function setParams(array $params): ParamsService
     {
         $this->params = $params;
         return $this;
+    }
+
+    /**
+     * @param string $domain
+     * @return array
+     */
+    public function getDomainParams(string $domain): array
+    {
+        $return = [];
+        $search = trim($domain) . ':';
+        foreach($this->params AS $key => $value) {
+            if(str_starts_with($key, $search)) {
+                $key = str_replace($search, '', $key);
+                $return[$key] = $value;
+            } elseif(str_starts_with($key, $domain)) {
+                $return[$key] = $value;
+            }
+        }
+
+        return $return;
     }
 }

@@ -1,12 +1,12 @@
 <?php
 namespace Mithra62\Export\Services;
 
-class ExportService
+use Mithra62\Export\Traits\ParamsTrait;
+use Mithra62\Export\Exceptions\Services\ExportServiceException;
+
+class ExportService extends AbstractService
 {
-    /**
-     * @var ParamsService
-     */
-    protected ParamsService $params;
+    use ParamsTrait;
 
     /**
      * @var OutputService
@@ -39,21 +39,13 @@ class ExportService
     }
 
     /**
-     * @param ParamsService|null $params
+     * @param array $parameters
      * @return $this
      */
-    public function setParams(ParamsService $params = null): ExportService
+    public function setParameters(array $parameters): ExportService
     {
-        $this->params = $params;
+        $this->getParams()->setParams($parameters);
         return $this;
-    }
-
-    /**
-     * @return ParamsService
-     */
-    public function getParams(): ParamsService
-    {
-        return $this->params;
     }
 
     /**
@@ -68,28 +60,27 @@ class ExportService
 
     /**
      * @return OutputService
+     * @throws ExportServiceException
      */
     public function getOutput(): OutputService
     {
-        return $this->output;
-    }
+        if(is_null($this->getParams())) {
+            throw new ExportServiceException("Parameters is null");
+        }
 
-    /**
-     * @param array $parameters
-     * @return $this
-     */
-    public function setParameters(array $parameters): ExportService
-    {
-        $this->getParams()->setParams($parameters);
-        return $this;
+        return $this->output->setParams($this->getParams());
     }
 
     /**
      * @param SourcesService|null $sources
      * @return $this
+     * @throws ExportServiceException
      */
     public function setSources(SourcesService $sources = null): ExportService
     {
+        if(is_null($this->getParams())) {
+            throw new ExportServiceException("Parameters is null");
+        }
         $this->sources = $sources;
         return $this;
     }
@@ -99,11 +90,22 @@ class ExportService
      */
     public function getSources(): SourcesService
     {
-        return $this->sources;
+        return $this->sources->setParams($this->getParams());
     }
 
-    public function validate()
+    /**
+     * @return bool
+     * @throws ExportServiceException
+     */
+    public function validate(): bool
     {
+        $result = $this->getSources()->getSource()->validate();
+        if (!$result->isValid()) {
+            $this->errors = $result->getAllErrors();
+        }
+
+        $result = $this->getOutput()->getDestination()->validate();
+        print_r($this->errors);
         //$errors =
         echo 'fdsa';
         exit;

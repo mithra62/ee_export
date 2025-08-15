@@ -8,14 +8,11 @@ class Query extends AbstractTag
     {
         $params = $this->params();
         $params['source'] = 'sql';
+        $params['source:query'] = $this->param('sql');
         $export = ee('export:ExportService')->setParameters($params);
 
         if($export->validate()) {
-            $export->build();
+            $export->build()->output();
         }
-
-        print_r($this->params());
-        exit;
-        return "My tag";
     }
 }

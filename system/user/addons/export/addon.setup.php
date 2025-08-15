@@ -9,6 +9,7 @@ use Mithra62\Export\Services\OutputService;
 use Mithra62\Export\Services\ParamsService;
 use Mithra62\Export\Services\SourcesService;
 
+require_once __DIR__ . "/vendor/autoload.php";
 
 return [
     'name' => 'Export',

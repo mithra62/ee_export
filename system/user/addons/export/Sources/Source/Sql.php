@@ -11,6 +11,5 @@ class Sql extends AbstractSource
     public array $rules = [
         'source' => 'required',
         'query' => 'required',
-        'test' => 'required',
     ];
 }

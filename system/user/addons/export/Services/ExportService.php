@@ -3,6 +3,9 @@ namespace Mithra62\Export\Services;
 
 use Mithra62\Export\Traits\ParamsTrait;
 use Mithra62\Export\Exceptions\Services\ExportServiceException;
+use Mithra62\Export\Exceptions\Services\OutputServiceException;
+use Mithra62\Export\Exceptions\Services\SourcesServiceException;
+use Mithra62\Export\Exceptions\Services\FormatsServiceException;
 
 class ExportService extends AbstractService
 {
@@ -17,6 +20,11 @@ class ExportService extends AbstractService
      * @var SourcesService
      */
     protected SourcesService $sources;
+
+    /**
+     * @var FormatsService
+     */
+    protected FormatsService $formats;
 
     /**
      * @var array
@@ -54,7 +62,11 @@ class ExportService extends AbstractService
      */
     public function setOutput(OutputService $output = null): ExportService
     {
-        $this->output = $output;
+        if(is_null($this->getParams())) {
+            throw new ExportServiceException("Parameters is null");
+        }
+
+        $this->output = $output->setParams($this->getParams());
         return $this;
     }
 
@@ -64,11 +76,7 @@ class ExportService extends AbstractService
      */
     public function getOutput(): OutputService
     {
-        if(is_null($this->getParams())) {
-            throw new ExportServiceException("Parameters is null");
-        }
-
-        return $this->output->setParams($this->getParams());
+        return $this->output;
     }
 
     /**
@@ -81,7 +89,8 @@ class ExportService extends AbstractService
         if(is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
         }
-        $this->sources = $sources;
+
+        $this->sources = $sources->setParams($this->getParams());
         return $this;
     }
 
@@ -94,8 +103,33 @@ class ExportService extends AbstractService
     }
 
     /**
+     * @param FormatsService|null $formats
+     * @return $this
+     * @throws ExportServiceException
+     */
+    public function setFormats(FormatsService $formats = null): ExportService
+    {
+        if(is_null($this->getParams())) {
+            throw new ExportServiceException("Parameters is null");
+        }
+
+        $this->formats = $formats->setParams($this->getParams());
+        return $this;
+    }
+
+    /**
+     * @return FormatsService
+     */
+    public function getFormats(): FormatsService
+    {
+        return $this->formats->setParams($this->getParams());
+    }
+
+    /**
      * @return bool
      * @throws ExportServiceException
+     * @throws OutputServiceException
+     * @throws SourcesServiceException
      */
     public function validate(): bool
     {
@@ -105,10 +139,16 @@ class ExportService extends AbstractService
         }
 
         $result = $this->getOutput()->getDestination()->validate();
-        print_r($this->errors);
-        //$errors =
-        echo 'fdsa';
-        exit;
+        if (!$result->isValid()) {
+            $this->errors = $this->errors + $result->getAllErrors();
+        }
+
+        $result = $this->getFormats()->getFormat()->validate();
+        if (!$result->isValid()) {
+            $this->errors = $this->errors + $result->getAllErrors();
+        }
+
+        return count($this->errors) == 0;
     }
 
 }

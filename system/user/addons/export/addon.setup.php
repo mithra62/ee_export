@@ -4,6 +4,7 @@ use Mithra62\Export\Services\ActionsService;
 use Mithra62\Export\Services\EntryService;
 use Mithra62\Export\Services\ExcelService;
 use Mithra62\Export\Services\ExportService;
+use Mithra62\Export\Services\FormatsService;
 use Mithra62\Export\Services\LoggerService;
 use Mithra62\Export\Services\OutputService;
 use Mithra62\Export\Services\ParamsService;
@@ -31,6 +32,7 @@ return [
             $export->setParams(ee('export:ParamsService'));
             $export->setSources(ee('export:SourcesService'));
             $export->setOutput(ee('export:OutputService'));
+            $export->setFormats(ee('export:FormatsService'));
             return $export;
         },
         'ParamsService' => function ($addon) {
@@ -41,6 +43,9 @@ return [
         },
         'OutputService' => function ($addon) {
             return new OutputService();
+        },
+        'FormatsService' => function ($addon) {
+            return new FormatsService();
         },
     ],
     'services.singletons' => [

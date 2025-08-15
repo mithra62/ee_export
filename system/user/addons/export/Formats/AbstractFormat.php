@@ -1,7 +1,9 @@
 <?php
 namespace Mithra62\Export\Formats;
 
-abstract class AbstractFormat
+use Mithra62\Export\Plugins\AbstractPlugin;
+
+abstract class AbstractFormat extends AbstractPlugin
 {
 
 }

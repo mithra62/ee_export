@@ -86,7 +86,7 @@ abstract class AbstractPlugin implements ValidationAware
                 mkdir($cache_path, 0777, true);
             }
 
-            $this->cache_path = $cache_path . ee()->functions->random('alpha', 13) . '.json';
+            $this->cache_path = $cache_path . ee()->functions->random('alpha', 13) . '.tmp';
         }
 
         return $this->cache_path;
@@ -122,6 +122,19 @@ abstract class AbstractPlugin implements ValidationAware
     protected function writeCache(array $data)
     {
         $this->truncateCache()->log(json_encode($data));
+    }
+
+    /**
+     * @param string $content
+     * @param string $path
+     * @return void
+     * @throws \Exception
+     */
+    protected function writeContent(string $content, string $path): AbstractPlugin
+    {
+        $file = new File($path, ee('Filesystem'));
+        $file->log($content);
+        return $this;
     }
 
     /**

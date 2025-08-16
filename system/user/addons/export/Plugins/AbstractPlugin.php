@@ -21,7 +21,7 @@ abstract class AbstractPlugin implements ValidationAware
     protected string $cache_path = '';
 
     /**
-     * @var File
+     * @var File|null
      */
     protected ? File $cache_file = null;
 
@@ -78,7 +78,7 @@ abstract class AbstractPlugin implements ValidationAware
     /**
      * @return string
      */
-    public function getCachePath(): string
+    public function generateCachePath(): string
     {
         if(!$this->cache_path) {
             $cache_path = PATH_CACHE . 'export/';
@@ -92,10 +92,14 @@ abstract class AbstractPlugin implements ValidationAware
         return $this->cache_path;
     }
 
+    /**
+     * @return File
+     * @throws \Exception
+     */
     protected function getCacheFile(): File
     {
         if(is_null($this->cache_file)) {
-            $this->cache_file = new File($this->getCachePath(), ee('Filesystem'));
+            $this->cache_file = new File($this->generateCachePath(), ee('Filesystem'));
         }
         return $this->cache_file;
     }
@@ -118,5 +122,55 @@ abstract class AbstractPlugin implements ValidationAware
     protected function writeCache(array $data)
     {
         $this->truncateCache()->log(json_encode($data));
+    }
+
+    /**
+     * @return string
+     */
+    public function getCachePath(): string
+    {
+        return $this->cache_path;
+    }
+
+    /**
+     * @param string $path
+     * @return $this
+     */
+    public function setCachePath(string $path): AbstractPlugin
+    {
+        $this->cache_path = $path;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getCacheContent(): array
+    {
+        $return = [];
+        $content = file_get_contents($this->getCachePath());
+        if($content) {
+            $return = json_decode($content, true);
+        }
+
+        return $return;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCacheFilename(): string
+    {
+        $info = pathinfo($this->getCachePath());
+        return $info['filename'];
+    }
+
+    /**
+     * @return string
+     */
+    public function getCacheDirPath(): string
+    {
+        $info = pathinfo($this->getCachePath());
+        return $info['dirname'];
     }
 }

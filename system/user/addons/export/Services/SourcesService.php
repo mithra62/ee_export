@@ -1,9 +1,9 @@
 <?php
 namespace Mithra62\Export\Services;
 
-use Mithra62\Export\Traits\ParamsTrait;
 use Mithra62\Export\Exceptions\Services\SourcesServiceException;
-use Mithra62\Export\Sources\AbstractSource;
+use Mithra62\Export\Plugins\AbstractSource;
+use Mithra62\Export\Traits\ParamsTrait;
 
 class SourcesService extends AbstractService
 {
@@ -25,7 +25,7 @@ class SourcesService extends AbstractService
             throw new SourcesServiceException('Source not set');
         }
 
-        $class = "\\Mithra62\\Export\\Sources\\Source\\" . ucfirst($params['source']);
+        $class = "\\Mithra62\\Export\\Sources\\" . ucfirst($params['source']);
         if(class_exists($class)) {
             $obj = new $class();
             if($obj instanceof AbstractSource) {

@@ -39,6 +39,11 @@ class ExportService extends AbstractService
     protected string $cache_file = '';
 
     /**
+     * @var string
+     */
+    protected string $formatted_export = '';
+
+    /**
      * @param ParamsService|null $params
      * @param OutputService|null $output
      * @param SourcesService|null $sources
@@ -178,14 +183,18 @@ class ExportService extends AbstractService
     }
 
     /**
-     * @return ExportService
-     * @throws SourcesServiceException
+     * @return $this
+     * @throws FormatsServiceException
      * @throws NoDataException
+     * @throws SourcesServiceException
      */
     public function build(): ExportService
     {
         $source = $this->getSources()->getSource();
         $this->cache_file = realpath($source->compile());
+
+        $format = $this->getFormats()->getFormat();
+        $this->formatted_export = $format->setCachePath($this->cache_file)->compile();
         return $this;
     }
 
@@ -195,12 +204,11 @@ class ExportService extends AbstractService
      */
     public function out(): void
     {
-        if(!$this->cache_file) {
+        if(!$this->formatted_export) {
             throw new ExportServiceException("No cache file is set");
         }
 
-        echo 'fdsa';
-        exit;
-
+        $output = $this->getOutput()->getDestination();
+        $output->process($this->formatted_export);
     }
 }

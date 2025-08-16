@@ -1,9 +1,9 @@
 <?php
-namespace Mithra62\Export\Sources\Source;
+namespace Mithra62\Export\Sources;
 
-use Mithra62\Export\Sources\AbstractSource;
 use CI_DB_result;
 use Mithra62\Export\Exceptions\Sources\NoDataException;
+use Mithra62\Export\Plugins\AbstractSource;
 
 class Sql extends AbstractSource
 {

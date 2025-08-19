@@ -8,7 +8,7 @@ abstract class AbstractDestination extends AbstractPlugin
 
     /**
      * @param string $finished_export
-     * @return string
+     * @return bool|int
      */
-    abstract public function process(string $finished_export): string;
+    abstract public function process(string $finished_export): bool|int;
 }

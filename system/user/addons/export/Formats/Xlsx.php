@@ -13,7 +13,7 @@ class Xlsx extends AbstractFormat
             ->setCols($cols)
             ->setFilename($this->getCacheFilename());
 
-        if($this->getOption('bold_cols') == 'y') {
+        if($this->getOption('bold_cols') === true) {
             $xlsx->boldFirstRow(true);
         }
 

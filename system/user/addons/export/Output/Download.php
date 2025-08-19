@@ -12,13 +12,16 @@ class Download extends AbstractDestination
         'filename' => 'required',
     ];
 
-    public function process(string $finished_export): string
+    public function process(string $finished_export): bool|int
     {
         header('Content-Type: application/octet-stream');
         header("Content-Transfer-Encoding: Binary");
         header("Content-disposition: attachment; filename=\"" . $this->getOption('filename') . "\"");
         ob_clean(); flush();
-        readfile($finished_export);
-        exit;
+        $return = false;
+        if(readfile($finished_export)) {
+            $return = true;
+        }
+        return $return;
     }
 }

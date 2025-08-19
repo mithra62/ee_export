@@ -9,7 +9,8 @@ use Mithra62\Export\Services\LoggerService;
 use Mithra62\Export\Services\OutputService;
 use Mithra62\Export\Services\ParamsService;
 use Mithra62\Export\Services\SourcesService;
-use ExpressionEngine\Service\Logger\File;
+use Mithra62\Export\Services\XmlService;
+use Mithra62\Export\Services\MemberService;
 
 require_once __DIR__ . "/vendor/autoload.php";
 
@@ -48,6 +49,9 @@ return [
         'FormatsService' => function ($addon) {
             return new FormatsService();
         },
+        'XmlService' => function ($addon) {
+            return new XmlService();
+        },
     ],
     'services.singletons' => [
         'ActionsService' => function ($addon) {
@@ -56,5 +60,8 @@ return [
         'EntryService' => function ($addon) {
             return new EntryService();
         },
+        'MemberService' => function ($addon) {
+            return new MemberService();
+        }
     ],
 ];

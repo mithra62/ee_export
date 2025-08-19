@@ -201,14 +201,25 @@ class ExportService extends AbstractService
     /**
      * @return void
      * @throws ExportServiceException
+     * @throws OutputServiceException
      */
     public function out(): void
     {
+        if(file_exists($this->cache_file)) {
+            unlink($this->cache_file);
+        }
+
         if(!$this->formatted_export) {
             throw new ExportServiceException("No cache file is set");
         }
 
         $output = $this->getOutput()->getDestination();
-        $output->process($this->formatted_export);
+        if($output->process($this->formatted_export) !== false) {
+            if(file_exists($this->formatted_export)) {
+                unlink($this->formatted_export);
+            }
+        }
+
+        exit;
     }
 }

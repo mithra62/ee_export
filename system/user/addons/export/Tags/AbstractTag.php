@@ -2,6 +2,7 @@
 namespace Mithra62\Export\Tags;
 
 use ExpressionEngine\Service\Addon\Controllers\Tag\AbstractRoute;
+use Mithra62\Export\Exceptions\Exception;
 use Mithra62\Export\Traits\LoggerTrait;
 
 abstract class AbstractTag extends AbstractRoute
@@ -127,13 +128,20 @@ abstract class AbstractTag extends AbstractRoute
     }
 
     /**
-     * Get all tag parameters
-     *
      * @return array
      */
     public function params(): array
     {
-        return ee()->TMPL->tagparams;
+        $return = [];
+        foreach(ee()->TMPL->tagparams AS $key => $param) {
+            if(str_starts_with($key, 'search:') && $param != '') {
+                $return['source:search'][str_replace('search:', '', $key)] = $this->param($key);
+            } else {
+                $return[$key] = $this->param($key, '');
+            }
+        }
+
+        return $return;
     }
 
     /**
@@ -297,5 +305,25 @@ abstract class AbstractTag extends AbstractRoute
     protected function isPost(): bool
     {
         return $_SERVER['REQUEST_METHOD'] == 'POST';
+    }
+
+    /**
+     * @param array $params
+     * @return void
+     */
+    public function compile(array $params = []): void
+    {
+        if ($this->param('format') && $this->param('output')) {
+            $export = ee('export:ExportService')->setParameters($params);
+            if ($export->validate()) {
+                try {
+                    $export->build()->out();
+                } catch (Exception $e) {
+                    show_error($e->getMessage());
+                }
+            } else {
+                show_error($this->prepareErrorOutput($export->getErrors()));
+            }
+        }
     }
 }

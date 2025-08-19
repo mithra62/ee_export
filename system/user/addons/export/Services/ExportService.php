@@ -219,7 +219,5 @@ class ExportService extends AbstractService
                 unlink($this->formatted_export);
             }
         }
-
-        exit;
     }
 }

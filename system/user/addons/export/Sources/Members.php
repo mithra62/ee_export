@@ -28,7 +28,7 @@ class Members extends AbstractSource
             $members->filter('last_visit', '<=', $this->getOption('last_login_end'));
         }
 
-        if ($this->getOption('search')) {
+        if ($this->getOption('search', [])) {
             $map = $this->buildFieldMap($this->getOption('search'));
             foreach ($map as $field => $search) {
                 $members->filter($field, $search);
@@ -43,8 +43,6 @@ class Members extends AbstractSource
             $results = [];
             foreach($members->all() AS $member) {
                 $results[] = $this->prepareData($member);
-                print_r($results);
-                exit;
             }
 
             $this->writeCache($results);

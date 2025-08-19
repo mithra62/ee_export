@@ -9,7 +9,6 @@ class Members extends AbstractTag
     {
         $params = $this->params();
         $params['source'] = 'members';
-        $params['fields'] = $this->param('fields');
         $params['source:roles'] = $this->explodeParam('roles');
         $params['source:limit'] = $this->param('limit');
         $params['source:join_start'] = $this->param('join_start');

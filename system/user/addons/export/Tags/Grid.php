@@ -7,6 +7,7 @@ class Grid extends AbstractTag
     // Example tag: {exp:export:grid}
     public function process()
     {
-        return "My tag";
+        $params = $this->params();
+        $params['source'] = 'grid';
     }
 }

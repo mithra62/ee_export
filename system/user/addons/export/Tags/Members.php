@@ -15,6 +15,7 @@ class Members extends AbstractTag
         $params['source:join_end'] = $this->param('join_end');
         $params['source:last_login_start'] = $this->param('last_login_start');
         $params['source:last_login_join_end'] = $this->param('last_login_join_end');
+
         $this->compile($params);
     }
 }

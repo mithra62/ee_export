@@ -9,6 +9,10 @@ use CI_DB_result;
 
 class Members extends AbstractSource
 {
+    /**
+     * @return string
+     * @throws NoDataException
+     */
     public function compile(): string
     {
         $members = ee('Model')
@@ -19,8 +23,8 @@ class Members extends AbstractSource
         }
 
         if ($this->getOption('join_start') && $this->getOption('join_end')) {
-            $members->filter('join_date', '>=', $this->getOption('last_login_start'));
-            $members->filter('join_date', '<=', $this->getOption('last_login_end'));
+            $members->filter('join_date', '>=', strtotime($this->getOption('join_start')));
+            $members->filter('join_date', '<=', strtotime($this->getOption('join_end')));
         }
 
         if ($this->getOption('last_login_start') && $this->getOption('last_login_end')) {
@@ -45,6 +49,7 @@ class Members extends AbstractSource
                 $results[] = $this->prepareData($member);
             }
 
+            $this->setExportData($results);
             $this->writeCache($results);
             return $this->getCachePath();
         }

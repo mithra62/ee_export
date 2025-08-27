@@ -5,10 +5,12 @@ use ExpressionEngine\Service\Logger\File;
 use ExpressionEngine\Service\Validation\Result as ValidationResult;
 use ExpressionEngine\Service\Validation\ValidationAware;
 use Mithra62\Export\Traits\ValidateTrait;
+use Mithra62\Export\Traits\LoggerTrait;
 
 abstract class AbstractPlugin implements ValidationAware
 {
-    use ValidateTrait;
+    use ValidateTrait,
+        LoggerTrait;
 
     /**
      * @var array

@@ -2,10 +2,9 @@
 
 namespace Mithra62\Export\Sources;
 
+use ExpressionEngine\Model\Member\Member as MemberModel;
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
-use ExpressionEngine\Model\Member\Member AS MemberModel;
-use CI_DB_result;
 
 class Members extends AbstractSource
 {
@@ -39,13 +38,13 @@ class Members extends AbstractSource
             }
         }
 
-        if($this->getOption('limit')) {
+        if ($this->getOption('limit')) {
             $members->limit($this->getOption('limit'));
         }
 
         if ($members->count() > 0) {
             $results = [];
-            foreach($members->all() AS $member) {
+            foreach ($members->all() as $member) {
                 $results[] = $this->prepareData($member);
             }
 
@@ -65,9 +64,9 @@ class Members extends AbstractSource
     {
         $return = [];
         $cols = ee('export:MemberService')->getColumns();
-        if($cols) {
+        if ($cols) {
             foreach ($cols as $col) {
-                if(array_key_exists($col, $search) && !empty($search[$col])) {
+                if (array_key_exists($col, $search) && !empty($search[$col])) {
                     $return[$col] = $search[$col];
                 }
             }
@@ -76,7 +75,7 @@ class Members extends AbstractSource
         $fields = ee('export:MemberService')->getFields();
         if ($fields) {
             foreach ($fields as $field) {
-                if(array_key_exists($field->m_field_name, $search)) {
+                if (array_key_exists($field->m_field_name, $search)) {
                     $return['m_field_id_' . $field->m_field_id] = $search[$field->m_field_name];
                 }
             }
@@ -93,25 +92,22 @@ class Members extends AbstractSource
     {
         $return = [];
         $fields = ee('export:MemberService')->getFields();
-        print_r($fields);
-        exit;
-        foreach($member->toArray() AS $key => $value) {
-            if(!str_starts_with($key, 'm_field_id_') && !str_starts_with($key, 'm_field_ft_')) {
-                if(is_array($value)) {
+        foreach ($member->toArray() as $key => $value) {
+            if (!str_starts_with($key, 'm_field_id_') && !str_starts_with($key, 'm_field_ft_')) {
+                if (is_array($value)) {
                     $return[$key] = json_encode($value);
                 } else {
                     $return[$key] = $value;
                 }
             } else {
-                foreach($fields AS $field) {
-                    if(str_starts_with($key, 'm_field_id_' . $field->m_field_id)) {
+                foreach ($fields as $field) {
+                    if (str_starts_with($key, 'm_field_id_' . $field->m_field_id)) {
                         $return[$field->m_field_name] = $value;
                     }
                 }
             }
-
         }
 
-        return $return;
+        return $this->cleanFields($return);
     }
 }

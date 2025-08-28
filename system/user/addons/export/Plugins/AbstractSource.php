@@ -1,11 +1,14 @@
 <?php
+
 namespace Mithra62\Export\Plugins;
 
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 
 abstract class AbstractSource extends AbstractPlugin
 {
-
+    /**
+     * @var array
+     */
     protected array $export_data = [];
 
     /**
@@ -31,5 +34,32 @@ abstract class AbstractSource extends AbstractPlugin
     {
         $this->export_data = $export_data;
         return $this;
+    }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    public function cleanFields(array $data): array
+    {
+        if ($this->getOption('fields')) {
+            foreach ($data as $key => $value) {
+                if (!in_array($key, $this->getOption('fields'))) {
+                    unset($data[$key]);
+                }
+            }
+
+            //now we order 'em
+            $return = [];
+            foreach ($this->getOption('fields') as $field) {
+                if(isset($data[$field])) {
+                    $return[$field] = $data[$field];
+                }
+            }
+
+            $data = $return;
+        }
+
+        return $data;
     }
 }

@@ -51,11 +51,19 @@ class ParamsService
             if(str_starts_with($key, $search)) {
                 $key = str_replace($search, '', $key);
                 $return[$key] = $value;
-            } elseif(str_starts_with($key, $domain)) {
+            } else {
                 $return[$key] = $value;
             }
         }
 
         return $return;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAllParams(): array
+    {
+        return $this->params;
     }
 }

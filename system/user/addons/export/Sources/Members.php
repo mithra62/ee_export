@@ -93,6 +93,8 @@ class Members extends AbstractSource
     {
         $return = [];
         $fields = ee('export:MemberService')->getFields();
+        print_r($fields);
+        exit;
         foreach($member->toArray() AS $key => $value) {
             if(!str_starts_with($key, 'm_field_id_') && !str_starts_with($key, 'm_field_ft_')) {
                 if(is_array($value)) {

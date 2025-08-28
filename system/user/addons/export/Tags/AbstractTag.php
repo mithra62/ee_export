@@ -141,9 +141,7 @@ abstract class AbstractTag extends AbstractRoute
             }
         }
 
-
         $return['fields'] = $this->explodeParam('fields');
-
         return $return;
     }
 
@@ -321,8 +319,7 @@ abstract class AbstractTag extends AbstractRoute
             $export = ee('export:ExportService')->setParameters($params);
             if ($export->validate()) {
                 try {
-                    $result = $export->build();
-                    $export>out($result);
+                    $export->build()->out();
                 } catch (Exception $e) {
                     show_error($e->getMessage());
                 }

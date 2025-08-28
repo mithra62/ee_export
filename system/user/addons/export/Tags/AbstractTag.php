@@ -328,4 +328,9 @@ abstract class AbstractTag extends AbstractRoute
             }
         }
     }
+
+    protected function prepareErrorOutput(array $errors): string
+    {
+        return ee('View')->make('export:errors')->render(['errors' => $errors]);
+    }
 }

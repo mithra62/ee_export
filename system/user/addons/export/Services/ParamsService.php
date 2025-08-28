@@ -43,7 +43,7 @@ class ParamsService
      * @param string $domain
      * @return array
      */
-    public function getDomainParams(string $domain): array
+    public function getDomainParams(string $domain, bool $include_all = true): array
     {
         $return = [];
         $search = trim($domain) . ':';
@@ -51,7 +51,7 @@ class ParamsService
             if(str_starts_with($key, $search)) {
                 $key = str_replace($search, '', $key);
                 $return[$key] = $value;
-            } else {
+            } elseif($include_all) {
                 $return[$key] = $value;
             }
         }

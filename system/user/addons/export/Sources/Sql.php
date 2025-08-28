@@ -24,7 +24,7 @@ class Sql extends AbstractSource
     {
         $query = ee()->db->query($this->getOption('query'));
         if($query instanceof CI_DB_result && $query->num_rows() > 0) {
-            $results = $query->result_array();
+            $results = $this->postProcess($query->result_array());
             $this->writeCache($results);
             return $this->getCachePath();
         }

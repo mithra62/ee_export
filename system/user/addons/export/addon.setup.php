@@ -6,11 +6,12 @@ use Mithra62\Export\Services\ExcelService;
 use Mithra62\Export\Services\ExportService;
 use Mithra62\Export\Services\FormatsService;
 use Mithra62\Export\Services\LoggerService;
+use Mithra62\Export\Services\MemberService;
 use Mithra62\Export\Services\OutputService;
 use Mithra62\Export\Services\ParamsService;
+use Mithra62\Export\Services\PostProcessService;
 use Mithra62\Export\Services\SourcesService;
 use Mithra62\Export\Services\XmlService;
-use Mithra62\Export\Services\MemberService;
 
 require_once __DIR__ . "/vendor/autoload.php";
 
@@ -35,6 +36,7 @@ return [
             $export->setSources(ee('export:SourcesService'));
             $export->setOutput(ee('export:OutputService'));
             $export->setFormats(ee('export:FormatsService'));
+            $export->setPostProcess(ee('export:PostProcessService'));
             return $export;
         },
         'ParamsService' => function ($addon) {
@@ -52,6 +54,9 @@ return [
         'XmlService' => function ($addon) {
             return new XmlService();
         },
+        'PostProcessService' => function ($addon) {
+            return new PostProcessService();
+        },
     ],
     'services.singletons' => [
         'ActionsService' => function ($addon) {
@@ -62,6 +67,6 @@ return [
         },
         'MemberService' => function ($addon) {
             return new MemberService();
-        }
+        },
     ],
 ];

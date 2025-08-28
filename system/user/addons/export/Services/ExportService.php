@@ -29,6 +29,11 @@ class ExportService extends AbstractService
     protected FormatsService $formats;
 
     /**
+     * @var PostProcessService
+     */
+    protected PostProcessService $post;
+
+    /**
      * @var array
      */
     protected array $errors = [];
@@ -48,8 +53,14 @@ class ExportService extends AbstractService
      * @param OutputService|null $output
      * @param SourcesService|null $sources
      * @param FormatsService|null $formats
+     * @param PostProcessService|null $post
      */
-    public function __construct(ParamsService $params = null, OutputService $output = null, SourcesService $sources = null, FormatsService $formats = null)
+    public function __construct(ParamsService $params = null,
+                                OutputService $output = null,
+                                SourcesService $sources = null,
+                                FormatsService $formats = null,
+                                PostProcessService $post = null
+    )
     {
         if ($params !== null) {
             $this->params = $params;
@@ -65,6 +76,14 @@ class ExportService extends AbstractService
 
         if ($formats !== null) {
             $this->formats = $formats;
+        }
+
+        if ($formats !== null) {
+            $this->formats = $formats;
+        }
+
+        if ($post !== null) {
+            $this->post = $post;
         }
     }
 
@@ -133,6 +152,29 @@ class ExportService extends AbstractService
     }
 
     /**
+     * @param PostProcessService|null $post
+     * @return $this
+     * @throws ExportServiceException
+     */
+    public function setPostProcess(PostProcessService $post = null): ExportService
+    {
+        if (is_null($this->getParams())) {
+            throw new ExportServiceException("Parameters is null");
+        }
+
+        $this->post = $post->setParams($this->getParams());
+        return $this;
+    }
+
+    /**
+     * @return PostProcessService
+     */
+    public function getPostProcess(): PostProcessService
+    {
+        return $this->post->setParams($this->getParams());
+    }
+
+    /**
      * @param FormatsService|null $formats
      * @return $this
      * @throws ExportServiceException
@@ -191,6 +233,7 @@ class ExportService extends AbstractService
     public function build(): ExportService
     {
         $source = $this->getSources()->getSource();
+        $source->setPostProcess($this->getPostProcess());
         $this->cache_file = realpath($source->compile());
 
         $format = $this->getFormats()->getFormat();
@@ -205,17 +248,17 @@ class ExportService extends AbstractService
      */
     public function out(): void
     {
-        if(file_exists($this->cache_file)) {
+        if (file_exists($this->cache_file)) {
             unlink($this->cache_file);
         }
 
-        if(!$this->formatted_export) {
+        if (!$this->formatted_export) {
             throw new ExportServiceException("No cache file is set");
         }
 
         $output = $this->getOutput()->getDestination();
-        if($output->process($this->formatted_export) !== false) {
-            if(file_exists($this->formatted_export)) {
+        if ($output->process($this->formatted_export) !== false) {
+            if (file_exists($this->formatted_export)) {
                 unlink($this->formatted_export);
             }
         }

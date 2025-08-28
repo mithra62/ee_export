@@ -1,11 +1,12 @@
 <?php
+
 namespace Mithra62\Export\Plugins;
 
 use ExpressionEngine\Service\Logger\File;
 use ExpressionEngine\Service\Validation\Result as ValidationResult;
 use ExpressionEngine\Service\Validation\ValidationAware;
-use Mithra62\Export\Traits\ValidateTrait;
 use Mithra62\Export\Traits\LoggerTrait;
+use Mithra62\Export\Traits\ValidateTrait;
 
 abstract class AbstractPlugin implements ValidationAware
 {
@@ -25,7 +26,7 @@ abstract class AbstractPlugin implements ValidationAware
     /**
      * @var File|null
      */
-    protected ? File $cache_file = null;
+    protected ?File $cache_file = null;
 
     /**
      * @param array $options
@@ -82,9 +83,9 @@ abstract class AbstractPlugin implements ValidationAware
      */
     public function generateCachePath(): string
     {
-        if(!$this->cache_path) {
+        if (!$this->cache_path) {
             $cache_path = PATH_CACHE . 'export/';
-            if(!is_dir($cache_path)) {
+            if (!is_dir($cache_path)) {
                 mkdir($cache_path, 0777, true);
             }
 
@@ -100,7 +101,7 @@ abstract class AbstractPlugin implements ValidationAware
      */
     protected function getCacheFile(): File
     {
-        if(is_null($this->cache_file)) {
+        if (is_null($this->cache_file)) {
             $this->cache_file = new File($this->generateCachePath(), ee('Filesystem'));
         }
         return $this->cache_file;
@@ -164,7 +165,7 @@ abstract class AbstractPlugin implements ValidationAware
     {
         $return = [];
         $content = file_get_contents($this->getCachePath());
-        if($content) {
+        if ($content) {
             $return = json_decode($content, true);
         }
 

@@ -3,6 +3,7 @@
 namespace Mithra62\Export\Plugins;
 
 use Mithra62\Export\Exceptions\Sources\NoDataException;
+use Mithra62\Export\Services\PostProcessService;
 
 abstract class AbstractSource extends AbstractPlugin
 {
@@ -12,11 +13,34 @@ abstract class AbstractSource extends AbstractPlugin
     protected array $export_data = [];
 
     /**
+     * @var PostProcessService
+     */
+    protected PostProcessService $post_process;
+
+    /**
      * @return string
      * @throws NoDataException
      * @throws \Exception
      */
     abstract public function compile(): string;
+
+    /**
+     * @param PostProcessService $post_process
+     * @return $this
+     */
+    public function setPostProcess(PostProcessService $post_process): AbstractSource
+    {
+        $this->post_process = $post_process;
+        return $this;
+    }
+
+    /**
+     * @return PostProcessService
+     */
+    public function getPostProcess(): PostProcessService
+    {
+        return $this->post_process;
+    }
 
     /**
      * @return array
@@ -59,6 +83,23 @@ abstract class AbstractSource extends AbstractPlugin
 
             $data = $return;
         }
+
+        return $this->postProcess($data);
+    }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    public function postProcess(array $data): array
+    {
+        $params = $this->getPostProcess()->getParams()->getDomainParams('post', false);
+        if($params) {
+
+            print_r($params);
+            exit;
+        }
+
 
         return $data;
     }

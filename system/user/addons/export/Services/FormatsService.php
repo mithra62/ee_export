@@ -4,6 +4,7 @@ namespace Mithra62\Export\Services;
 use Mithra62\Export\Exceptions\Services\FormatsServiceException;
 use Mithra62\Export\Plugins\AbstractFormat;
 use Mithra62\Export\Traits\ParamsTrait;
+use ExpressionEngine\Library\String\Str;
 
 class FormatsService extends AbstractService
 {
@@ -20,7 +21,7 @@ class FormatsService extends AbstractService
             throw new FormatsServiceException('Source not set');
         }
 
-        $class = "\\Mithra62\\Export\\Formats\\" . ucfirst($params['format']);
+        $class = "\\Mithra62\\Export\\Formats\\" . Str::studly($params['format']);
         if(class_exists($class)) {
             $obj = new $class();
             if($obj instanceof AbstractFormat) {

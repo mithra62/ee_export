@@ -24,6 +24,11 @@ abstract class AbstractPlugin implements ValidationAware
     protected string $cache_path = '';
 
     /**
+     * @var string
+     */
+    protected string $cache_filename = '';
+
+    /**
      * @var File|null
      */
     protected ?File $cache_file = null;
@@ -89,7 +94,7 @@ abstract class AbstractPlugin implements ValidationAware
                 mkdir($cache_path, 0777, true);
             }
 
-            $this->cache_path = $cache_path . ee()->functions->random('alpha', 13) . '.tmp';
+            $this->cache_path = $cache_path;
         }
 
         return $this->cache_path;
@@ -177,8 +182,11 @@ abstract class AbstractPlugin implements ValidationAware
      */
     public function getCacheFilename(): string
     {
-        $info = pathinfo($this->getCachePath());
-        return $info['filename'];
+        if(!$this->cache_filename) {
+            $this->cache_filename = ee()->functions->random('alpha', 13) . '.tmp';
+        }
+
+        return $this->cache_filename;
     }
 
     /**
@@ -186,7 +194,6 @@ abstract class AbstractPlugin implements ValidationAware
      */
     public function getCacheDirPath(): string
     {
-        $info = pathinfo($this->getCachePath());
-        return $info['dirname'];
+        return $this->generateCachePath();
     }
 }

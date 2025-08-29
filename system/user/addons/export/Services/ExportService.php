@@ -49,45 +49,6 @@ class ExportService extends AbstractService
     protected string $formatted_export = '';
 
     /**
-     * @param ParamsService|null $params
-     * @param OutputService|null $output
-     * @param SourcesService|null $sources
-     * @param FormatsService|null $formats
-     * @param PostProcessService|null $post
-     */
-    public function __construct(ParamsService $params = null,
-                                OutputService $output = null,
-                                SourcesService $sources = null,
-                                FormatsService $formats = null,
-                                PostProcessService $post = null
-    )
-    {
-        if ($params !== null) {
-            $this->params = $params;
-        }
-
-        if ($output !== null) {
-            $this->output = $output;
-        }
-
-        if ($sources !== null) {
-            $this->sources = $sources;
-        }
-
-        if ($formats !== null) {
-            $this->formats = $formats;
-        }
-
-        if ($formats !== null) {
-            $this->formats = $formats;
-        }
-
-        if ($post !== null) {
-            $this->post = $post;
-        }
-    }
-
-    /**
      * @return array
      */
     public function getErrors(): array
@@ -225,41 +186,27 @@ class ExportService extends AbstractService
     }
 
     /**
-     * @return $this
-     * @throws FormatsServiceException
-     * @throws NoDataException
-     * @throws SourcesServiceException
-     */
-    public function build(): ExportService
-    {
-        $source = $this->getSources()->getSource();
-        $source->setPostProcess($this->getPostProcess());
-        $this->cache_file = realpath($source->compile());
-
-        $format = $this->getFormats()->getFormat();
-        $this->formatted_export = $format->setCachePath($this->cache_file)->compile();
-        return $this;
-    }
-
-    /**
      * @return void
      * @throws ExportServiceException
+     * @throws FormatsServiceException
+     * @throws NoDataException
      * @throws OutputServiceException
+     * @throws SourcesServiceException
      */
-    public function out(): void
+    public function build(): void
     {
-        if (file_exists($this->cache_file)) {
-            unlink($this->cache_file);
-        }
+        $source = $this->getSources()->getSource()->compile();
 
-        if (!$this->formatted_export) {
-            throw new ExportServiceException("No cache file is set");
-        }
+        $post = $this->getPostProcess();
+        $source = $post->process($source);
+
+        $format = $this->getFormats()->getFormat();
+        $path = $format->compile($source);
 
         $output = $this->getOutput()->getDestination();
-        if ($output->process($this->formatted_export) !== false) {
-            if (file_exists($this->formatted_export)) {
-                unlink($this->formatted_export);
+        if ($output->process($path) !== false) {
+            if (file_exists($path)) {
+                unlink($path);
             }
         }
     }

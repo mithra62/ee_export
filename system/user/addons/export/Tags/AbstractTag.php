@@ -318,7 +318,7 @@ abstract class AbstractTag extends AbstractRoute
             $export = ee('export:ExportService')->setParameters($params);
             if ($export->validate()) {
                 try {
-                    $export->build()->out();
+                    $export->build();
                 } catch (Exception $e) {
                     show_error($e->getMessage());
                 }

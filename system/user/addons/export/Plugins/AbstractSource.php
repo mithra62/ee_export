@@ -22,7 +22,7 @@ abstract class AbstractSource extends AbstractPlugin
      * @throws NoDataException
      * @throws \Exception
      */
-    abstract public function compile(): string;
+    abstract public function compile(): AbstractSource;
 
     /**
      * @param PostProcessService $post_process

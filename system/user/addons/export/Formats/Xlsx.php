@@ -2,12 +2,17 @@
 namespace Mithra62\Export\Formats;
 
 use Mithra62\Export\Plugins\AbstractFormat;
+use Mithra62\Export\Plugins\AbstractSource;
 
 class Xlsx extends AbstractFormat
 {
-    public function compile(): string
+    /**
+     * @param AbstractSource $source
+     * @return string
+     */
+    public function compile(AbstractSource $source): string
     {
-        $content = $this->getCacheContent();
+        $content = $source->getExportData();
         $cols = array_keys($content[0]);
         $xlsx = ee('export:ExcelService')->setRows($content)
             ->setCols($cols)

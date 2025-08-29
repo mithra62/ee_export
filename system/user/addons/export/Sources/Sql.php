@@ -20,13 +20,13 @@ class Sql extends AbstractSource
      * @throws NoDataException
      * @throws \Exception
      */
-    public function compile(): string
+    public function compile(): AbstractSource
     {
         $query = ee()->db->query($this->getOption('query'));
         if($query instanceof CI_DB_result && $query->num_rows() > 0) {
             $results = $this->postProcess($query->result_array());
-            $this->writeCache($results);
-            return $this->getCachePath();
+            $this->setExportData($results);
+            return $this;
         }
 
         throw new NoDataException("Nothing to export from your query");

@@ -3,6 +3,7 @@
 namespace Mithra62\Export\Formats;
 
 use Mithra62\Export\Plugins\AbstractFormat;
+use Mithra62\Export\Plugins\AbstractSource;
 
 class Xml extends AbstractFormat
 {
@@ -15,10 +16,11 @@ class Xml extends AbstractFormat
     ];
 
     /**
+     * @param AbstractSource $source
      * @return string
      * @throws \Exception
      */
-    public function compile(): string
+    public function compile(AbstractSource $source): string
     {
         $content = $this->getCacheContent();
         $xml = ee('export:XmlService');

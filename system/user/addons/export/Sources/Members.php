@@ -12,7 +12,7 @@ class Members extends AbstractSource
      * @return string
      * @throws NoDataException
      */
-    public function compile(): string
+    public function compile(): AbstractSource
     {
         $members = ee('Model')
             ->get('Member');
@@ -49,8 +49,7 @@ class Members extends AbstractSource
             }
 
             $this->setExportData($results);
-            $this->writeCache($results);
-            return $this->getCachePath();
+            return $this;
         }
 
         throw new NoDataException("Nothing to export from your query");

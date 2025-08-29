@@ -5,7 +5,7 @@ use Mithra62\Export\Plugins\AbstractSource;
 
 class Entries extends AbstractSource
 {
-    public function compile(): string
+    public function compile(): AbstractSource
     {
 
     }

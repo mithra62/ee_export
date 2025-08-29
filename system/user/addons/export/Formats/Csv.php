@@ -2,10 +2,11 @@
 namespace Mithra62\Export\Formats;
 
 use Mithra62\Export\Plugins\AbstractFormat;
+use Mithra62\Export\Plugins\AbstractSource;
 
 class Csv extends AbstractFormat
 {
-    public function compile(): string
+    public function compile(AbstractSource $source): string
     {
         $save_path = $this->getCacheDirPath() . '/' . $this->getCacheFilename() . '.csv';
         $content = $this->getCacheContent();

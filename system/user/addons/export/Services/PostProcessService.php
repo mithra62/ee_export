@@ -5,32 +5,33 @@ use Mithra62\Export\Exceptions\Services\SourcesServiceException;
 use Mithra62\Export\Plugins\AbstractPost;
 use Mithra62\Export\Traits\ParamsTrait;
 use Mithra62\Export\Plugins\AbstractSource;
+use ExpressionEngine\Library\String\Str;
 
 class PostProcessService extends AbstractService
 {
     use ParamsTrait;
 
     /**
+     * @var array
+     */
+    protected array $processes = [];
+
+    /**
      * @return AbstractPost
      * @throws SourcesServiceException
      */
-    public function getPost(): AbstractPost
+    public function getPost($processor): ?AbstractPost
     {
-        $params = $this->getParams()->getDomainParams('post');
-        if(empty($params['post'])) {
-            throw new PostProcessServiceException('Source not set');
-        }
-
-        $class = "\\Mithra62\\Export\\Post\\" . ucfirst($params['source']);
+        $return = null;
+        $class = "\\Mithra62\\Export\\Post\\" . Str::studly($processor);
         if(class_exists($class)) {
             $obj = new $class();
             if($obj instanceof AbstractPost) {
-                $obj->setOptions($params);
-                return $obj;
+                $return = $obj;
             }
         }
 
-        throw new SourcesServiceException('Source not found ' . $class);
+        return $return;
     }
 
     /**
@@ -39,9 +40,27 @@ class PostProcessService extends AbstractService
      */
     public function process(AbstractSource $source): AbstractSource
     {
+        $processes = $this->getProcesses();
+        if($processes) {
+            $data = $source->getExportData();
+            foreach($data as $key => $item) {
+                foreach($processes as $field => $process) {
+                    if(isset($item[$field])) {
+                        $data[$key][$field] = $this->runProcesses($item[$field], $process);
+                    }
+                }
+            }
+
+            $source->setExportData($data);
+        }
+
         return $source;
-        //
+    }
+
+    public function getProcesses(): array
+    {
         $params = $this->getParams()->getDomainParams('post', false);
+        $return = [];
         if($params) {
             $fields = $processors = [];
             foreach($params As $field => $param) {
@@ -51,12 +70,30 @@ class PostProcessService extends AbstractService
                     $processors[$part] = $part;
                 }
             }
-            print_r($processors);
-            print_r($fields);
-            exit;
+
+            $return = $fields;
         }
 
+        return $return;
+    }
+
+    /**
+     * @param mixed $data
+     * @param array $processes
+     * @return mixed
+     * @throws SourcesServiceException
+     */
+    protected function runProcesses(mixed $data, array $processes): mixed
+    {
+        foreach($processes AS $post) {
+            $process = $this->getPost($post);
+            if($process instanceof AbstractPost) {
+                $data = $process->process($data);
+            }
+
+        }
 
         return $data;
     }
+
 }

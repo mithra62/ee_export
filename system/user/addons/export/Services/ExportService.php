@@ -44,11 +44,6 @@ class ExportService extends AbstractService
     protected string $cache_file = '';
 
     /**
-     * @var string
-     */
-    protected string $formatted_export = '';
-
-    /**
      * @return array
      */
     public function getErrors(): array
@@ -199,6 +194,9 @@ class ExportService extends AbstractService
 
         $post = $this->getPostProcess();
         $source = $post->process($source);
+
+        print_r($source);
+        exit;
 
         $format = $this->getFormats()->getFormat();
         $path = $format->compile($source);

@@ -4,7 +4,8 @@ namespace Mithra62\Export\Plugins;
 abstract class AbstractPost extends AbstractPlugin
 {
     /**
-     * @return string
+     * @param mixed $value
+     * @return mixed
      */
-    abstract public function process(): string;
+    abstract public function process(mixed $value): mixed;
 }

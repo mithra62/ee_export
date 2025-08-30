@@ -58,7 +58,7 @@ class LoggerService
             'warning',
             'emergency',
             'alert',
-            'critical'
+            'critical',
         ], $log_levels);
 
         return in_array($level, $log_levels);

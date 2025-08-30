@@ -199,10 +199,15 @@ class ExportService extends AbstractService
         $path = $format->compile($source);
 
         $output = $this->getOutput()->getDestination();
+
         if ($output->process($path) !== false) {
             if (file_exists($path)) {
                 unlink($path);
             }
+        }
+
+        if ($output->shouldDie()) {
+            exit;
         }
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Plugins;
 
 abstract class AbstractModifier extends AbstractPlugin

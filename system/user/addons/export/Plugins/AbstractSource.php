@@ -84,33 +84,6 @@ abstract class AbstractSource extends AbstractPlugin
             $data = $return;
         }
 
-        return $this->postProcess($data);
-    }
-
-    /**
-     * @param array $data
-     * @return array
-     */
-    public function postProcess(array $data): array
-    {
-        return $data;
-        //
-        $params = $this->getPostProcess()->getParams()->getDomainParams('post', false);
-        if($params) {
-            $fields = $processors = [];
-            foreach($params As $field => $param) {
-                $parts = explode('|', $param);
-                $fields[$field] = $parts;
-                foreacH($parts AS $part) {
-                    $processors[$part] = $part;
-                }
-            }
-            print_r($processors);
-            print_r($fields);
-            exit;
-        }
-
-
         return $data;
     }
 }

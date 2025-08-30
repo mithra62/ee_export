@@ -6,12 +6,21 @@ use Mithra62\Export\Plugins\AbstractDestination;
 class Download extends AbstractDestination
 {
     /**
+     * @var bool
+     */
+    protected bool $force_exit = true;
+
+    /**
      * @var array|string[]
      */
     public array $rules = [
         'filename' => 'required',
     ];
 
+    /**
+     * @param string $finished_export
+     * @return bool|int
+     */
     public function process(string $finished_export): bool|int
     {
         header('Content-Type: application/octet-stream');
@@ -22,6 +31,7 @@ class Download extends AbstractDestination
         if(readfile($finished_export)) {
             $return = true;
         }
+
         return $return;
     }
 }

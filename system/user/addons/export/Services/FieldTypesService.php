@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Services;
 
 use EE_Fieldtype;
@@ -39,7 +40,7 @@ class FieldTypesService
                 if ($provider->get('fieldtypes')) {
                     $ft = $provider->get('fieldtypes');
                     foreach ($ft as $k => $v) {
-                        if($k == 'highlander_ft') {
+                        if ($k == 'highlander_ft') {
                             continue;
                         }
                         if (!empty($v['compatibility']) && in_array($v['compatibility'], $this->allowed_compatibility)) {
@@ -104,8 +105,8 @@ class FieldTypesService
         foreach ($fields as $type => $field) {
             $obj = $this->build($field['field_type']);
             $form = $obj->display_settings($settings);
-            if($form) {
-                foreach($form AS $key => $value) {
+            if ($form) {
+                foreach ($form as $key => $value) {
                     $return[$field['field_type']] = $value;
                     $return[$field['field_type']]['group'] = 'hl_' . $value['group'];
                 }
@@ -125,7 +126,7 @@ class FieldTypesService
     {
         $return = '';
         $field = $this->getField($field);
-        if($field) {
+        if ($field) {
             $return = $field['field_type'];
         }
 

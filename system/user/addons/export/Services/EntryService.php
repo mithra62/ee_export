@@ -95,7 +95,7 @@ class EntryService extends AbstractService
             $where['fluid_field_id'] = $field_id;
         }
 
-        if($group) {
+        if ($group) {
             $where['group'] = $group;
         }
 
@@ -299,14 +299,14 @@ class EntryService extends AbstractService
         $return = [];
         foreach ($entries as $index => $entry) {
             foreach ($entry as $key => $value) {
-                if(is_string($value)) {
-                    if(strpos($value, $string) !== false) {
+                if (is_string($value)) {
+                    if (strpos($value, $string) !== false) {
                         $return[] = $entry;
                     }
-                } elseif(is_array($value)) {
-                    foreach($value AS $k => $v) {
-                        if(is_string($v)) {
-                            if(strpos($v, $string) !== false) {
+                } elseif (is_array($value)) {
+                    foreach ($value as $k => $v) {
+                        if (is_string($v)) {
+                            if (strpos($v, $string) !== false) {
                                 $return[] = $entry;
                             }
                         }
@@ -350,7 +350,7 @@ class EntryService extends AbstractService
         $table = 'channel_grid_field_' . $field_id;
         $row['entry_id'] = $entry_id;
         $row['row_order'] = 0;
-        if(ee()->db->insert($table, $row)) {
+        if (ee()->db->insert($table, $row)) {
             return true;
         }
 
@@ -366,7 +366,7 @@ class EntryService extends AbstractService
     public function updateGridData(int $row_id, int $field_id, array $row): bool
     {
         $table = 'channel_grid_field_' . $field_id;
-        if(ee()->db->update($table, $row, ['row_id' => $row_id])) {
+        if (ee()->db->update($table, $row, ['row_id' => $row_id])) {
             return true;
         }
 

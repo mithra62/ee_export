@@ -34,7 +34,7 @@ class ActionsService extends AbstractService
 
         $return = 0;
         $query = ee()->db->select('action_id')->from('actions')->where($where)->get();
-        if($query instanceof CI_DB_result) {
+        if ($query instanceof CI_DB_result) {
             $return = $query->row()->action_id;
         }
 

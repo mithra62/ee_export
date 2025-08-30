@@ -16,16 +16,14 @@ class Sql extends AbstractSource
     ];
 
     /**
-     * @return string
+     * @return AbstractSource
      * @throws NoDataException
-     * @throws \Exception
      */
     public function compile(): AbstractSource
     {
         $query = ee()->db->query($this->getOption('query'));
         if($query instanceof CI_DB_result && $query->num_rows() > 0) {
-            $results = $this->postProcess($query->result_array());
-            $this->setExportData($results);
+            $this->setExportData($query->result_array());
             return $this;
         }
 

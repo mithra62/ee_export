@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Services;
 
 class ParamsService
@@ -47,11 +48,11 @@ class ParamsService
     {
         $return = [];
         $search = trim($domain) . ':';
-        foreach($this->params AS $key => $value) {
-            if(str_starts_with($key, $search)) {
+        foreach ($this->params as $key => $value) {
+            if (str_starts_with($key, $search)) {
                 $key = str_replace($search, '', $key);
                 $return[$key] = $value;
-            } elseif($include_all) {
+            } elseif ($include_all) {
                 $return[$key] = $value;
             }
         }

@@ -192,8 +192,8 @@ class ExportService extends AbstractService
     {
         $source = $this->getSources()->getSource()->compile();
 
-        $post = $this->getModifiers();
-        $source = $post->process($source);
+        $modifiers = $this->getModifiers();
+        $source = $modifiers->process($source);
 
         $format = $this->getFormats()->getFormat();
         $path = $format->compile($source);

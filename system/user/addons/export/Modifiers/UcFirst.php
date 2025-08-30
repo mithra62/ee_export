@@ -3,7 +3,7 @@ namespace Mithra62\Export\Modifiers;
 
 use Mithra62\Export\Plugins\AbstractModifier;
 
-class UcFirst extends AbstractPost
+class UcFirst extends AbstractModifier
 {
     /**
      * @param mixed $value

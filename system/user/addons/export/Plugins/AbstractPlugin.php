@@ -182,7 +182,7 @@ abstract class AbstractPlugin implements ValidationAware
      */
     public function getCacheFilename(): string
     {
-        if(!$this->cache_filename) {
+        if (!$this->cache_filename) {
             $this->cache_filename = ee()->functions->random('alpha', 13) . '.tmp';
         }
 

@@ -18,16 +18,20 @@ class ModifiersService extends AbstractService
     protected array $processes = [];
 
     /**
-     * @return AbstractModifier
-     * @throws SourcesServiceException
+     * @param $processor
+     * @param array $params
+     * @return AbstractModifier|null
      */
-    public function getModifier($processor): ?AbstractModifier
+    protected function getModifier($processor, array $params = []): ?AbstractModifier
     {
         $return = null;
         $class = "\\Mithra62\\Export\\Modifiers\\" . Str::studly($processor);
         if (class_exists($class)) {
             $obj = new $class();
             if ($obj instanceof AbstractModifier) {
+                if($params) {
+                    $obj->setParams($params);
+                }
                 $return = $obj;
             }
         }
@@ -42,13 +46,13 @@ class ModifiersService extends AbstractService
      */
     public function process(AbstractSource $source): AbstractSource
     {
-        $processes = $this->getProcesses();
+        $processes = $this->getModifiers();
         if ($processes) {
             $data = $source->getExportData();
             foreach ($data as $key => $item) {
                 foreach ($processes as $field => $process) {
                     if (isset($item[$field])) {
-                        $data[$key][$field] = $this->runProcesses($item[$field], $process);
+                        $data[$key][$field] = $this->runModifiers($item[$field], $process);
                     }
                 }
             }
@@ -62,7 +66,7 @@ class ModifiersService extends AbstractService
     /**
      * @return array
      */
-    public function getProcesses(): array
+    protected function getModifiers(): array
     {
         $params = $this->getParams()->getDomainParams('modify', false);
         $return = [];
@@ -84,14 +88,20 @@ class ModifiersService extends AbstractService
 
     /**
      * @param mixed $data
-     * @param array $processes
+     * @param array $modifiers
      * @return mixed
-     * @throws SourcesServiceException
      */
-    protected function runProcesses(mixed $data, array $processes): mixed
+    protected function runModifiers(mixed $data, array $modifiers): mixed
     {
-        foreach ($processes as $post) {
-            $process = $this->getModifier($post);
+        foreach ($modifiers as $modifier) {
+            $params = [];
+
+            preg_match_all('/\\[(.*?)\\]/', $modifier, $params);
+
+            $pattern = '/\[.*?\]/';
+            $name = preg_replace($pattern, '', $modifier);
+
+            $process = $this->getModifier($name, $params[1]);
             if ($process instanceof AbstractModifier) {
                 $data = $process->process($data);
             }

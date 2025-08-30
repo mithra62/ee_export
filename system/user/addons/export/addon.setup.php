@@ -13,12 +13,14 @@ use Mithra62\Export\Services\PostProcessService;
 use Mithra62\Export\Services\SourcesService;
 use Mithra62\Export\Services\XmlService;
 
+const EXPORT_VERSION = '0.1.0';
+
 require_once __DIR__ . "/vendor/autoload.php";
 
 return [
     'name' => 'Export',
     'description' => 'Export description',
-    'version' => '1.0.0',
+    'version' => EXPORT_VERSION,
     'author' => 'mithra62',
     'author_url' => 'fdsa',
     'namespace' => 'Mithra62\Export',

@@ -195,9 +195,6 @@ class ExportService extends AbstractService
         $post = $this->getPostProcess();
         $source = $post->process($source);
 
-        print_r($source);
-        exit;
-
         $format = $this->getFormats()->getFormat();
         $path = $format->compile($source);
 

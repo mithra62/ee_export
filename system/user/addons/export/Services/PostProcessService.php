@@ -57,6 +57,9 @@ class PostProcessService extends AbstractService
         return $source;
     }
 
+    /**
+     * @return array
+     */
     public function getProcesses(): array
     {
         $params = $this->getParams()->getDomainParams('post', false);

@@ -29,9 +29,9 @@ class ExportService extends AbstractService
     protected FormatsService $formats;
 
     /**
-     * @var PostProcessService
+     * @var ModifiersService
      */
-    protected PostProcessService $post;
+    protected ModifiersService $modifiers;
 
     /**
      * @var array
@@ -108,26 +108,26 @@ class ExportService extends AbstractService
     }
 
     /**
-     * @param PostProcessService|null $post
+     * @param ModifiersService|null $post
      * @return $this
      * @throws ExportServiceException
      */
-    public function setPostProcess(PostProcessService $post = null): ExportService
+    public function setModifiers(ModifiersService $post = null): ExportService
     {
         if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
         }
 
-        $this->post = $post->setParams($this->getParams());
+        $this->modifiers = $post->setParams($this->getParams());
         return $this;
     }
 
     /**
-     * @return PostProcessService
+     * @return ModifiersService
      */
-    public function getPostProcess(): PostProcessService
+    public function getModifiers(): ModifiersService
     {
-        return $this->post->setParams($this->getParams());
+        return $this->modifiers->setParams($this->getParams());
     }
 
     /**
@@ -192,7 +192,7 @@ class ExportService extends AbstractService
     {
         $source = $this->getSources()->getSource()->compile();
 
-        $post = $this->getPostProcess();
+        $post = $this->getModifiers();
         $source = $post->process($source);
 
         $format = $this->getFormats()->getFormat();

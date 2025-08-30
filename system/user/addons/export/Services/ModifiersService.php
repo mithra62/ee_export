@@ -2,12 +2,12 @@
 namespace Mithra62\Export\Services;
 
 use Mithra62\Export\Exceptions\Services\SourcesServiceException;
-use Mithra62\Export\Plugins\AbstractPost;
+use Mithra62\Export\Plugins\AbstractModifier;
 use Mithra62\Export\Traits\ParamsTrait;
 use Mithra62\Export\Plugins\AbstractSource;
 use ExpressionEngine\Library\String\Str;
 
-class PostProcessService extends AbstractService
+class ModifiersService extends AbstractService
 {
     use ParamsTrait;
 
@@ -17,16 +17,16 @@ class PostProcessService extends AbstractService
     protected array $processes = [];
 
     /**
-     * @return AbstractPost
+     * @return AbstractModifier
      * @throws SourcesServiceException
      */
-    public function getPost($processor): ?AbstractPost
+    public function getModifier($processor): ?AbstractModifier
     {
         $return = null;
-        $class = "\\Mithra62\\Export\\Post\\" . Str::studly($processor);
+        $class = "\\Mithra62\\Export\\Modifiers\\" . Str::studly($processor);
         if(class_exists($class)) {
             $obj = new $class();
-            if($obj instanceof AbstractPost) {
+            if($obj instanceof AbstractModifier) {
                 $return = $obj;
             }
         }
@@ -37,6 +37,7 @@ class PostProcessService extends AbstractService
     /**
      * @param AbstractSource $source
      * @return AbstractSource
+     * @throws SourcesServiceException
      */
     public function process(AbstractSource $source): AbstractSource
     {
@@ -62,7 +63,7 @@ class PostProcessService extends AbstractService
      */
     public function getProcesses(): array
     {
-        $params = $this->getParams()->getDomainParams('post', false);
+        $params = $this->getParams()->getDomainParams('modify', false);
         $return = [];
         if($params) {
             $fields = $processors = [];
@@ -89,8 +90,8 @@ class PostProcessService extends AbstractService
     protected function runProcesses(mixed $data, array $processes): mixed
     {
         foreach($processes AS $post) {
-            $process = $this->getPost($post);
-            if($process instanceof AbstractPost) {
+            $process = $this->getModifier($post);
+            if($process instanceof AbstractModifier) {
                 $data = $process->process($data);
             }
 

@@ -3,7 +3,7 @@
 namespace Mithra62\Export\Plugins;
 
 use Mithra62\Export\Exceptions\Sources\NoDataException;
-use Mithra62\Export\Services\PostProcessService;
+use Mithra62\Export\Services\ModifiersService;
 
 abstract class AbstractSource extends AbstractPlugin
 {
@@ -13,9 +13,9 @@ abstract class AbstractSource extends AbstractPlugin
     protected array $export_data = [];
 
     /**
-     * @var PostProcessService
+     * @var ModifiersService
      */
-    protected PostProcessService $post_process;
+    protected ModifiersService $post_process;
 
     /**
      * @return string
@@ -25,19 +25,19 @@ abstract class AbstractSource extends AbstractPlugin
     abstract public function compile(): AbstractSource;
 
     /**
-     * @param PostProcessService $post_process
+     * @param ModifiersService $post_process
      * @return $this
      */
-    public function setPostProcess(PostProcessService $post_process): AbstractSource
+    public function setPostProcess(ModifiersService $post_process): AbstractSource
     {
         $this->post_process = $post_process;
         return $this;
     }
 
     /**
-     * @return PostProcessService
+     * @return ModifiersService
      */
-    public function getPostProcess(): PostProcessService
+    public function getPostProcess(): ModifiersService
     {
         return $this->post_process;
     }

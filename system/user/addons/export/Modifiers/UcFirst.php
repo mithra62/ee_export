@@ -1,7 +1,7 @@
 <?php
-namespace Mithra62\Export\Post;
+namespace Mithra62\Export\Modifiers;
 
-use Mithra62\Export\Plugins\AbstractPost;
+use Mithra62\Export\Plugins\AbstractModifier;
 
 class UcFirst extends AbstractPost
 {

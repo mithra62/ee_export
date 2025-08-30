@@ -1,7 +1,7 @@
 <?php
 namespace Mithra62\Export\Plugins;
 
-abstract class AbstractPost extends AbstractPlugin
+abstract class AbstractModifier extends AbstractPlugin
 {
     /**
      * @param mixed $value

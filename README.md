@@ -9,11 +9,36 @@ Export allows for easy and customizable exports of data from within your Express
 3. Save exports to location or download through a browser
 4. Apply "modifiers" to exported data to transform it before save
 
+### Basic Example
+
+The below will force download of the export in JSON format, with a data from the SQL, named `members.json`
+
+```html
+{exp:export:query
+    sql="SELECT * FROM exp_members"
+    format="json"
+    output="download"
+    output:filename="members.json"
+}
+```
+
 ## Formats
 
-Export comes equipped with multiple formats for your exports
+Export comes equipped with multiple formats for your exports. Note that all format based parameters should be prefixed with `format:`.
 
 ### XML
+
+Generate an XML document 
+
+#### Params
+
+These params are unique to XML documents
+
+##### `root_name`
+
+The name to use to contain your XML nodes
+
+##### `branch_name`
 
 ### JSON
 

@@ -232,9 +232,8 @@ These params are unique to `csv` documents
 {exp:export:query
     sql="SELECT * FROM exp_members"
     format="csv"
-    output="local"
+    output="download"
     output:filename="members.csv"
-    output:path="D:\Projects\mithra62\ee-product-dev\html\fdsa"
 }
 ```
 
@@ -266,11 +265,20 @@ These params are unique to `download` destinations
 | :--- | :---: | :---: |
 | `output:filename` | The name for the file upon export | None |
 
+#### Basic Example
+
+```html
+{exp:export:query
+    sql="SELECT * FROM exp_members"
+    format="csv"
+    output="download"
+    output:filename="members.csv"
+}
+```
+
 ### Local
 
 Places the Export at the specified location 
-
-
 
 #### Params
 
@@ -280,3 +288,15 @@ These params are unique to `download` destinations
 | :--- | :---: | :---: |
 | `output:filename` | The name for the file upon export | None |
 | `output:path` | The full system path to the directory the export will be stored | None |
+
+#### Basic Example
+
+```html
+{exp:export:query
+    sql="SELECT * FROM exp_members"
+    format="csv"
+    output="local"
+    output:filename="members.csv"
+    output:path="/path/to/dir"
+}
+```

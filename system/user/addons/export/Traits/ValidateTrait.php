@@ -54,8 +54,6 @@ trait ValidateTrait
      */
     protected function getValidator(): Validator
     {
-        $validator = ee('Validation')->make($this->rules);
-
-        return $validator;
+        return ee('Validation')->make($this->rules);
     }
 }

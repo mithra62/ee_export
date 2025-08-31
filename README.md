@@ -256,6 +256,27 @@ Destinations are how delivery is defined. At this point, there are 2: `download`
 
 ### Download
 
+Will force the export file to download
 
+#### Params
+
+These params are unique to `download` destinations
+
+| Command | Description | Default |
+| :--- | :---: | :---: |
+| `output:filename` | The name for the file upon export | None |
 
 ### Local
+
+Places the Export at the specified location 
+
+
+
+#### Params
+
+These params are unique to `download` destinations
+
+| Command | Description | Default |
+| :--- | :---: | :---: |
+| `output:filename` | The name for the file upon export | None |
+| `output:path` | The full system path to the directory the export will be stored | None |

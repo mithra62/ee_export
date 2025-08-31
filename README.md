@@ -61,6 +61,29 @@ These params are unique to the `query` template tag
 }
 ```
 
+#### Advanced Example
+
+```html
+{exp:export:query
+    sql="SELECT * FROM exp_members LIMIT 20"
+    modify:last_activity="ee_date[%y-%m-%d]"
+    modify:join_date="ee_date[%y-%m-%d]"
+    modify:last_visit="ee_date[%y-%m-%d]"
+    modify:last_entry_date="ee_date[%y-%m-%d]"
+    modify:last_comment_date="ee_date[%y-%m-%d]"
+    modify:language="uc_words"
+    modify:password="replace_with[*******]"
+    modify:unique_id="replace_with[*******]"
+    modify:crypt_key="replace_with[*******]"
+    format="xlsx"
+    format:bold_cols="y"
+    format:ucfirst_cols="y"
+    output="local"
+    output:filename="members.xlsx"
+    output:path="/path/to/location"
+}
+```
+
 ### `members`
 
 Export ExpressionEngine members 

@@ -85,6 +85,12 @@ To use modifiers, you set parameters and declare them on a per key value. For ex
 
 Parameters for modifiers are called using brackets for each. 
 
+#### Example
+
+```html
+modify:join_date="ee_date[%y-%m-%d]|"
+```
+
 ### `ee_date`
 
 Will take a Unix timestamp and format it as described. 
@@ -96,6 +102,51 @@ Will take a Unix timestamp and format it as described.
     format="json"
     output="download"
     modify:join_date="ee_date[%y-%m-%d]"
+    output:filename="members.json"
+}
+```
+
+### `uc_words`
+
+Runs the value through the internal PHP function
+
+#### Example
+
+```html
+{exp:export:members
+    format="json"
+    output="download"
+    modify:first_name="uc_first"
+    output:filename="members.json"
+}
+```
+
+### `replace_with`
+
+Will replace any output with the value provided. 
+
+#### Example
+
+```html
+{exp:export:members
+    format="json"
+    output="download"
+    modify:password="replace_with[*******]"
+    output:filename="members.json"
+}
+```
+
+### `uc_words`
+
+Runs the value through the internal PHP function
+
+#### Example
+
+```html
+{exp:export:members
+    format="json"
+    output="download"
+    modify:city="uc_words"
     output:filename="members.json"
 }
 ```

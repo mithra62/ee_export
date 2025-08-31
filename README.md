@@ -36,10 +36,21 @@ These params are unique to XML documents
 
 | Command | Description |
 | :--- | :---: |
-| `root_name` | The name to use to contain your XML nodess |
-| `branch_name` |  |
+| `format:root_name` | The name to use to contain your XML nodess |
+| `format:branch_name` | What the containing node should be called |
 
+#### Basic Example
 
+```html
+{exp:export:query
+    sql="SELECT * FROM exp_members"
+    format="xml"
+    format:root_name="members_table"
+    format:branch_name="members"
+    output="download"
+    output:filename="members.xml"
+}
+```
 
 ### JSON
 

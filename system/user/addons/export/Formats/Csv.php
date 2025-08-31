@@ -9,7 +9,7 @@ class Csv extends AbstractFormat
     public function compile(AbstractSource $source): string
     {
         $save_path = $this->getCacheDirPath() . '/' . $this->getCacheFilename() . '.csv';
-        $content = $this->getCacheContent();
+        $content = $source->getExportData();
         $separator = $this->getOption('separator', ',');
         $enclosure = $this->getOption('enclosure', '"');
         $escape = $this->getOption('escape', '\\');

@@ -22,7 +22,7 @@ class Xml extends AbstractFormat
      */
     public function compile(AbstractSource $source): string
     {
-        $content = $this->getCacheContent();
+        $content = $source->getExportData();
         $xml = ee('export:XmlService');
         $xml->setRootName($this->getOption('root_name'));
         $xml->initiate();

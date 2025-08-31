@@ -51,6 +51,32 @@ These params are unique to the `query` template tag
 }
 ```
 
+### `members`
+
+Export ExpressionEngine members 
+
+#### Params
+
+These params are unique to the `members` template tag
+
+| Command | Description | Default |
+| :--- | :---: | :---: |
+| `roles` | A pip delimited collection of role_id values | None |
+| `join_start` | A `strtotime` compatible date | None |
+| `join_end` | A `strtotime` compatible date | None |
+| `last_login_start` | A `strtotime` compatible date | None |
+| `last_login_join_end` | A `strtotime` compatible date | None |
+
+#### Basic Example
+
+```html
+{exp:export:members
+    format="json"
+    output="download"
+    output:filename="members.json"
+}
+```
+
 ## Formats
 
 Export comes equipped with multiple formats for your exports. Note that all format based parameters should be prefixed with `format:`.

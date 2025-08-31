@@ -12,7 +12,7 @@ class Json extends AbstractFormat
      */
     public function compile(AbstractSource $source): string
     {
-        $content = $this->getCacheContent();
+        $content = $source->getExportData();
         $save_path = $this->getCacheDirPath() . '/' . $this->getCacheFilename() . '.json';
         $this->writeContent(json_encode($content), $save_path);
         return $save_path;

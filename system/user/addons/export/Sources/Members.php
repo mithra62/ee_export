@@ -8,8 +8,9 @@ use Mithra62\Export\Plugins\AbstractSource;
 
 class Members extends AbstractSource
 {
+
     /**
-     * @return string
+     * @return AbstractSource
      * @throws NoDataException
      */
     public function compile(): AbstractSource

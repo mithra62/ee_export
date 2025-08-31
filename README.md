@@ -94,6 +94,7 @@ These params are unique to the `members` template tag
 
 | Command | Description | Default |
 | :--- | :---: | :---: |
+| `limit` | How many members to include in your export | None |
 | `roles` | A pip delimited collection of role_id values | None |
 | `join_start` | A `strtotime` compatible date | None |
 | `join_end` | A `strtotime` compatible date | None |
@@ -108,6 +109,29 @@ These params are unique to the `members` template tag
     format="json"
     output="download"
     output:filename="members.json"
+}
+```
+
+#### Advanced Example
+
+```html
+{exp:export:members
+    format="xlsx"
+    output="local"
+    limit="10"
+    join_start="1 year ago"
+    join_end="today"
+    roles="1|5|26"
+    modify:last_activity="ee_date[%y-%m-%d]"
+    modify:join_date="ee_date[%y-%m-%d]"
+    modify:last_visit="ee_date[%y-%m-%d]"
+    modify:last_entry_date="ee_date[%y-%m-%d]"
+    modify:last_comment_date="ee_date[%y-%m-%d]"
+    modify:language="uc_words"
+    fields="member_id|username|email|first_name|last_name|city|state|zip|join_date|last_visit|last_activity"
+    format:bold_cols="y"
+    output:path="D:\Projects\mithra62\ee-product-dev\html\fdsa"
+    output:filename="members.xlsx"
 }
 ```
 

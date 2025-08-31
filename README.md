@@ -81,9 +81,9 @@ These params are unique to XML documents
 
 | Command | Description | Default |
 | :--- | :---: | :---: |
-| `format:separator` | The optional delimiter parameter sets the field delimiter (one character only). | `,` |
-| `format:enclosure` | he optional enclosure parameter sets the field enclosure (one character only). | `"` |
-| `format:escape` | The optional escape_char parameter sets the escape character (one character only). | `\\` |
+| `format:separator` | Sets the field delimiter (one character only). | `,` |
+| `format:enclosure` | The field enclosure (one character only). | `"` |
+| `format:escape` | Tthe escape character (one character only). | `\\` |
 | `format:newline` | How new lines are created | \n |
 
 #### Basic Example

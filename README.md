@@ -54,6 +54,23 @@ These params are unique to XML documents
 
 ### JSON
 
+Will convert an Export into JSON
+
+#### Params
+
+None
+
+#### Basic Example
+
+```html
+{exp:export:query
+    sql="SELECT * FROM exp_members"
+    format="json"
+    output="download"
+    output:filename="members.json"
+}
+```
+
 ### CSV
 
 ### Excel

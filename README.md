@@ -73,6 +73,31 @@ None
 
 ### CSV
 
+Export data in a comma seperated value format
+
+#### Params
+
+These params are unique to XML documents
+
+| Command | Description | Default |
+| :--- | :---: | :---: |
+| `format:separator` | The optional delimiter parameter sets the field delimiter (one character only). | `,` |
+| `format:enclosure` | he optional enclosure parameter sets the field enclosure (one character only). | `"` |
+| `format:escape` | The optional escape_char parameter sets the escape character (one character only). | `\\` |
+| `format:newline` | How new lines are created | \n |
+
+#### Basic Example
+
+```html
+{exp:export:query
+    sql="SELECT * FROM exp_members"
+    format="csv"
+    output="local"
+    output:filename="members.csv"
+    output:path="D:\Projects\mithra62\ee-product-dev\html\fdsa"
+}
+```
+
 ### Excel
 
 ## Sources

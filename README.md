@@ -22,6 +22,33 @@ The below will force download of the export in JSON format, with a data from the
 }
 ```
 
+## Template Tags
+
+Exporting data is all done through template tags and parameters. This allow for granular and ah-hoc control over your data exporting and allows for fast implementation. 
+
+### `query`
+
+Execute an Export of a database table using a custom query
+
+#### Params
+
+These params are unique to the `query` template tag
+
+| Command | Description | Default |
+| :--- | :---: | :---: |
+| `query` | The SQL query to execute | None |
+
+#### Basic Example
+
+```html
+{exp:export:query
+    sql="SELECT * FROM exp_members"
+    format="json"
+    output="download"
+    output:filename="members.json"
+}
+```
+
 ## Formats
 
 Export comes equipped with multiple formats for your exports. Note that all format based parameters should be prefixed with `format:`.
@@ -84,7 +111,7 @@ These params are unique to XML documents
 | `format:separator` | Sets the field delimiter (one character only). | `,` |
 | `format:enclosure` | The field enclosure (one character only). | `"` |
 | `format:escape` | Tthe escape character (one character only). | `\\` |
-| `format:newline` | How new lines are created | \n |
+| `format:newline` | How new lines are created | `\n` |
 
 #### Basic Example
 

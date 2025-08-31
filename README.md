@@ -28,6 +28,16 @@ The below will force download of the export in JSON format, with a data from the
 
 Exporting data is all done through template tags and parameters. This allow for granular and ah-hoc control over your data exporting and allows for fast implementation. 
 
+### Universal Parameters
+
+The below parameters can be used on all template tags
+
+| Command | Description | Default |
+| :--- | :---: | :---: |
+| `format` | The desiered export format | None |
+| `output` | How you want the export delivered | None |
+| `fields` | A pipe delimited list of fields you want inccluded in your export | None |
+
 ### `query`
 
 Execute an Export of a database table using a custom query
@@ -66,6 +76,7 @@ These params are unique to the `members` template tag
 | `join_end` | A `strtotime` compatible date | None |
 | `last_login_start` | A `strtotime` compatible date | None |
 | `last_login_join_end` | A `strtotime` compatible date | None |
+| `search:field_name` | Allows for strict searching of members based on value amtching | None |
 
 #### Basic Example
 
@@ -227,7 +238,11 @@ These params are unique to XML documents
 }
 ```
 
-### Excel
+### Xlsx
+
+Export data in Excel format 
+
+#### Params
 
 ## Destinations
 

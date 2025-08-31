@@ -2,6 +2,8 @@
 
 Export allows for easy and customizable exports of data from within your ExpressionEngine installation. Export contains template tags you use to configure your export specific to your and your clients needs. 
 
+> Note this is in open alpha at the moment and should NOT be used in production. Use at your own risk. 
+
 ## Features
 
 1. Export to Excel, XML, JSON, and CSV

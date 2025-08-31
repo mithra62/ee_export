@@ -76,7 +76,7 @@ These params are unique to the `members` template tag
 | `join_end` | A `strtotime` compatible date | None |
 | `last_login_start` | A `strtotime` compatible date | None |
 | `last_login_join_end` | A `strtotime` compatible date | None |
-| `search:field_name` | Allows for strict searching of members based on value amtching | None |
+| `search:field_name` | Allows for strict searching of members based on value matching | None |
 
 #### Basic Example
 
@@ -172,7 +172,7 @@ Generate an XML document
 
 #### Params
 
-These params are unique to XML documents
+These params are unique to xml documents
 
 | Command | Description | Default |
 | :--- | :---: | :---: |
@@ -217,7 +217,7 @@ Export data in a comma seperated value format
 
 #### Params
 
-These params are unique to XML documents
+These params are unique to `csv` documents
 
 | Command | Description | Default |
 | :--- | :---: | :---: |
@@ -244,8 +244,18 @@ Export data in Excel format
 
 #### Params
 
+These params are unique to `xlsx` documents
+
+| Command | Description | Default |
+| :--- | :---: | :---: |
+| `bold_cols` | Whether the columns within the spreadsheet should be bolded | None |
+
 ## Destinations
 
+Destinations are how delivery is defined. At this point, there are 2: `download` and `local`
+
 ### Download
+
+
 
 ### Local

@@ -34,10 +34,10 @@ Generate an XML document
 
 These params are unique to XML documents
 
-| Command | Description |
-| :--- | :---: |
-| `format:root_name` | The name to use to contain your XML nodess |
-| `format:branch_name` | What the containing node should be called |
+| Command | Description | Default |
+| :--- | :---: | :---: |
+| `format:root_name` | The name to use to contain your XML nodess | None |
+| `format:branch_name` | What the containing node should be called | None |
 
 #### Basic Example
 

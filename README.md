@@ -100,15 +100,6 @@ Will take a Unix timestamp and format it as described.
 }
 ```
 
-#### Params
-
-These params are unique to the `ee_date` modifier
-
-| Command | Description | Default |
-| :--- | :---: | :---: |
-| `format:root_name` | The name to use to contain your XML nodess | None |
-
-
 ## Formats
 
 Export comes equipped with multiple formats for your exports. Note that all format based parameters should be prefixed with `format:`.
@@ -186,14 +177,6 @@ These params are unique to XML documents
 ```
 
 ### Excel
-
-## Sources
-
-### Members
-
-### Query
-
-## Modifiers
 
 ## Destinations
 

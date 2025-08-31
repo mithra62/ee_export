@@ -77,6 +77,38 @@ These params are unique to the `members` template tag
 }
 ```
 
+## Modifiers
+
+Modifiers allow exports to have it's data overriden through parameters. At the moment, Export only ships with a few, but that number will grow over time. You can chain multiple modifiers togethr using the pipe `|` string. 
+
+To use modifiers, you set parameters and declare them on a per key value. For example, with a `member` export, you can replace all passwords with `*******` through a parameter of `modify:password="replace_with[*******]"`. 
+
+Parameters for modifiers are called using brackets for each. 
+
+### `ee_date`
+
+Will take a Unix timestamp and format it as described. 
+
+#### Example
+
+```html
+{exp:export:members
+    format="json"
+    output="download"
+    modify:join_date="ee_date[%y-%m-%d]"
+    output:filename="members.json"
+}
+```
+
+#### Params
+
+These params are unique to the `ee_date` modifier
+
+| Command | Description | Default |
+| :--- | :---: | :---: |
+| `format:root_name` | The name to use to contain your XML nodess | None |
+
+
 ## Formats
 
 Export comes equipped with multiple formats for your exports. Note that all format based parameters should be prefixed with `format:`.

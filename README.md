@@ -34,11 +34,12 @@ Generate an XML document
 
 These params are unique to XML documents
 
-##### `root_name`
+| Command | Description |
+| :--- | :---: |
+| `root_name` | The name to use to contain your XML nodess |
+| `branch_name` |  |
 
-The name to use to contain your XML nodes
 
-##### `branch_name`
 
 ### JSON
 

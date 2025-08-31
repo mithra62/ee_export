@@ -38,7 +38,7 @@ These params are unique to the `query` template tag
 
 | Command | Description | Default |
 | :--- | :---: | :---: |
-| `query` | The SQL query to execute | None |
+| `sql` | The SQL query to execute | None |
 
 #### Basic Example
 

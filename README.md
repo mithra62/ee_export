@@ -11,3 +11,26 @@ Export allows for easy and customizable exports of data from within your Express
 
 ## Formats
 
+Export comes equipped with multiple formats for your exports
+
+### XML
+
+### JSON
+
+### CSV
+
+### Excel
+
+## Sources
+
+### Members
+
+### Query
+
+## Modifiers
+
+## Destinations
+
+### Download
+
+### Local

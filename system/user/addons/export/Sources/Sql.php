@@ -2,6 +2,7 @@
 namespace Mithra62\Export\Sources;
 
 use CI_DB_result;
+use ExpressionEngine\Service\Validation\Validator;
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
 
@@ -12,7 +13,7 @@ class Sql extends AbstractSource
      */
     public array $rules = [
         'source' => 'required',
-        'query' => 'required',
+        'query' => 'required|isSelect',
     ];
 
     /**
@@ -28,5 +29,20 @@ class Sql extends AbstractSource
         }
 
         throw new NoDataException("Nothing to export from your query");
+    }
+
+    /**
+     * @return Validator
+     */
+    protected function getValidator(): Validator
+    {
+        $validator = parent::getValidator();
+        $data = $this->data;
+        $validator->defineRule('isSelect', function ($key, $value, $parameters, $rule) use ($data) {
+            return str_starts_with(strtolower($value), 'select') ? true : 'invalid query';
+            //return ($data['mode'] == $parameters[0]) ? true : $rule->skip();
+        });
+
+        return $validator;
     }
 }

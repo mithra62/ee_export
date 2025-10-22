@@ -7,6 +7,7 @@ class Entries extends AbstractSource
 {
     public function compile(): AbstractSource
     {
-
+        echo 'fdsa';
+        exit;
     }
 }

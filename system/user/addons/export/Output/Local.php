@@ -21,7 +21,8 @@ class Local extends AbstractDestination
      */
     public function process(string $finished_export): bool|int
     {
-        return copy($finished_export, $this->getOption('path') . '/' . $this->getOption('filename'));
+        $path = rtrim($this->getOption('path'), '/\\') . DIRECTORY_SEPARATOR . $this->getOption('filename');
+        return copy($finished_export, $path);
     }
 
     /**

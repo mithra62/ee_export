@@ -3,6 +3,7 @@ namespace Mithra62\Export\Tags;
 
 use ExpressionEngine\Service\Addon\Controllers\Tag\AbstractRoute;
 use Mithra62\Export\Exceptions\Exception;
+use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Traits\LoggerTrait;
 
 abstract class AbstractTag extends AbstractRoute
@@ -287,7 +288,8 @@ abstract class AbstractTag extends AbstractRoute
      */
     public function memberLoggedIn(): bool
     {
-        return $this->getMemberId() !== 0;
+        $id = $this->getMemberId();
+        return $id !== false && $id > 0;
     }
 
     /**
@@ -319,6 +321,8 @@ abstract class AbstractTag extends AbstractRoute
             if ($export->validate()) {
                 try {
                     $export->build();
+                } catch (NoDataException $e) {
+                    return;
                 } catch (Exception $e) {
                     show_error($e->getMessage());
                 }

@@ -24,6 +24,14 @@ abstract class AbstractSource extends AbstractPlugin
      */
     abstract public function compile(): AbstractSource;
 
+    public function supportsStreaming(): bool { return false; }
+
+    public function openStream(): void {}
+
+    public function nextChunk(): array { return []; }
+
+    public function closeStream(): void {}
+
     /**
      * @param ModifiersService $post_process
      * @return $this

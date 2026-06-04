@@ -190,7 +190,14 @@ class ExportService extends AbstractService
      */
     public function build(): void
     {
-        $source = $this->getSources()->getSource()->compile();
+        $source = $this->getSources()->getSource();
+
+        if ($source->supportsStreaming()) {
+            $this->buildStreaming($source);
+            return;
+        }
+
+        $source->compile();
 
         $modifiers = $this->getModifiers();
         $source = $modifiers->process($source);
@@ -198,6 +205,41 @@ class ExportService extends AbstractService
         $format = $this->getFormats()->getFormat();
         $path = $format->compile($source);
 
+        $this->deliver($path);
+    }
+
+    protected function buildStreaming(\Mithra62\Export\Plugins\AbstractSource $source): void
+    {
+        $format    = $this->getFormats()->getFormat();
+        $modifiers = $this->getModifiers();
+
+        $source->openStream();
+        $header_written = false;
+
+        while (true) {
+            $chunk = $source->nextChunk();
+            if (empty($chunk)) {
+                break;
+            }
+
+            $chunk = $modifiers->processChunk($chunk);
+
+            if (!$header_written) {
+                $format->openFile($chunk[0]);
+                $header_written = true;
+            }
+
+            $format->writeChunk($chunk);
+        }
+
+        $source->closeStream();
+        $path = $format->finalizeFile();
+
+        $this->deliver($path);
+    }
+
+    protected function deliver(string $path): void
+    {
         $output = $this->getOutput()->getDestination();
         if ($output->process($path) !== false) {
             if (file_exists($path)) {

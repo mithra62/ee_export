@@ -4,41 +4,50 @@ namespace Mithra62\Export\Formats;
 
 use Mithra62\Export\Plugins\AbstractFormat;
 use Mithra62\Export\Plugins\AbstractSource;
+use Mithra62\Export\Services\XmlService;
 
 class Xml extends AbstractFormat
 {
-    /**
-     * @var array|string[]
-     */
     protected array $rules = [
-        'root_name' => 'required',
+        'root_name'   => 'required',
         'branch_name' => 'required',
     ];
 
-    /**
-     * @param AbstractSource $source
-     * @return string
-     * @throws \Exception
-     */
+    protected string $stream_path = '';
+    protected ?XmlService $xml = null;
+
     public function compile(AbstractSource $source): string
     {
-        $content = $source->getExportData();
-        $xml = ee('export:XmlService');
-        $xml->setRootName($this->getOption('root_name'));
-        $xml->initiate();
+        $this->openFile($source->getExportData()[0] ?? []);
+        $this->writeChunk($source->getExportData());
+        return $this->finalizeFile();
+    }
 
-        foreach ($content as $i => $item) {
-            $xml->startBranch($this->getOption('branch_name'));
+    public function supportsStreaming(): bool { return true; }
+
+    public function openFile(array $first_row = []): void
+    {
+        $this->stream_path = $this->getCacheDirPath() . $this->getCacheFilename() . '.xml';
+        $this->xml         = new XmlService();
+        $this->xml->setRootName($this->getOption('root_name'));
+        $this->xml->initiateFile($this->stream_path);
+    }
+
+    public function writeChunk(array $rows): void
+    {
+        $branch = $this->getOption('branch_name');
+        foreach ($rows as $item) {
+            $this->xml->startBranch($branch);
             foreach ($item as $key => $value) {
-                $xml->addXmlNodes($key, $value);
+                $this->xml->addXmlNodes($key, $value);
             }
-
-            $xml->endBranch();
+            $this->xml->endBranch();
         }
+    }
 
-        $export_data = $xml->getXml(false);
-        $save_path = $this->getCacheDirPath() . '/' . $this->getCacheFilename() . '.xml';
-        $this->writeContent($export_data, $save_path);
-        return $save_path;
+    public function finalizeFile(): string
+    {
+        $this->xml->closeFile();
+        return $this->stream_path;
     }
 }

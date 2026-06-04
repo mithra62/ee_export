@@ -87,6 +87,26 @@ class ModifiersService extends AbstractService
     }
 
     /**
+     * @param array $rows
+     * @return array
+     */
+    public function processChunk(array $rows): array
+    {
+        $processes = $this->getModifiers();
+        if ($processes) {
+            foreach ($rows as $key => $item) {
+                foreach ($processes as $field => $process) {
+                    if (isset($item[$field])) {
+                        $rows[$key][$field] = $this->runModifiers($item[$field], $process);
+                    }
+                }
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
      * @param mixed $data
      * @param array $modifiers
      * @return mixed

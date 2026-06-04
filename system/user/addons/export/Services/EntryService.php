@@ -4,6 +4,7 @@ namespace Mithra62\Export\Services;
 
 use CI_DB_result;
 use ExpressionEngine\Model\File\File as FileModel;
+use ExpressionEngine\Service\Validation\Validator;
 
 class EntryService extends AbstractService
 {
@@ -371,6 +372,218 @@ class EntryService extends AbstractService
         }
 
         return false;
+    }
+
+    /**
+     * Resolve a channel short name or numeric ID string to a channel_id.
+     */
+    public function getChannelId(string $channel_name): int
+    {
+        $query = ee()->db->select('channel_id')
+            ->from('channels')
+            ->group_start()
+                ->where('channel_name', $channel_name)
+                ->or_where('channel_id', (int) $channel_name)
+            ->group_end()
+            ->limit(1)
+            ->get();
+
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            return (int) $query->row('channel_id');
+        }
+
+        return 0;
+    }
+
+    /**
+     * Returns field definitions for a channel keyed by field_id.
+     * Each entry: [field_id, field_name, field_type, field_label, field_settings (decoded)]
+     */
+    public function getChannelFields(int $channel_id): array
+    {
+        $query = ee()->db
+            ->select('cf.field_id, cf.field_name, cf.field_type, cf.field_label, cf.field_settings')
+            ->from('channel_fields cf')
+            ->join('channels_channel_fields ccf', 'cf.field_id = ccf.field_id')
+            ->where('ccf.channel_id', $channel_id)
+            ->order_by('cf.field_order', 'ASC')
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $row['field_settings'] = $row['field_settings']
+                    ? @unserialize(base64_decode($row['field_settings'])) ?: []
+                    : [];
+                $return[(int) $row['field_id']] = $row;
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * Returns column definitions for a grid field keyed by col_id.
+     * Each entry: [col_id, col_name, col_label, col_type]
+     */
+    public function getGridColumns(int $field_id): array
+    {
+        $query = ee()->db
+            ->select('col_id, col_name, col_label, col_type, col_settings')
+            ->from('grid_columns')
+            ->where('field_id', $field_id)
+            ->order_by('col_order', 'ASC')
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $row['col_settings'] = $row['col_settings']
+                    ? @json_decode($row['col_settings'], true) ?: []
+                    : [];
+                $return[(int) $row['col_id']] = $row;
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * Batch-load custom field values from channel_data for a set of entry IDs.
+     * Returns [entry_id => [field_id_X => value, ...]]
+     */
+    public function batchFieldData(array $entry_ids): array
+    {
+        $query = ee()->db->from('channel_data')
+            ->where_in('entry_id', $entry_ids)
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $return[(int) $row['entry_id']] = $row;
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * Batch-load all grid rows for a field and a set of entry IDs.
+     * Returns [entry_id => [row, row, ...]] ordered by row_order.
+     * Only loads top-level grid rows (fluid_field_data_id = 0).
+     */
+    public function batchGridData(int $field_id, array $entry_ids): array
+    {
+        $table = 'channel_grid_field_' . $field_id;
+        if (!ee()->db->table_exists($table)) {
+            return [];
+        }
+
+        $query = ee()->db
+            ->from($table)
+            ->where_in('entry_id', $entry_ids)
+            ->where('fluid_field_data_id', 0)
+            ->order_by('entry_id')
+            ->order_by('row_order')
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $return[(int) $row['entry_id']][] = $row;
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * Batch-load relationship records for a set of entries and field IDs.
+     * Returns [entry_id => [field_id => [child_entry_id, ...]]]
+     */
+    public function batchRelationshipIds(array $entry_ids, array $field_ids): array
+    {
+        $query = ee()->db
+            ->select('parent_id, child_id, field_id')
+            ->from('relationships')
+            ->where_in('parent_id', $entry_ids)
+            ->where_in('field_id', $field_ids)
+            ->where('fluid_field_data_id', 0)
+            ->order_by('order')
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $return[(int) $row['parent_id']][(int) $row['field_id']][] = (int) $row['child_id'];
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * Resolve a set of entry IDs to their titles (and optionally other fields).
+     * Returns [entry_id => ['title' => '...', ...]]
+     * $rel_fields should be field_name values from channel_fields (not field_id_X column names).
+     */
+    public function resolveRelatedEntries(array $entry_ids, array $rel_fields = ['title']): array
+    {
+        if (empty($entry_ids)) {
+            return [];
+        }
+
+        $select = 'ct.entry_id, ct.title';
+        $extra  = array_diff($rel_fields, ['title']);
+        if ($extra) {
+            $select .= ', cd.' . implode(', cd.', $extra);
+        }
+
+        $query = ee()->db
+            ->select($select)
+            ->from('channel_titles ct')
+            ->join('channel_data cd', 'ct.entry_id = cd.entry_id', 'left')
+            ->where_in('ct.entry_id', $entry_ids)
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $return[(int) $row['entry_id']] = $row;
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * Batch-load category names for a set of entry IDs.
+     * Returns [entry_id => 'Cat One|Cat Two|Cat Three']
+     */
+    public function batchCategoryNames(array $entry_ids): array
+    {
+        $query = ee()->db
+            ->select('cp.entry_id, c.cat_name')
+            ->from('category_posts cp')
+            ->join('categories c', 'cp.cat_id = c.cat_id')
+            ->where_in('cp.entry_id', $entry_ids)
+            ->order_by('c.cat_order', 'ASC')
+            ->get();
+
+        $raw = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $raw[(int) $row['entry_id']][] = $row['cat_name'];
+            }
+        }
+
+        $return = [];
+        foreach ($raw as $entry_id => $names) {
+            $return[$entry_id] = implode('|', $names);
+        }
+
+        return $return;
     }
 
     /**

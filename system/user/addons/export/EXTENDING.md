@@ -13,7 +13,7 @@ This document explains how to add custom Sources, Formats, Modifiers, Output des
   - [Class resolution](#class-resolution)
   - [Reading options inside a plugin](#reading-options-inside-a-plugin)
   - [Validation](#validation)
-  - [The `exclude` param](#the-exclude-param)
+  - [Column selection — `fields` and `exclude`](#column-selection--fields-and-exclude)
 - [1. Creating and Using Source Objects](#1-creating-and-using-source-objects)
   - [Contract](#contract)
   - [Inherited helpers](#inherited-helpers)
@@ -151,9 +151,29 @@ protected function getValidator(): Validator
 }
 ```
 
-### The `exclude` param
+### Column selection — `fields` and `exclude`
 
-Every source calls `$this->cleanFields($row)` before appending each row to the output. That method reads the `exclude` tag param as a pipe-separated list — any column name listed is removed from the row. All other columns pass through unchanged.
+Every source calls `$this->cleanFields($row)` before appending each row to the output. That method implements a two-param priority system:
+
+| Scenario | Behaviour |
+|---|---|
+| `fields` present | Return **only** the listed columns, in the order declared. `exclude` is ignored. |
+| `exclude` present, `fields` absent | Remove the listed columns; return everything else. |
+| Neither present | Return the full row unchanged. |
+
+**`fields` whitelist** — return only the named columns, in the order listed (also lets you reorder output columns):
+
+```ee
+{exp:export:entries
+    channel="blog"
+    fields="title|entry_date|field_summary|field_body"
+    format="csv"
+    output="download"
+    output:filename="blog.csv"
+}
+```
+
+**`exclude` blacklist** — remove named columns, return the rest:
 
 ```ee
 {exp:export:entries
@@ -165,7 +185,7 @@ Every source calls `$this->cleanFields($row)` before appending each row to the o
 }
 ```
 
-`cleanFields()` does **not** filter to only the listed columns, and it does **not** reorder columns.
+Both params accept pipe-separated column names and work identically across all sources.
 
 ---
 
@@ -191,7 +211,7 @@ Either populate the export data and return `$this`, or throw `NoDataException` w
 |---|---|
 | `$this->getOption('key', $default)` | Read a source param |
 | `$this->setExportData(array $rows)` | Store the 2-D result array |
-| `$this->cleanFields(array $row)` | Remove columns listed in the `exclude` param |
+| `$this->cleanFields(array $row)` | Filter columns via `fields` whitelist or `exclude` blacklist (see priority rules above) |
 
 ### Example — simple non-streaming `Orders` source
 

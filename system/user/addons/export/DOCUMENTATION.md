@@ -103,7 +103,8 @@ Exports channel entry rows. Each row contains standard entry columns plus every 
 | `offset` | | `0` | Entry-level pagination offset |
 | `chunk_size` | | `500` | Entries processed per streaming chunk |
 | `relationship_fields` | | `title` | Pipe-separated fields to pull from related entries |
-| `exclude` | | — | Pipe-separated column names to **exclude** from output |
+| `fields` | | — | Pipe-separated column **whitelist** — return only these columns, in this order |
+| `exclude` | | — | Pipe-separated column **blacklist** — exclude these columns, return the rest |
 
 #### Standard columns in every row
 
@@ -206,7 +207,8 @@ Exports member rows. Standard member columns are included alongside any custom m
 | `last_login_end` | | — | Filter last login to |
 | `limit` | | — | Maximum number of members to export |
 | `search:field_name` | | — | Filter by any member field value (see below) |
-| `exclude` | | — | Pipe-separated column names to **exclude** |
+| `fields` | | — | Pipe-separated column **whitelist** — return only these columns, in this order |
+| `exclude` | | — | Pipe-separated column **blacklist** — exclude these columns, return the rest |
 
 #### Field-level search filters
 
@@ -283,7 +285,8 @@ Exports EE Grid field rows as a flat tabular dataset. Each exported row represen
 | `offset` | | `0` | Entry-level pagination offset |
 | `chunk_size` | | `500` | Entries per streaming chunk |
 | `relationship_fields` | | `title` | Fields to pull from relationship-column targets |
-| `exclude` | | — | Pipe-separated column names to **exclude** |
+| `fields` | | — | Pipe-separated column **whitelist** — return only these columns, in this order |
+| `exclude` | | — | Pipe-separated column **blacklist** — exclude these columns, return the rest |
 
 #### Output shape
 
@@ -351,7 +354,8 @@ Exports the result of a raw SQL query. Column names in the query result become t
 | `sql` | ✅ | — | Full SQL query string |
 | `format` | ✅ | — | `csv`, `json`, `xlsx`, `xml` |
 | `output` | ✅ | — | `download`, `local` |
-| `exclude` | | — | Pipe-separated column names to **exclude** |
+| `fields` | | — | Pipe-separated column **whitelist** — return only these columns, in this order |
+| `exclude` | | — | Pipe-separated column **blacklist** — exclude these columns, return the rest |
 
 > **Note:** The SQL query runs with the database user configured for your EE installation. Validate and sanitise any user-supplied values before interpolating them into the query string.
 
@@ -508,8 +512,30 @@ These parameters are available on all tags.
 
 | Parameter | Description |
 |-----------|-------------|
-| `exclude="col_a\|col_b"` | Pipe-separated list of column names to **exclude** from every output row. All other columns are included automatically. |
+| `fields="col_a\|col_b"` | **Whitelist.** Return *only* the named columns, in the order listed. When present, `exclude` is ignored. Also controls output column order. |
+| `exclude="col_a\|col_b"` | **Blacklist.** Remove the named columns from every output row; return everything else. Only applied when `fields` is absent. |
 | `modify:col="modifier"` | Apply one or more modifiers to a column (see §6). |
+
+**Priority rule:** `fields` → `exclude` → return all columns.
+
+```ee
+{!-- Return only two columns, in a specific order --}
+{exp:export:entries
+    channel="blog"
+    fields="title|entry_date"
+    format="csv"
+    output="download"
+    output:filename="titles.csv"
+}
+
+{!-- Return everything except two sensitive columns --}
+{exp:export:members
+    exclude="password|salt"
+    format="csv"
+    output="download"
+    output:filename="members.csv"
+}
+```
 
 ---
 

@@ -142,6 +142,7 @@ abstract class AbstractTag extends AbstractRoute
             }
         }
 
+        $return['fields']  = $this->explodeParam('fields');
         $return['exclude'] = $this->explodeParam('exclude');
         return $return;
     }
@@ -290,16 +291,6 @@ abstract class AbstractTag extends AbstractRoute
     {
         $id = $this->getMemberId();
         return $id !== false && $id > 0;
-    }
-
-    /**
-     * @return void
-     */
-    protected function guardLoggedOutRedirect(): void
-    {
-        if (!$this->memberLoggedIn() && $this->hasParam('logged_out_redirect')) {
-            ee()->template_helper->tag_redirect($this->param('logged_out_redirect'));
-        }
     }
 
     /**

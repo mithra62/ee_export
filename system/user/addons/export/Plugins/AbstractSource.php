@@ -69,20 +69,36 @@ abstract class AbstractSource extends AbstractPlugin
     }
 
     /**
-     * Remove any columns listed in the `exclude` tag param from the row.
-     * When `exclude` is not set the full row is returned unchanged, so new
-     * fields added to a channel are automatically included without any tag
-     * edits.
+     * Filter output columns using the `fields` whitelist or `exclude` blacklist tag params.
+     *
+     * Priority rules:
+     *   1. `fields` present  → return only those columns, in declaration order (ignore `exclude`)
+     *   2. `exclude` present → remove listed columns, return the rest
+     *   3. Neither present   → return the full row unchanged
+     *
+     * The `fields` param also lets template authors reorder columns — the
+     * returned array preserves the order of the `fields` list, not the source.
      *
      * @param array $data
      * @return array
      */
     public function cleanFields(array $data): array
     {
+        $whitelist = $this->getOption('fields', []);
+        if (!empty($whitelist)) {
+            $filtered = [];
+            foreach ($whitelist as $key) {
+                if (array_key_exists($key, $data)) {
+                    $filtered[$key] = $data[$key];
+                }
+            }
+            return $filtered;
+        }
+
         $exclude = $this->getOption('exclude', []);
         if (!empty($exclude)) {
-            foreach ($exclude as $field) {
-                unset($data[$field]);
+            foreach ($exclude as $key) {
+                unset($data[$key]);
             }
         }
 

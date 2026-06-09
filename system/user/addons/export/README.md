@@ -170,9 +170,22 @@ Parameters are routed to the correct pipeline layer by prefix:
 
 ---
 
-## Excluding Columns
+## Column Selection
 
-The `exclude` parameter accepts a pipe-separated list of column names to remove from every output row. All other columns are included automatically.
+Two complementary parameters let you control which columns appear in the output.
+
+**`fields`** — whitelist. Return *only* the named columns, in the order listed. When `fields` is present, `exclude` is ignored.
+
+```ee
+{exp:export:members
+    fields="member_id|username|email|screen_name"
+    format="csv"
+    output="download"
+    output:filename="members-public.csv"
+}
+```
+
+**`exclude`** — blacklist. Remove the named columns; return everything else. Used when `fields` is absent.
 
 ```ee
 {exp:export:members
@@ -182,6 +195,10 @@ The `exclude` parameter accepts a pipe-separated list of column names to remove 
     output:filename="members-safe.csv"
 }
 ```
+
+**Priority:** `fields` > `exclude` > return all columns.
+
+The `fields` param also controls column order — the output columns appear in the same order as the pipe-separated list, regardless of the order they exist in the source data.
 
 ---
 

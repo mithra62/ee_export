@@ -741,6 +741,44 @@ class EntryService extends AbstractService
     }
 
     /**
+     * Batch-load relationship child IDs for relationship sub-fields inside Fluid field instances.
+     *
+     * EE stores Fluid relationship values in the `relationships` pivot table using
+     * `fluid_field_data_id` = the fluid instance PK (fluid_field_data.id).
+     * This is distinct from top-level relationship fields (fluid_field_data_id = 0)
+     * and from Grid relationship columns (which store raw IDs in col_id_X cells).
+     *
+     * Returns [fluid_instance_id][field_id][] = child_entry_id, ordered by `order`.
+     *
+     * @param int[] $instance_ids   fluid_field_data.id values to query
+     * @param int[] $field_ids      relationship field IDs (channel_fields.field_id)
+     */
+    public function batchFluidRelationshipIds(array $instance_ids, array $field_ids): array
+    {
+        if (empty($instance_ids) || empty($field_ids)) {
+            return [];
+        }
+
+        $query = ee()->db
+            ->select('fluid_field_data_id, child_id, field_id')
+            ->from('relationships')
+            ->where_in('fluid_field_data_id', $instance_ids)
+            ->where_in('field_id', $field_ids)
+            ->where('grid_field_id', 0)
+            ->order_by('order', 'ASC')
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $return[(int) $row['fluid_field_data_id']][(int) $row['field_id']][] = (int) $row['child_id'];
+            }
+        }
+
+        return $return;
+    }
+
+    /**
      * Resolve a grid field name (or numeric ID string) to a field_id,
      * validating that the field belongs to the given channel AND is of type 'grid'.
      *
@@ -767,6 +805,67 @@ class EntryService extends AbstractService
         }
 
         return 0;
+    }
+
+    /**
+     * Resolve a fluid field name (or numeric ID string) to a field_id,
+     * validating that the field belongs to the given channel AND is of type 'fluid_field'.
+     *
+     * Returns 0 when not found / wrong type.
+     */
+    public function getFluidFieldId(string $field_name_or_id, int $channel_id): int
+    {
+        $channel_fields = $this->getChannelFields($channel_id);
+
+        if (is_numeric($field_name_or_id)) {
+            $fid = (int) $field_name_or_id;
+            if (isset($channel_fields[$fid]) && $channel_fields[$fid]['field_type'] === 'fluid_field') {
+                return $fid;
+            }
+            return 0;
+        }
+
+        foreach ($channel_fields as $field_id => $field_info) {
+            if ($field_info['field_name'] === $field_name_or_id && $field_info['field_type'] === 'fluid_field') {
+                return $field_id;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Batch-load channel field definitions by an arbitrary set of field IDs.
+     *
+     * Returns [field_id => ['field_id', 'field_name', 'field_type', 'field_label', 'field_settings']]
+     * Useful when the caller already knows the field_ids (e.g. from fluid_field_data rows) and
+     * does not need the full channel-scoped field list.
+     */
+    public function getFieldDefinitions(array $field_ids): array
+    {
+        if (empty($field_ids)) {
+            return [];
+        }
+
+        $query = ee()->db
+            ->select('field_id, field_name, field_type, field_label, field_settings')
+            ->from('channel_fields')
+            ->where_in('field_id', $field_ids)
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $settings = $row['field_settings'];
+                if (is_string($settings)) {
+                    $settings = @unserialize(base64_decode($settings)) ?: [];
+                }
+                $row['field_settings'] = is_array($settings) ? $settings : [];
+                $return[(int) $row['field_id']] = $row;
+            }
+        }
+
+        return $return;
     }
 
     /**

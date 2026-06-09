@@ -30,6 +30,7 @@ use Mithra62\Export\Services\ParamsService;
 use Mithra62\Export\Services\SourcesService;
 use Mithra62\Export\Services\XmlService;
 use Mithra62\Export\Sources\Entries;
+use Mithra62\Export\Sources\Fluid as SourceFluid;
 use Mithra62\Export\Sources\Grid as SourceGrid;
 use Mithra62\Export\Sources\Members;
 use Mithra62\Export\Sources\Sql;
@@ -109,9 +110,10 @@ return [
     'export' => [
         'sources' => [
             'entries' => Entries::class,
+            'fluid'   => SourceFluid::class,
+            'grid'    => SourceGrid::class,
             'members' => Members::class,
-            'grid' => SourceGrid::class,
-            'sql' => Sql::class,
+            'sql'     => Sql::class,
         ],
         'formats' => [
             'csv' => Csv::class,

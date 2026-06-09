@@ -55,7 +55,7 @@ Every export runs through a five-stage pipeline. The pipeline has two execution 
 
 ### Non-streaming path
 
-Used by Sources that load all data into memory before writing (e.g. `Members`, `Sql`).
+Used by Sources that load all data into memory before writing (e.g. `Sql`).
 
 ```
 Template tag params
@@ -825,6 +825,13 @@ public function process(mixed $raw_value, array $field_info, int $entry_id, arra
         $row_id        = $context['row_id'];   // actual channel_grid_field_X.row_id
         $col_id        = $context['col_id'];   // actual grid_columns.col_id
 
+    } elseif ($source === 'fluid') {
+        // $entry_id here is the fluid instance_id (fluid_field_data.id), NOT the channel entry_id
+        // $field_info['field_id'] is the sub-field's channel_fields.field_id
+        $real_entry_id  = $context['entry_id'];          // actual channel_titles.entry_id
+        $instance_id    = $context['fluid_instance_id']; // fluid_field_data.id
+        $fluid_field_id = $context['fluid_field_id'];    // parent fluid field's channel_fields.field_id
+
     } elseif ($source === 'member') {
         // $entry_id is the member_id
         $member_id = $context['member_id']; // same value, explicit key
@@ -845,32 +852,35 @@ public function process(mixed $raw_value, array $field_info, int $entry_id, arra
 
 The `$context` array passed to `AbstractField::process()` varies by source. ✅ = present and populated; — = not present (treat as empty).
 
-| Context key | Type | Entries | Grid | Members | Description |
-|---|---|---|---|---|---|
-| `source_type` | `string` | — | `'grid'` | `'member'` | Source identifier; absent means Entries |
-| `rel_data` | `array` | ✅ | ✅ | — | `[entry_id\|row_id][field_id\|col_id][] = child_entry_id` |
-| `rel_cache` | `array` | ✅ | ✅ | — | `[child_entry_id] = ['title' => ..., ...]` |
-| `grid_data` | `array` | ✅ | — | — | `[field_id][entry_id][] = raw grid row array` |
-| `channel_fields` | `array` | ✅ | — | — | `[field_id] = field_info array` for the whole channel |
-| `grid_columns` | `array` | ✅ | — | — | `[field_id][col_id] = col_info array` |
-| `fluid_instances` | `array` | ✅ | — | — | `[entry_id][fluid_field_id][] = fluid_field_data row` |
-| `fluid_values` | `array` | ✅ | — | — | `[sub_field_id][field_data_id] = scalar value` |
-| `fluid_grid_data` | `array` | ✅ | — | — | `[sub_field_id][fluid_instance_id][] = grid row` |
-| `entry_id` | `int` | — | ✅ | — | Actual `channel_titles.entry_id` (use when `$entry_id` arg = row_id in Grid context) |
-| `row_id` | `int` | — | ✅ | — | Actual `channel_grid_field_X.row_id` |
-| `col_id` | `int` | — | ✅ | — | Actual `grid_columns.col_id` |
-| `member_id` | `int` | — | — | ✅ | Actual `exp_members.member_id` (same as `$entry_id` arg in Members context) |
+| Context key | Type | Entries | Grid | Fluid | Members | Description |
+|---|---|---|---|---|---|---|
+| `source_type` | `string` | — | `'grid'` | `'fluid'` | `'member'` | Source identifier; absent means Entries |
+| `rel_data` | `array` | ✅ | ✅ | ✅ | — | `[entry_id\|row_id\|instance_id][field_id\|col_id][] = child_entry_id` |
+| `rel_cache` | `array` | ✅ | ✅ | ✅ | — | `[child_entry_id] = ['title' => ..., ...]` |
+| `grid_data` | `array` | ✅ | — | ✅ | — | `[field_id][entry_id\|instance_id][] = raw grid row array` |
+| `channel_fields` | `array` | ✅ | — | — | — | `[field_id] = field_info array` for the whole channel |
+| `grid_columns` | `array` | ✅ | — | ✅ | — | `[field_id][col_id] = col_info array` |
+| `fluid_instances` | `array` | ✅ | — | — | — | `[entry_id][fluid_field_id][] = fluid_field_data row` |
+| `fluid_values` | `array` | ✅ | — | — | — | `[sub_field_id][field_data_id] = scalar value` |
+| `fluid_grid_data` | `array` | ✅ | — | — | — | `[sub_field_id][fluid_instance_id][] = grid row` |
+| `entry_id` | `int` | — | ✅ | ✅ | — | Actual `channel_titles.entry_id` (use when `$entry_id` arg = row_id / instance_id) |
+| `row_id` | `int` | — | ✅ | — | — | Actual `channel_grid_field_X.row_id` |
+| `col_id` | `int` | — | ✅ | — | — | Actual `grid_columns.col_id` |
+| `fluid_instance_id` | `int` | — | — | ✅ | — | `fluid_field_data.id` (PK of the instance; same value as `$entry_id` arg in Fluid context) |
+| `fluid_field_id` | `int` | — | — | ✅ | — | Parent fluid field's `channel_fields.field_id` |
+| `member_id` | `int` | — | — | — | ✅ | Actual `exp_members.member_id` (same as `$entry_id` arg in Members context) |
 
 ### `rel_data` key detail
 
-The shape is identical between Entries and Grid — only the outer key scope differs:
+The outer key is always passed as the `$entry_id` argument to `AbstractField::process()` — and each source uses the most locally-scoped ID available so relationship lookups stay row-safe:
 
 ```
-Entries:  $context['rel_data'][$entry_id][$field_id][] = $child_entry_id
-Grid:     $context['rel_data'][$row_id][$col_id][]     = $child_entry_id
+Entries:  $context['rel_data'][$entry_id][$field_id][]   = $child_entry_id
+Grid:     $context['rel_data'][$row_id][$col_id][]       = $child_entry_id
+Fluid:    $context['rel_data'][$instance_id][$field_id][] = $child_entry_id
 ```
 
-`Fields\Relationship` uses the `$entry_id` argument as the outer key in both cases — which resolves correctly in Grid because the source passes `$row_id` as that argument.
+`Fields\Relationship` uses the `$entry_id` argument as the outer key in all three cases. The disambiguation works because each source passes the correct scope key as `$entry_id` (`row_id` for Grid, `fluid_instance_id` for Fluid).
 
 ---
 

@@ -14,7 +14,8 @@
    - [Entries](#31-entries)
    - [Members](#32-members)
    - [Grid](#33-grid)
-   - [Query (SQL)](#34-query-sql)
+   - [Fluid](#34-fluid)
+   - [Query (SQL)](#35-query-sql)
 4. [Formats](#4-formats)
 5. [Outputs (Destinations)](#5-outputs-destinations)
 6. [Modifiers](#6-modifiers)
@@ -56,8 +57,8 @@ ExportService::build()
 output->process(path)           →  download / copy / etc.
 ```
 
-**Streaming sources** (Entries, Grid) process data in configurable chunks so memory stays constant regardless of dataset size.  
-**Non-streaming sources** (Members, SQL) load all rows into memory before writing.
+**Streaming sources** (Entries, Grid, Fluid, Members) process data in configurable chunks so memory stays constant regardless of dataset size. Members also lazy-loads custom field definitions — the `member_data` JOIN is skipped entirely when no custom member fields are configured.  
+**Non-streaming sources** (SQL) load all rows into memory before writing.
 
 ### Param namespacing
 
@@ -184,7 +185,7 @@ All custom channel fields follow, keyed by `field_name`.
 
 ### 3.2 Members
 
-Exports member rows. Standard member columns are included alongside any custom member fields (same field handler pipeline as Entries).
+Exports member rows in streaming chunks. Standard member columns are included alongside any custom member fields, which are routed through the same FieldsService handler pipeline as Entries, Grid, and Fluid. Custom field definitions are lazy-loaded — if no custom member fields exist the `member_data` join is skipped entirely.
 
 ```ee
 {exp:export:members
@@ -206,6 +207,8 @@ Exports member rows. Standard member columns are included alongside any custom m
 | `last_login_start` | | — | Filter last login from |
 | `last_login_end` | | — | Filter last login to |
 | `limit` | | — | Maximum number of members to export |
+| `offset` | | `0` | Pagination offset |
+| `chunk_size` | | `500` | Members per streaming chunk |
 | `search:field_name` | | — | Filter by any member field value (see below) |
 | `fields` | | — | Pipe-separated column **whitelist** — return only these columns, in this order |
 | `exclude` | | — | Pipe-separated column **blacklist** — exclude these columns, return the rest |
@@ -334,7 +337,92 @@ entry_id | entry_title | row_order | <col_name_1> | <col_name_2> | ...
 
 ---
 
-### 3.4 Query (SQL)
+### 3.4 Fluid
+
+Exports EE Fluid field instances as a flat tabular dataset. Each exported row represents one content block (fluid instance) and carries entry-level context alongside the block's metadata and processed value. Streams in chunks.
+
+All sub-field types are routed through the FieldsService handler pipeline:
+- **Relationship sub-fields** — resolved via the `relationships` table (EE stores fluid relationship values keyed by `fluid_field_data_id`, not in `channel_data_field_X`)
+- **Grid sub-fields** — resolved via `Fields/Grid`, including relationship columns nested within the grid
+- **Date, File, and all other registered types** — routed through their respective field handlers
+- **Unregistered types** — raw stored value
+
+```ee
+{exp:export:fluid
+    channel="blog"
+    field="page_builder"
+    format="csv"
+    output="download"
+    output:filename="page-builder-blocks.csv"
+}
+```
+
+#### Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `channel` | ✅ | — | Channel short name or numeric ID |
+| `field` | ✅ | — | Fluid field short name or numeric field_id |
+| `format` | ✅ | — | `csv`, `json`, `xlsx`, `xml` |
+| `output` | ✅ | — | `download`, `local` |
+| `status` | | `open` | Entry status filter |
+| `author_id` | | — | Filter entries by member ID |
+| `entry_id` | | — | Export instances for a single entry only |
+| `limit` | | — | Maximum number of **entries** to process |
+| `offset` | | `0` | Entry-level pagination offset |
+| `chunk_size` | | `500` | Entries per streaming chunk |
+| `relationship_fields` | | `title` | Pipe-separated fields to pull from related entries |
+| `fields` | | — | Pipe-separated column **whitelist** — return only these columns, in this order |
+| `exclude` | | — | Pipe-separated column **blacklist** — exclude these columns, return the rest |
+
+#### Output shape
+
+```
+entry_id | entry_title  | instance_order | sub_field_id | sub_field_type | sub_field_label  | value
+1        | My Blog Post | 1              | 12           | text           | Introduction     | "Welcome..."
+1        | My Blog Post | 2              | 14           | grid           | Feature Blocks   | [{"heading":"..."}]
+1        | My Blog Post | 3              | 15           | relationship   | Related Articles | [{"entry_id":5,"title":"..."}]
+```
+
+`limit` controls the number of **entries** processed, not fluid instances. One entry with five blocks produces five output rows.
+
+#### Examples
+
+```ee
+{!-- Export all page builder blocks across all open entries --}
+{exp:export:fluid
+    channel="blog"
+    field="page_builder"
+    format="xlsx"
+    output="download"
+    output:filename="page-builder.xlsx"
+}
+
+{!-- Single entry's blocks --}
+{exp:export:fluid
+    channel="blog"
+    field="page_builder"
+    entry_id="42"
+    format="json"
+    output="download"
+    output:filename="entry-42-blocks.json"
+}
+
+{!-- Only the columns you need, in a specific order --}
+{exp:export:fluid
+    channel="blog"
+    field="page_builder"
+    fields="entry_title|instance_order|sub_field_label|value"
+    relationship_fields="title|field_url"
+    format="csv"
+    output="download"
+    output:filename="blocks-summary.csv"
+}
+```
+
+---
+
+### 3.5 Query (SQL)
 
 Exports the result of a raw SQL query. Column names in the query result become the export column headers.
 

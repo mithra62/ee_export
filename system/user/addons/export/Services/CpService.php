@@ -49,15 +49,23 @@ class CpService
             $channel = ee('Model')
                 ->get('Channel')
                 ->filter('channel_id', $channel_id)
-                ->with('CustomFields')
                 ->first();
 
-            if (! $channel || ! $channel->CustomFields) {
+            if (! $channel) {
+                return [];
+            }
+
+            // getAllCustomFields() merges fields assigned directly to the channel
+            // AND fields belonging to any attached field groups — unlike querying
+            // the CustomFields relationship alone, which misses group-assigned fields.
+            $all_fields = $channel->getAllCustomFields();
+
+            if (! $all_fields || ! count($all_fields)) {
                 return [];
             }
 
             $list = [];
-            foreach ($channel->CustomFields as $field) {
+            foreach ($all_fields as $field) {
                 if ($field_type && $field->field_type !== $field_type) {
                     continue;
                 }

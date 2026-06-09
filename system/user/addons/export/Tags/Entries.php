@@ -18,6 +18,5 @@ class Entries extends AbstractTag
         $params['source:relationship_fields'] = $this->param('relationship_fields', 'title');
 
         $this->compile($params);
-        exit;
     }
 }

@@ -1,9 +1,15 @@
 <?php
 
+use Mithra62\Export\Fields\Date as FieldDate;
+use Mithra62\Export\Fields\File as FieldFile;
+use Mithra62\Export\Fields\FluidField;
+use Mithra62\Export\Fields\Grid as FieldGrid;
+use Mithra62\Export\Fields\Relationship;
 use Mithra62\Export\Services\ActionsService;
 use Mithra62\Export\Services\EntryService;
 use Mithra62\Export\Services\ExcelService;
 use Mithra62\Export\Services\ExportService;
+use Mithra62\Export\Services\FieldsService;
 use Mithra62\Export\Services\FormatsService;
 use Mithra62\Export\Services\LoggerService;
 use Mithra62\Export\Services\MemberService;
@@ -67,8 +73,20 @@ return [
         'EntryService' => function ($addon) {
             return new EntryService();
         },
+        'FieldsService' => function ($addon) {
+            return new FieldsService();
+        },
         'MemberService' => function ($addon) {
             return new MemberService();
         },
+    ],
+    'export' => [
+        'fields' => [
+            'date' => FieldDate::class,
+            'file' => FieldFile::class,
+            'relationship' => Relationship::class,
+            'grid' => FieldGrid::class,
+            'fluid_field' => FluidField::class,
+        ],
     ],
 ];

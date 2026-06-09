@@ -324,9 +324,16 @@ class CpService
                 'desc'   => lang('export_field_source_desc'),
                 'fields' => [
                     'source' => [
-                        'type'    => 'select',
-                        'value'   => $source,
-                        'choices' => $source_choices,
+                        'type'         => 'select',
+                        'value'        => $source,
+                        'choices'      => $source_choices,
+                        'group_toggle' => [
+                            'entries' => 'source_entries',
+                            'members' => 'source_members',
+                            'grid'    => 'source_grid',
+                            'fluid'   => 'source_fluid',
+                            'sql'     => 'source_sql',
+                        ],
                     ],
                 ],
             ],
@@ -360,7 +367,7 @@ class CpService
             [
                 'title'  => lang('export_field_author_id'),
                 'group'  => 'source_entries',
-                'fields' => ['src_entries_author_id' => ['type' => 'short-text', 'value' => $settings['source:author_id'] ?? '']],
+                'fields' => ['src_entries_author_id' => ['type' => 'text', 'value' => $settings['source:author_id'] ?? '']],
             ],
             [
                 'title'  => lang('export_field_entry_id'),
@@ -371,17 +378,17 @@ class CpService
             [
                 'title'  => lang('export_field_limit'),
                 'group'  => 'source_entries',
-                'fields' => ['src_entries_limit' => ['type' => 'short-text', 'value' => $settings['source:limit'] ?? '']],
+                'fields' => ['src_entries_limit' => ['type' => 'text', 'value' => $settings['source:limit'] ?? '']],
             ],
             [
                 'title'  => lang('export_field_offset'),
                 'group'  => 'source_entries',
-                'fields' => ['src_entries_offset' => ['type' => 'short-text', 'value' => $settings['source:offset'] ?? '0']],
+                'fields' => ['src_entries_offset' => ['type' => 'text', 'value' => $settings['source:offset'] ?? '0']],
             ],
             [
                 'title'  => lang('export_field_chunk_size'),
                 'group'  => 'source_entries',
-                'fields' => ['src_entries_chunk_size' => ['type' => 'short-text', 'value' => $settings['source:chunk_size'] ?? '500']],
+                'fields' => ['src_entries_chunk_size' => ['type' => 'text', 'value' => $settings['source:chunk_size'] ?? '500']],
             ],
             [
                 'title'  => lang('export_field_relationship_fields'),
@@ -399,37 +406,57 @@ class CpService
             [
                 'title'  => lang('export_field_join_start'),
                 'group'  => 'source_members',
-                'fields' => ['src_members_join_start' => ['type' => 'text', 'value' => $norm_date('source:join_start'), 'placeholder' => 'YYYY-MM-DD', 'class' => 'export-date-field']],
+                'fields' => [
+                    'src_members_join_start' => [
+                        'type'    => 'html',
+                        'content' => '<input type="date" name="src_members_join_start" value="' . htmlspecialchars($norm_date('source:join_start')) . '" class="form-control">',
+                    ],
+                ],
             ],
             [
                 'title'  => lang('export_field_join_end'),
                 'group'  => 'source_members',
-                'fields' => ['src_members_join_end' => ['type' => 'text', 'value' => $norm_date('source:join_end'), 'placeholder' => 'YYYY-MM-DD', 'class' => 'export-date-field']],
+                'fields' => [
+                    'src_members_join_end' => [
+                        'type'    => 'html',
+                        'content' => '<input type="date" name="src_members_join_end" value="' . htmlspecialchars($norm_date('source:join_end')) . '" class="form-control">',
+                    ],
+                ],
             ],
             [
                 'title'  => lang('export_field_last_login_start'),
                 'group'  => 'source_members',
-                'fields' => ['src_members_last_login_start' => ['type' => 'text', 'value' => $norm_date('source:last_login_start'), 'placeholder' => 'YYYY-MM-DD', 'class' => 'export-date-field']],
+                'fields' => [
+                    'src_members_last_login_start' => [
+                        'type'    => 'html',
+                        'content' => '<input type="date" name="src_members_last_login_start" value="' . htmlspecialchars($norm_date('source:last_login_start')) . '" class="form-control">',
+                    ],
+                ],
             ],
             [
                 'title'  => lang('export_field_last_login_end'),
                 'group'  => 'source_members',
-                'fields' => ['src_members_last_login_end' => ['type' => 'text', 'value' => $norm_date('source:last_login_end'), 'placeholder' => 'YYYY-MM-DD', 'class' => 'export-date-field']],
+                'fields' => [
+                    'src_members_last_login_end' => [
+                        'type'    => 'html',
+                        'content' => '<input type="date" name="src_members_last_login_end" value="' . htmlspecialchars($norm_date('source:last_login_end')) . '" class="form-control">',
+                    ],
+                ],
             ],
             [
                 'title'  => lang('export_field_limit'),
                 'group'  => 'source_members',
-                'fields' => ['src_members_limit' => ['type' => 'short-text', 'value' => $settings['source:limit'] ?? '']],
+                'fields' => ['src_members_limit' => ['type' => 'text', 'value' => $settings['source:limit'] ?? '']],
             ],
             [
                 'title'  => lang('export_field_offset'),
                 'group'  => 'source_members',
-                'fields' => ['src_members_offset' => ['type' => 'short-text', 'value' => $settings['source:offset'] ?? '0']],
+                'fields' => ['src_members_offset' => ['type' => 'text', 'value' => $settings['source:offset'] ?? '0']],
             ],
             [
                 'title'  => lang('export_field_chunk_size'),
                 'group'  => 'source_members',
-                'fields' => ['src_members_chunk_size' => ['type' => 'short-text', 'value' => $settings['source:chunk_size'] ?? '500']],
+                'fields' => ['src_members_chunk_size' => ['type' => 'text', 'value' => $settings['source:chunk_size'] ?? '500']],
             ],
 
             // ── grid ─────────────────────────────────────────────────────────
@@ -451,7 +478,7 @@ class CpService
             [
                 'title'  => lang('export_field_author_id'),
                 'group'  => 'source_grid',
-                'fields' => ['src_grid_author_id' => ['type' => 'short-text', 'value' => $settings['source:author_id'] ?? '']],
+                'fields' => ['src_grid_author_id' => ['type' => 'text', 'value' => $settings['source:author_id'] ?? '']],
             ],
             [
                 'title'  => lang('export_field_entry_id'),
@@ -462,17 +489,17 @@ class CpService
             [
                 'title'  => lang('export_field_limit'),
                 'group'  => 'source_grid',
-                'fields' => ['src_grid_limit' => ['type' => 'short-text', 'value' => $settings['source:limit'] ?? '']],
+                'fields' => ['src_grid_limit' => ['type' => 'text', 'value' => $settings['source:limit'] ?? '']],
             ],
             [
                 'title'  => lang('export_field_offset'),
                 'group'  => 'source_grid',
-                'fields' => ['src_grid_offset' => ['type' => 'short-text', 'value' => $settings['source:offset'] ?? '0']],
+                'fields' => ['src_grid_offset' => ['type' => 'text', 'value' => $settings['source:offset'] ?? '0']],
             ],
             [
                 'title'  => lang('export_field_chunk_size'),
                 'group'  => 'source_grid',
-                'fields' => ['src_grid_chunk_size' => ['type' => 'short-text', 'value' => $settings['source:chunk_size'] ?? '500']],
+                'fields' => ['src_grid_chunk_size' => ['type' => 'text', 'value' => $settings['source:chunk_size'] ?? '500']],
             ],
             [
                 'title'  => lang('export_field_relationship_fields'),
@@ -500,7 +527,7 @@ class CpService
             [
                 'title'  => lang('export_field_author_id'),
                 'group'  => 'source_fluid',
-                'fields' => ['src_fluid_author_id' => ['type' => 'short-text', 'value' => $settings['source:author_id'] ?? '']],
+                'fields' => ['src_fluid_author_id' => ['type' => 'text', 'value' => $settings['source:author_id'] ?? '']],
             ],
             [
                 'title'  => lang('export_field_entry_id'),
@@ -511,17 +538,17 @@ class CpService
             [
                 'title'  => lang('export_field_limit'),
                 'group'  => 'source_fluid',
-                'fields' => ['src_fluid_limit' => ['type' => 'short-text', 'value' => $settings['source:limit'] ?? '']],
+                'fields' => ['src_fluid_limit' => ['type' => 'text', 'value' => $settings['source:limit'] ?? '']],
             ],
             [
                 'title'  => lang('export_field_offset'),
                 'group'  => 'source_fluid',
-                'fields' => ['src_fluid_offset' => ['type' => 'short-text', 'value' => $settings['source:offset'] ?? '0']],
+                'fields' => ['src_fluid_offset' => ['type' => 'text', 'value' => $settings['source:offset'] ?? '0']],
             ],
             [
                 'title'  => lang('export_field_chunk_size'),
                 'group'  => 'source_fluid',
-                'fields' => ['src_fluid_chunk_size' => ['type' => 'short-text', 'value' => $settings['source:chunk_size'] ?? '500']],
+                'fields' => ['src_fluid_chunk_size' => ['type' => 'text', 'value' => $settings['source:chunk_size'] ?? '500']],
             ],
             [
                 'title'  => lang('export_field_relationship_fields'),
@@ -585,7 +612,18 @@ class CpService
             // format selector (always visible)
             [
                 'title'  => lang('export_section_format'),
-                'fields' => ['format' => ['type' => 'select', 'value' => $format, 'choices' => $format_choices]],
+                'fields' => [
+                    'format' => [
+                        'type'         => 'select',
+                        'value'        => $format,
+                        'choices'      => $format_choices,
+                        'group_toggle' => [
+                            'csv'  => 'format_csv',
+                            'xlsx' => 'format_xlsx',
+                            'xml'  => 'format_xml',
+                        ],
+                    ],
+                ],
             ],
 
             // CSV options
@@ -593,19 +631,19 @@ class CpService
                 'title'  => lang('export_format_separator'),
                 'desc'   => lang('export_format_separator_desc'),
                 'group'  => 'format_csv',
-                'fields' => ['fmt_separator' => ['type' => 'short-text', 'value' => $settings['format:separator'] ?? ',', 'maxlength' => 1]],
+                'fields' => ['fmt_separator' => ['type' => 'text', 'value' => $settings['format:separator'] ?? ',', 'maxlength' => 1]],
             ],
             [
                 'title'  => lang('export_format_enclosure'),
                 'desc'   => lang('export_format_enclosure_desc'),
                 'group'  => 'format_csv',
-                'fields' => ['fmt_enclosure' => ['type' => 'short-text', 'value' => $settings['format:enclosure'] ?? '"', 'maxlength' => 1]],
+                'fields' => ['fmt_enclosure' => ['type' => 'text', 'value' => $settings['format:enclosure'] ?? '"', 'maxlength' => 1]],
             ],
             [
                 'title'  => lang('export_format_escape'),
                 'desc'   => lang('export_format_escape_desc'),
                 'group'  => 'format_csv',
-                'fields' => ['fmt_escape' => ['type' => 'short-text', 'value' => $settings['format:escape'] ?? '\\', 'maxlength' => 1]],
+                'fields' => ['fmt_escape' => ['type' => 'text', 'value' => $settings['format:escape'] ?? '\\', 'maxlength' => 1]],
             ],
             [
                 'title'  => lang('export_format_newline'),
@@ -654,7 +692,16 @@ class CpService
         $sections[] = [
             [
                 'title'  => lang('export_section_output'),
-                'fields' => ['output' => ['type' => 'select', 'value' => $output, 'choices' => $output_choices]],
+                'fields' => [
+                    'output' => [
+                        'type'         => 'select',
+                        'value'        => $output,
+                        'choices'      => $output_choices,
+                        'group_toggle' => [
+                            'local' => 'output_local',
+                        ],
+                    ],
+                ],
             ],
             [
                 'title'    => lang('export_field_filename'),
@@ -669,8 +716,31 @@ class CpService
             ],
         ];
 
-        // ── Section 6 — Modifiers ─────────────────────────────────────────────
-        // Dynamic add/remove rows require raw HTML; no equivalent in _shared/form.
+        // ── Section 6 — Modifiers (MiniGrid) ─────────────────────────────────
+        //
+        // ee('CP/MiniGridInput') renders via ee:_shared/form/mini_grid.php.
+        // namespaceForGrid() rewrites bare input names to:
+        //   modify[rows][row_id_N][col]   — for saved rows  (numeric row_id)
+        //   modify[rows][new_row_N][col]  — for JS-added rows
+        //   modify[rows][new_row_0][col]  — the hidden blank-row template
+
+        $grid = ee('CP/MiniGridInput', ['field_name' => 'modify']);
+        $grid->loadAssets();
+
+        $grid->setColumns([
+            'column' => ['label' => lang('export_modifier_column')],
+            'chain'  => ['label' => lang('export_modifier_chain')],
+        ]);
+
+        // Both are standard EE lang keys
+        $grid->setNoResultsText('no_rows_created', 'add_a_row');
+
+        $grid->setBlankRow([
+            ['html' => form_input('column', '', 'class="form-control" placeholder="column_name"')],
+            ['html' => form_input('chain',  '', 'class="form-control" placeholder="ee_date[%Y-%m-%d]|uc_first"')],
+        ]);
+
+        $grid->setData([]);
 
         $modifiers = [];
         foreach ($settings as $key => $value) {
@@ -679,24 +749,21 @@ class CpService
             }
         }
 
-        $mod_rows = '';
-        foreach ($modifiers as $i => $mod) {
-            $mod_rows .= '<tr class="export-modifier-row">'
-                . '<td><input type="text" name="modify[' . $i . '][column]" class="form-control" value="' . htmlspecialchars($mod['column']) . '" placeholder="column_name"></td>'
-                . '<td><input type="text" name="modify[' . $i . '][chain]"  class="form-control" value="' . htmlspecialchars($mod['chain'])  . '" placeholder="ee_date[%Y-%m-%d]|uc_first"></td>'
-                . '<td><a href="#" class="export-remove-modifier button button--small button--default">' . lang('export_remove') . '</a></td>'
-                . '</tr>';
+        if ($modifiers) {
+            $rows = [];
+            foreach ($modifiers as $i => $mod) {
+                $rows[] = [
+                    'attrs'   => ['row_id' => $i + 1],
+                    'columns' => [
+                        ['html' => form_input('column', $mod['column'], 'class="form-control"')],
+                        ['html' => form_input('chain',  $mod['chain'],  'class="form-control"')],
+                    ],
+                ];
+            }
+            $grid->setData($rows);
         }
 
-        $mod_html = '<table class="mainTable"><thead><tr>'
-            . '<th>' . lang('export_modifier_column') . '</th>'
-            . '<th>' . lang('export_modifier_chain')  . '</th>'
-            . '<th></th>'
-            . '</tr></thead>'
-            . '<tbody id="export-modifier-rows">' . $mod_rows . '</tbody>'
-            . '</table>'
-            . '<a href="#" class="button button--default export-add-modifier" style="margin-top:.5em" data-row-count="' . count($modifiers) . '">'
-            . lang('export_add_modifier') . '</a>';
+        $mod_html = ee('View')->make('ee:_shared/form/mini_grid')->render($grid->viewData());
 
         $sections[] = [
             [
@@ -775,9 +842,11 @@ class CpService
             $settings['output:path'] = $post['output_path'];
         }
 
-        // Modifiers
-        $modifiers = $post['modify'] ?? [];
-        foreach ($modifiers as $row) {
+        // Modifiers — MiniGridInput posts as modify[rows][row_id_N | new_row_N][col]
+        // The hidden blank-row template (new_row_0) is always present with empty
+        // values; skipping empty column/chain naturally filters it out.
+        $modifier_rows = $post['modify']['rows'] ?? [];
+        foreach ($modifier_rows as $row) {
             $col   = trim($row['column'] ?? '');
             $chain = trim($row['chain']  ?? '');
             if ($col !== '' && $chain !== '') {

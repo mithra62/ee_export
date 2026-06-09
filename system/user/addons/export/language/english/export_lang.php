@@ -20,7 +20,7 @@ $lang = [
     'export_run'             => 'Run',
     'export_edit'            => 'Edit',
     'export_delete'          => 'Delete',
-    'export_remove'          => 'Remove',
+    // 'export_remove' removed — EE's built-in MiniGrid provides its own remove UI
 
     // Index table columns
     'export_col_name'        => 'Name',
@@ -125,7 +125,7 @@ $lang = [
     'export_placeholder_any'         => 'Any',
     'export_modifier_column'      => 'Column Name',
     'export_modifier_chain'       => 'Modifier Chain',
-    'export_add_modifier'         => 'Add Modifier',
+    // 'export_add_modifier' removed — EE's MiniGrid renders its own Add A Row button
 
     // ── Errors ────────────────────────────────────────────────────────────────
     'export_err_heading'    => 'Your submission has errors',

@@ -39,8 +39,21 @@ class Csv extends AbstractFormat
         }
 
         foreach ($rows as $row) {
-            fputcsv($this->fp, array_values($row), $sep, $enc, $esc, $nl);
+            fputcsv($this->fp, array_map([$this, 'flattenValue'], array_values($row)), $sep, $enc, $esc, $nl);
         }
+    }
+
+    /**
+     * Scalars pass through unchanged; arrays are JSON-encoded so a multi-
+     * dimensional field (Grid, Fluid, Relationship) still fits in one cell.
+     */
+    protected function flattenValue(mixed $value): string
+    {
+        if (is_array($value)) {
+            return empty($value) ? '' : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        return (string) ($value ?? '');
     }
 
     public function finalizeFile(): string

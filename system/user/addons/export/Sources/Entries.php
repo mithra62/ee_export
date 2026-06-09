@@ -221,31 +221,31 @@ class Entries extends AbstractSource
     // Complex field formatters
     // -------------------------------------------------------------------------
 
-    protected function formatRelationship(int $entry_id, int $field_id, array $rel_data, array $rel_cache): string
+    protected function formatRelationship(int $entry_id, int $field_id, array $rel_data, array $rel_cache): array
     {
         $child_ids = $rel_data[$entry_id][$field_id] ?? [];
         if (empty($child_ids)) {
-            return '';
+            return [];
         }
 
         $parts = [];
         foreach ($child_ids as $child_id) {
             $resolved = $rel_cache[$child_id] ?? null;
             $parts[]  = $resolved
-                ? $child_id . '|' . $resolved['title']
-                : (string) $child_id;
+                ? ['entry_id' => $child_id, 'title' => $resolved['title']]
+                : ['entry_id' => $child_id];
         }
 
-        return implode(',', $parts);
+        return $parts;
     }
 
-    protected function formatGrid(int $entry_id, int $field_id, array $grid_data, array $rel_data, array $rel_cache): string
+    protected function formatGrid(int $entry_id, int $field_id, array $grid_data, array $rel_data, array $rel_cache): array
     {
         $rows    = $grid_data[$field_id][$entry_id] ?? [];
         $columns = $this->grid_columns[$field_id] ?? [];
 
         if (empty($rows)) {
-            return '';
+            return [];
         }
 
         $export_rows = [];
@@ -258,7 +258,9 @@ class Entries extends AbstractSource
                 if ($col_info['col_type'] === 'relationship' && !is_null($value) && $value !== '') {
                     $child_id = (int) $value;
                     $resolved = $rel_cache[$child_id] ?? null;
-                    $value    = $resolved ? $child_id . '|' . $resolved['title'] : (string) $child_id;
+                    $value    = $resolved
+                        ? ['entry_id' => $child_id, 'title' => $resolved['title']]
+                        : ['entry_id' => $child_id];
                 }
 
                 $mapped_row[$col_info['col_name']] = $value ?? '';
@@ -266,14 +268,14 @@ class Entries extends AbstractSource
             $export_rows[] = $mapped_row;
         }
 
-        return json_encode($export_rows);
+        return $export_rows;
     }
 
-    protected function formatFluid(int $entry_id, int $field_id): string
+    protected function formatFluid(int $entry_id, int $field_id): array
     {
         $instances = ee('export:EntryService')->getFluidData($entry_id, $field_id);
         if (empty($instances)) {
-            return '';
+            return [];
         }
 
         $export = [];
@@ -296,10 +298,9 @@ class Entries extends AbstractSource
                     $col_map[$col_info['col_name']] = 'col_id_' . $col_id;
                 }
 
-                $grid_rows  = ee('export:EntryService')->getGridData(
+                $item['rows'] = ee('export:EntryService')->getGridData(
                     $sub_field_id, $entry_id, array_flip($col_map), (int) $instance['id']
                 );
-                $item['rows'] = $grid_rows;
             } else {
                 $item['value'] = ee('export:EntryService')->getFluidFieldData(
                     $entry_id, $field_id, $sub_field_id
@@ -309,7 +310,7 @@ class Entries extends AbstractSource
             $export[] = $item;
         }
 
-        return json_encode($export);
+        return $export;
     }
 
     // -------------------------------------------------------------------------

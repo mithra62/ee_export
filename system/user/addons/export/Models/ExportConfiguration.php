@@ -62,7 +62,11 @@ class ExportConfiguration extends Model
      */
     public function setSettings(array $settings): void
     {
-        $this->settings = json_encode($settings);
+        // setRawProperty() triggers backupIfChanging() so the ORM marks this
+        // property dirty and includes it in UPDATE queries. Direct $this->settings
+        // assignment bypasses __set() / setProperty() and the model never marks
+        // the column as modified, causing edits to silently not save.
+        $this->setRawProperty('settings', json_encode($settings));
     }
 
     /**

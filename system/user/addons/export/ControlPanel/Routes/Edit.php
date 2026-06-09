@@ -68,6 +68,14 @@ class Edit extends AbstractRoute
 
     protected function renderForm($config, array $settings, string $source)
     {
+        // On a GET request $settings comes from $config->getSettings(), which is
+        // the raw JSON blob — it never contains 'name' (a separate DB column).
+        // On a POST validation-failure re-render, postToSettings() now includes
+        // 'name', so the isset check leaves the submitted value intact.
+        if (! isset($settings['name'])) {
+            $settings['name'] = $config->name;
+        }
+
         $form = ee('export:CpService')->buildForm($settings, $source);
         $form->setCpPageTitle(lang('export_edit_heading') . ': ' . $config->name)
              ->setBaseUrl($this->url('edit/' . $config->id))

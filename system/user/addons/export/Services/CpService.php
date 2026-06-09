@@ -754,6 +754,11 @@ class CpService
     {
         $settings = [];
 
+        // name is a top-level model property but must travel through the settings
+        // array to reach buildForm() on validation-failure re-renders (Create and
+        // Edit both call postToSettings() then pass the result to renderForm()).
+        $settings['name'] = trim($post['name'] ?? '');
+
         // Source-specific params — strip the `src_{source}_` prefix
         $prefix = 'src_' . $source . '_';
         foreach ($post as $key => $value) {

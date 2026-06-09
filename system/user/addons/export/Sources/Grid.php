@@ -214,7 +214,7 @@ class Grid extends AbstractSource
                     $raw     = $grid_row[$col_key] ?? null;
 
                     $row[$col_info['col_name']] = $this->processColumnValue(
-                        $raw, $col_info, $row_id, $rel_data, $rel_cache
+                        $raw, $col_info, $row_id, $entry_id, $rel_data, $rel_cache
                     );
                 }
 
@@ -250,10 +250,32 @@ class Grid extends AbstractSource
      * and structure used by the Entries source.  row_id acts as the entry_id
      * lookup key (see nextChunk() for rationale).
      */
+    /**
+     * Route a single grid column value through the FieldsService handler for its
+     * col_type, falling back to the raw value when no handler is registered.
+     *
+     * The col_info array is translated into the field_info shape expected by
+     * AbstractField::process() so all existing handlers work without changes:
+     *
+     *   col_id       → field_id
+     *   col_name     → field_name
+     *   col_type     → field_type
+     *   col_label    → field_label
+     *   col_settings → field_settings
+     *
+     * Note: field_id here is col_id, NOT a channel_fields.field_id.  Third-party
+     * handlers that make additional DB queries by field_id or entry_id should check
+     * $context['source_type'] === 'grid' and use $context['col_id'] /
+     * $context['entry_id'] / $context['row_id'] instead.
+     *
+     * rel_data / rel_cache follow the identical shape used by the Entries source.
+     * row_id is passed as the $entry_id lookup key (see nextChunk() for rationale).
+     */
     protected function processColumnValue(
         mixed $raw,
         array $col_info,
         int   $row_id,
+        int   $entry_id,
         array $rel_data,
         array $rel_cache
     ): mixed {
@@ -269,8 +291,13 @@ class Grid extends AbstractSource
 
         if ($field) {
             return $field->process($raw, $field_info, $row_id, [
-                'rel_data'  => $rel_data,
-                'rel_cache' => $rel_cache,
+                'rel_data'    => $rel_data,
+                'rel_cache'   => $rel_cache,
+                // Disambiguation keys for third-party handlers
+                'source_type' => 'grid',
+                'row_id'      => $row_id,
+                'entry_id'    => $entry_id,
+                'col_id'      => (int) $col_info['col_id'],
             ]);
         }
 

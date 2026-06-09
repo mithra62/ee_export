@@ -320,6 +320,13 @@ class CpService
 
         $form = ee('CP/Form');
 
+        // Load addon JS and expose the AJAX endpoint URL to JS scope
+        ee()->cp->load_package_js('export');
+        ee()->javascript->set_global(
+            'Export.ajax_url',
+            ee('CP/URL')->make('addons/settings/export/ajax')->compile()
+        );
+
         // ── Section 1 — Identity ─────────────────────────────────────────────
 
         $identity = $form->getGroup('export_section_identity');
@@ -577,6 +584,9 @@ class CpService
         foreach (['all' => lang('export_col_all'), 'whitelist' => lang('export_col_whitelist'), 'blacklist' => lang('export_col_blacklist')] as $val => $lbl) {
             $col_html .= '<label style="margin-right:1em"><input type="radio" name="col_mode" value="' . $val . '"' . ($col_mode === $val ? ' checked' : '') . '> ' . $lbl . '</label>';
         }
+        $col_html .= '</div>';
+        $col_html .= '<div class="export-col-picker"' . ($col_mode === 'all' ? ' style="display:none"' : '') . '>';
+        $col_html .= '<div class="export-col-checkboxes"></div>';
         $col_html .= '</div>';
         $col_html .= '<input type="hidden" name="fields"  id="export_fields_val"  value="' . htmlspecialchars($fields_val) . '">';
         $col_html .= '<input type="hidden" name="exclude" id="export_exclude_val" value="' . htmlspecialchars($exclude_val) . '">';

@@ -232,24 +232,32 @@ class CpService
         return $params;
     }
 
-    // ── Form helpers ──────────────────────────────────────────────────────────
+    // ── Form builder ──────────────────────────────────────────────────────────
 
     /**
-     * Build the $vars['sections'] array for ee:_shared/form.
+     * Build and return a configured CP/Form object for the Create / Edit form.
      *
-     * All fields use EE's native field-definition format (type, value, choices…).
-     * Source- and format-specific rows carry a `group` key so the JS in form.php
-     * can show/hide them via [data-group] selectors without any raw-HTML blobs.
+     * The caller (Create/Edit route) chains form-level metadata onto the returned
+     * object (setCpPageTitle, setBaseUrl, setSaveBtnText, setSaveBtnTextWorking)
+     * then calls toArray() to pass to setView().
      *
-     * Only the column-picker and modifier rows remain as `type => 'html'` because
-     * they require AJAX-loaded checkboxes and dynamic add/remove rows respectively.
+     * Group names are lang keys — _shared/form/section.php passes them through
+     * lang() to render <h2> section headings.
+     *
+     * group_toggle on select fields is set via ->set('group_toggle', array) rather
+     * than ->setGroupToggle(string) because the view expects an array (json_encode'd
+     * by field.php into data-group-toggle), while the typed method only accepts string.
+     *
+     * group on individual Set (fieldset row) objects is set via $set->set('group', '…');
+     * Set::toArray() iterates the full prototype dict including dynamically added keys,
+     * so the key propagates correctly into the view's $setting array.
      *
      * @param array  $settings  Decoded settings from ExportConfiguration::getSettings()
      * @param string $source    Currently selected source key
      *
-     * @return array
+     * @return \ExpressionEngine\Library\CP\Form
      */
-    public function buildFormSections(array $settings, string $source = 'entries'): array
+    public function buildForm(array $settings, string $source = 'entries'): \ExpressionEngine\Library\CP\Form
     {
         $channels   = $this->getChannelList();
         $roles      = $this->getMemberRoles();
@@ -263,7 +271,6 @@ class CpService
             $selected_roles = array_values(array_filter(explode('|', $selected_roles)));
         }
 
-        // Normalise stored date strings/timestamps → YYYY-MM-DD for date inputs
         $norm_date = function (string $key) use ($settings): string {
             $raw = $settings[$key] ?? '';
             if ($raw === '') { return ''; }
@@ -303,444 +310,386 @@ class CpService
             '\r'   => 'CR (\r — Classic Mac)',
         ];
 
-        // ── Section 1 — Identity ─────────────────────────────────────────────
-
-        $sections = [];
-
-        $sections[] = [
-            [
-                'title'  => lang('export_field_name'),
-                'desc'   => lang('export_field_name_desc'),
-                'fields' => [
-                    'name' => [
-                        'type'     => 'text',
-                        'value'    => $settings['name'] ?? '',
-                        'required' => true,
-                    ],
-                ],
-            ],
-            [
-                'title'  => lang('export_field_source'),
-                'desc'   => lang('export_field_source_desc'),
-                'fields' => [
-                    'source' => [
-                        'type'         => 'select',
-                        'value'        => $source,
-                        'choices'      => $source_choices,
-                        'group_toggle' => [
-                            'entries' => 'source_entries',
-                            'members' => 'source_members',
-                            'grid'    => 'source_grid',
-                            'fluid'   => 'source_fluid',
-                            'sql'     => 'source_sql',
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-        // ── Section 2 — Source options ───────────────────────────────────────
-        //
-        // Every source-specific row carries a `group` key.  EE's _shared/form
-        // wraps each row in <div data-group="…"> so the JS in form.php can
-        // show/hide whole rows by toggling visibility on those containers.
-        //
-        // Rows shared across multiple sources (channel, status, etc.) appear
-        // once per source under a unique input name (src_{source}_{param}).
-
         $grid_field_id  = (int) ($settings['source:field'] ?? 0);
         $fluid_field_id = (int) ($settings['source:field'] ?? 0);
 
-        $source_rows = [
+        $format = $settings['format'] ?? 'csv';
+        $output = $settings['output'] ?? 'download';
 
-            // ── entries ──────────────────────────────────────────────────────
-            [
-                'title'  => lang('export_field_channel'),
-                'group'  => 'source_entries',
-                'fields' => ['src_entries_channel' => ['type' => 'select', 'choices' => $channels, 'value' => $channel_id]],
-            ],
-            [
-                'title'  => lang('export_field_status'),
-                'group'  => 'source_entries',
-                'fields' => ['src_entries_status' => ['type' => 'select', 'choices' => $status_choices, 'value' => $settings['source:status'] ?? 'open']],
-            ],
-            [
-                'title'  => lang('export_field_author_id'),
-                'group'  => 'source_entries',
-                'fields' => ['src_entries_author_id' => ['type' => 'text', 'value' => $settings['source:author_id'] ?? '']],
-            ],
-            [
-                'title'  => lang('export_field_entry_id'),
-                'desc'   => lang('export_hint_pipe_sep'),
-                'group'  => 'source_entries',
-                'fields' => ['src_entries_entry_id' => ['type' => 'text', 'value' => $settings['source:entry_id'] ?? '']],
-            ],
-            [
-                'title'  => lang('export_field_limit'),
-                'group'  => 'source_entries',
-                'fields' => ['src_entries_limit' => ['type' => 'text', 'value' => $settings['source:limit'] ?? '']],
-            ],
-            [
-                'title'  => lang('export_field_offset'),
-                'group'  => 'source_entries',
-                'fields' => ['src_entries_offset' => ['type' => 'text', 'value' => $settings['source:offset'] ?? '0']],
-            ],
-            [
-                'title'  => lang('export_field_chunk_size'),
-                'group'  => 'source_entries',
-                'fields' => ['src_entries_chunk_size' => ['type' => 'text', 'value' => $settings['source:chunk_size'] ?? '500']],
-            ],
-            [
-                'title'  => lang('export_field_relationship_fields'),
-                'desc'   => lang('export_hint_pipe_sep'),
-                'group'  => 'source_entries',
-                'fields' => ['src_entries_relationship_fields' => ['type' => 'text', 'value' => $settings['source:relationship_fields'] ?? 'title']],
-            ],
+        // ── Build Form object ─────────────────────────────────────────────────
 
-            // ── members ──────────────────────────────────────────────────────
-            [
-                'title'  => lang('export_field_roles'),
-                'group'  => 'source_members',
-                'fields' => ['src_members_roles' => ['type' => 'checkbox', 'choices' => $roles, 'value' => $selected_roles]],
-            ],
-            [
-                'title'  => lang('export_field_join_start'),
-                'group'  => 'source_members',
-                'fields' => [
-                    'src_members_join_start' => [
-                        'type'    => 'html',
-                        'content' => '<input type="date" name="src_members_join_start" value="' . htmlspecialchars($norm_date('source:join_start')) . '" class="form-control">',
-                    ],
-                ],
-            ],
-            [
-                'title'  => lang('export_field_join_end'),
-                'group'  => 'source_members',
-                'fields' => [
-                    'src_members_join_end' => [
-                        'type'    => 'html',
-                        'content' => '<input type="date" name="src_members_join_end" value="' . htmlspecialchars($norm_date('source:join_end')) . '" class="form-control">',
-                    ],
-                ],
-            ],
-            [
-                'title'  => lang('export_field_last_login_start'),
-                'group'  => 'source_members',
-                'fields' => [
-                    'src_members_last_login_start' => [
-                        'type'    => 'html',
-                        'content' => '<input type="date" name="src_members_last_login_start" value="' . htmlspecialchars($norm_date('source:last_login_start')) . '" class="form-control">',
-                    ],
-                ],
-            ],
-            [
-                'title'  => lang('export_field_last_login_end'),
-                'group'  => 'source_members',
-                'fields' => [
-                    'src_members_last_login_end' => [
-                        'type'    => 'html',
-                        'content' => '<input type="date" name="src_members_last_login_end" value="' . htmlspecialchars($norm_date('source:last_login_end')) . '" class="form-control">',
-                    ],
-                ],
-            ],
-            [
-                'title'  => lang('export_field_limit'),
-                'group'  => 'source_members',
-                'fields' => ['src_members_limit' => ['type' => 'text', 'value' => $settings['source:limit'] ?? '']],
-            ],
-            [
-                'title'  => lang('export_field_offset'),
-                'group'  => 'source_members',
-                'fields' => ['src_members_offset' => ['type' => 'text', 'value' => $settings['source:offset'] ?? '0']],
-            ],
-            [
-                'title'  => lang('export_field_chunk_size'),
-                'group'  => 'source_members',
-                'fields' => ['src_members_chunk_size' => ['type' => 'text', 'value' => $settings['source:chunk_size'] ?? '500']],
-            ],
+        $form = ee('CP/Form');
 
-            // ── grid ─────────────────────────────────────────────────────────
-            [
-                'title'  => lang('export_field_channel'),
-                'group'  => 'source_grid',
-                'fields' => ['src_grid_channel' => ['type' => 'select', 'choices' => $channels, 'value' => $channel_id, 'data-field-type' => 'grid']],
-            ],
-            [
-                'title'  => lang('export_field_field'),
-                'group'  => 'source_grid',
-                'fields' => ['src_grid_field' => ['type' => 'select', 'choices' => $grid_fields, 'value' => $grid_field_id]],
-            ],
-            [
-                'title'  => lang('export_field_status'),
-                'group'  => 'source_grid',
-                'fields' => ['src_grid_status' => ['type' => 'select', 'choices' => $status_choices, 'value' => $settings['source:status'] ?? 'open']],
-            ],
-            [
-                'title'  => lang('export_field_author_id'),
-                'group'  => 'source_grid',
-                'fields' => ['src_grid_author_id' => ['type' => 'text', 'value' => $settings['source:author_id'] ?? '']],
-            ],
-            [
-                'title'  => lang('export_field_entry_id'),
-                'desc'   => lang('export_hint_pipe_sep'),
-                'group'  => 'source_grid',
-                'fields' => ['src_grid_entry_id' => ['type' => 'text', 'value' => $settings['source:entry_id'] ?? '']],
-            ],
-            [
-                'title'  => lang('export_field_limit'),
-                'group'  => 'source_grid',
-                'fields' => ['src_grid_limit' => ['type' => 'text', 'value' => $settings['source:limit'] ?? '']],
-            ],
-            [
-                'title'  => lang('export_field_offset'),
-                'group'  => 'source_grid',
-                'fields' => ['src_grid_offset' => ['type' => 'text', 'value' => $settings['source:offset'] ?? '0']],
-            ],
-            [
-                'title'  => lang('export_field_chunk_size'),
-                'group'  => 'source_grid',
-                'fields' => ['src_grid_chunk_size' => ['type' => 'text', 'value' => $settings['source:chunk_size'] ?? '500']],
-            ],
-            [
-                'title'  => lang('export_field_relationship_fields'),
-                'desc'   => lang('export_hint_pipe_sep'),
-                'group'  => 'source_grid',
-                'fields' => ['src_grid_relationship_fields' => ['type' => 'text', 'value' => $settings['source:relationship_fields'] ?? 'title']],
-            ],
+        // ── Section 1 — Identity ─────────────────────────────────────────────
 
-            // ── fluid ─────────────────────────────────────────────────────────
-            [
-                'title'  => lang('export_field_channel'),
-                'group'  => 'source_fluid',
-                'fields' => ['src_fluid_channel' => ['type' => 'select', 'choices' => $channels, 'value' => $channel_id, 'data-field-type' => 'fluid_field']],
-            ],
-            [
-                'title'  => lang('export_field_field'),
-                'group'  => 'source_fluid',
-                'fields' => ['src_fluid_field' => ['type' => 'select', 'choices' => $fluid_fields, 'value' => $fluid_field_id]],
-            ],
-            [
-                'title'  => lang('export_field_status'),
-                'group'  => 'source_fluid',
-                'fields' => ['src_fluid_status' => ['type' => 'select', 'choices' => $status_choices, 'value' => $settings['source:status'] ?? 'open']],
-            ],
-            [
-                'title'  => lang('export_field_author_id'),
-                'group'  => 'source_fluid',
-                'fields' => ['src_fluid_author_id' => ['type' => 'text', 'value' => $settings['source:author_id'] ?? '']],
-            ],
-            [
-                'title'  => lang('export_field_entry_id'),
-                'desc'   => lang('export_hint_pipe_sep'),
-                'group'  => 'source_fluid',
-                'fields' => ['src_fluid_entry_id' => ['type' => 'text', 'value' => $settings['source:entry_id'] ?? '']],
-            ],
-            [
-                'title'  => lang('export_field_limit'),
-                'group'  => 'source_fluid',
-                'fields' => ['src_fluid_limit' => ['type' => 'text', 'value' => $settings['source:limit'] ?? '']],
-            ],
-            [
-                'title'  => lang('export_field_offset'),
-                'group'  => 'source_fluid',
-                'fields' => ['src_fluid_offset' => ['type' => 'text', 'value' => $settings['source:offset'] ?? '0']],
-            ],
-            [
-                'title'  => lang('export_field_chunk_size'),
-                'group'  => 'source_fluid',
-                'fields' => ['src_fluid_chunk_size' => ['type' => 'text', 'value' => $settings['source:chunk_size'] ?? '500']],
-            ],
-            [
-                'title'  => lang('export_field_relationship_fields'),
-                'desc'   => lang('export_hint_pipe_sep'),
-                'group'  => 'source_fluid',
-                'fields' => ['src_fluid_relationship_fields' => ['type' => 'text', 'value' => $settings['source:relationship_fields'] ?? 'title']],
-            ],
+        $identity = $form->getGroup('export_section_identity');
 
-            // ── sql ──────────────────────────────────────────────────────────
-            [
-                'title'  => lang('export_field_sql'),
-                'group'  => 'source_sql',
-                'fields' => [
-                    'src_sql_sql' => [
-                        'type'  => 'textarea',
-                        'value' => $settings['source:sql'] ?? '',
-                    ],
-                ],
-            ],
-        ];
+        $identity->getFieldSet('export_field_name')
+            ->setDesc('export_field_name_desc')
+            ->getField('name', 'text')
+                ->setValue($settings['name'] ?? '')
+                ->setRequired(true);
 
-        $sections[] = $source_rows;
+        $identity->getFieldSet('export_field_source')
+            ->setDesc('export_field_source_desc')
+            ->getField('source', 'select')
+                ->setChoices($source_choices)
+                ->setValue($source)
+                ->set('group_toggle', [
+                    'entries' => 'source_entries',
+                    'members' => 'source_members',
+                    'grid'    => 'source_grid',
+                    'fluid'   => 'source_fluid',
+                    'sql'     => 'source_sql',
+                ]);
+
+        // ── Section 2 — Source options ────────────────────────────────────────
+
+        $src = $form->getGroup('export_section_source_params');
+
+        // entries ─────────────────────────────────────────────────────────────
+        $src->getFieldSet('export_field_channel_entries')
+            ->set('group', 'source_entries')
+            ->setTitle('export_field_channel')
+            ->getField('src_entries_channel', 'select')
+                ->setChoices($channels)->setValue($channel_id);
+
+        $src->getFieldSet('export_field_status_entries')
+            ->set('group', 'source_entries')
+            ->setTitle('export_field_status')
+            ->getField('src_entries_status', 'select')
+                ->setChoices($status_choices)->setValue($settings['source:status'] ?? 'open');
+
+        $src->getFieldSet('export_field_author_id_entries')
+            ->set('group', 'source_entries')
+            ->setTitle('export_field_author_id')
+            ->getField('src_entries_author_id', 'text')
+                ->setValue($settings['source:author_id'] ?? '');
+
+        $src->getFieldSet('export_field_entry_id_entries')
+            ->set('group', 'source_entries')
+            ->setTitle('export_field_entry_id')
+            ->setDesc('export_hint_pipe_sep')
+            ->getField('src_entries_entry_id', 'text')
+                ->setValue($settings['source:entry_id'] ?? '');
+
+        $src->getFieldSet('export_field_limit_entries')
+            ->set('group', 'source_entries')
+            ->setTitle('export_field_limit')
+            ->getField('src_entries_limit', 'text')
+                ->setValue($settings['source:limit'] ?? '');
+
+        $src->getFieldSet('export_field_offset_entries')
+            ->set('group', 'source_entries')
+            ->setTitle('export_field_offset')
+            ->getField('src_entries_offset', 'text')
+                ->setValue($settings['source:offset'] ?? '0');
+
+        $src->getFieldSet('export_field_chunk_size_entries')
+            ->set('group', 'source_entries')
+            ->setTitle('export_field_chunk_size')
+            ->getField('src_entries_chunk_size', 'text')
+                ->setValue($settings['source:chunk_size'] ?? '500');
+
+        $src->getFieldSet('export_field_relationship_fields_entries')
+            ->set('group', 'source_entries')
+            ->setTitle('export_field_relationship_fields')
+            ->setDesc('export_hint_pipe_sep')
+            ->getField('src_entries_relationship_fields', 'text')
+                ->setValue($settings['source:relationship_fields'] ?? 'title');
+
+        // members ─────────────────────────────────────────────────────────────
+        $src->getFieldSet('export_field_roles')
+            ->set('group', 'source_members')
+            ->getField('src_members_roles', 'checkbox')
+                ->setChoices($roles)->setValue($selected_roles);
+
+        $src->getFieldSet('export_field_join_start')
+            ->set('group', 'source_members')
+            ->getField('src_members_join_start', 'html')
+                ->setContent('<input type="date" name="src_members_join_start" value="' . htmlspecialchars($norm_date('source:join_start')) . '" class="form-control">');
+
+        $src->getFieldSet('export_field_join_end')
+            ->set('group', 'source_members')
+            ->getField('src_members_join_end', 'html')
+                ->setContent('<input type="date" name="src_members_join_end" value="' . htmlspecialchars($norm_date('source:join_end')) . '" class="form-control">');
+
+        $src->getFieldSet('export_field_last_login_start')
+            ->set('group', 'source_members')
+            ->getField('src_members_last_login_start', 'html')
+                ->setContent('<input type="date" name="src_members_last_login_start" value="' . htmlspecialchars($norm_date('source:last_login_start')) . '" class="form-control">');
+
+        $src->getFieldSet('export_field_last_login_end')
+            ->set('group', 'source_members')
+            ->getField('src_members_last_login_end', 'html')
+                ->setContent('<input type="date" name="src_members_last_login_end" value="' . htmlspecialchars($norm_date('source:last_login_end')) . '" class="form-control">');
+
+        $src->getFieldSet('export_field_limit_members')
+            ->set('group', 'source_members')
+            ->setTitle('export_field_limit')
+            ->getField('src_members_limit', 'text')
+                ->setValue($settings['source:limit'] ?? '');
+
+        $src->getFieldSet('export_field_offset_members')
+            ->set('group', 'source_members')
+            ->setTitle('export_field_offset')
+            ->getField('src_members_offset', 'text')
+                ->setValue($settings['source:offset'] ?? '0');
+
+        $src->getFieldSet('export_field_chunk_size_members')
+            ->set('group', 'source_members')
+            ->setTitle('export_field_chunk_size')
+            ->getField('src_members_chunk_size', 'text')
+                ->setValue($settings['source:chunk_size'] ?? '500');
+
+        // grid ────────────────────────────────────────────────────────────────
+        $src->getFieldSet('export_field_channel_grid')
+            ->set('group', 'source_grid')
+            ->setTitle('export_field_channel')
+            ->getField('src_grid_channel', 'select')
+                ->setChoices($channels)->setValue($channel_id);
+
+        $src->getFieldSet('export_field_field_grid')
+            ->set('group', 'source_grid')
+            ->setTitle('export_field_field')
+            ->getField('src_grid_field', 'select')
+                ->setChoices($grid_fields)->setValue($grid_field_id);
+
+        $src->getFieldSet('export_field_status_grid')
+            ->set('group', 'source_grid')
+            ->setTitle('export_field_status')
+            ->getField('src_grid_status', 'select')
+                ->setChoices($status_choices)->setValue($settings['source:status'] ?? 'open');
+
+        $src->getFieldSet('export_field_author_id_grid')
+            ->set('group', 'source_grid')
+            ->setTitle('export_field_author_id')
+            ->getField('src_grid_author_id', 'text')
+                ->setValue($settings['source:author_id'] ?? '');
+
+        $src->getFieldSet('export_field_entry_id_grid')
+            ->set('group', 'source_grid')
+            ->setTitle('export_field_entry_id')
+            ->setDesc('export_hint_pipe_sep')
+            ->getField('src_grid_entry_id', 'text')
+                ->setValue($settings['source:entry_id'] ?? '');
+
+        $src->getFieldSet('export_field_limit_grid')
+            ->set('group', 'source_grid')
+            ->setTitle('export_field_limit')
+            ->getField('src_grid_limit', 'text')
+                ->setValue($settings['source:limit'] ?? '');
+
+        $src->getFieldSet('export_field_offset_grid')
+            ->set('group', 'source_grid')
+            ->setTitle('export_field_offset')
+            ->getField('src_grid_offset', 'text')
+                ->setValue($settings['source:offset'] ?? '0');
+
+        $src->getFieldSet('export_field_chunk_size_grid')
+            ->set('group', 'source_grid')
+            ->setTitle('export_field_chunk_size')
+            ->getField('src_grid_chunk_size', 'text')
+                ->setValue($settings['source:chunk_size'] ?? '500');
+
+        $src->getFieldSet('export_field_relationship_fields_grid')
+            ->set('group', 'source_grid')
+            ->setTitle('export_field_relationship_fields')
+            ->setDesc('export_hint_pipe_sep')
+            ->getField('src_grid_relationship_fields', 'text')
+                ->setValue($settings['source:relationship_fields'] ?? 'title');
+
+        // fluid ───────────────────────────────────────────────────────────────
+        $src->getFieldSet('export_field_channel_fluid')
+            ->set('group', 'source_fluid')
+            ->setTitle('export_field_channel')
+            ->getField('src_fluid_channel', 'select')
+                ->setChoices($channels)->setValue($channel_id);
+
+        $src->getFieldSet('export_field_field_fluid')
+            ->set('group', 'source_fluid')
+            ->setTitle('export_field_field')
+            ->getField('src_fluid_field', 'select')
+                ->setChoices($fluid_fields)->setValue($fluid_field_id);
+
+        $src->getFieldSet('export_field_status_fluid')
+            ->set('group', 'source_fluid')
+            ->setTitle('export_field_status')
+            ->getField('src_fluid_status', 'select')
+                ->setChoices($status_choices)->setValue($settings['source:status'] ?? 'open');
+
+        $src->getFieldSet('export_field_author_id_fluid')
+            ->set('group', 'source_fluid')
+            ->setTitle('export_field_author_id')
+            ->getField('src_fluid_author_id', 'text')
+                ->setValue($settings['source:author_id'] ?? '');
+
+        $src->getFieldSet('export_field_entry_id_fluid')
+            ->set('group', 'source_fluid')
+            ->setTitle('export_field_entry_id')
+            ->setDesc('export_hint_pipe_sep')
+            ->getField('src_fluid_entry_id', 'text')
+                ->setValue($settings['source:entry_id'] ?? '');
+
+        $src->getFieldSet('export_field_limit_fluid')
+            ->set('group', 'source_fluid')
+            ->setTitle('export_field_limit')
+            ->getField('src_fluid_limit', 'text')
+                ->setValue($settings['source:limit'] ?? '');
+
+        $src->getFieldSet('export_field_offset_fluid')
+            ->set('group', 'source_fluid')
+            ->setTitle('export_field_offset')
+            ->getField('src_fluid_offset', 'text')
+                ->setValue($settings['source:offset'] ?? '0');
+
+        $src->getFieldSet('export_field_chunk_size_fluid')
+            ->set('group', 'source_fluid')
+            ->setTitle('export_field_chunk_size')
+            ->getField('src_fluid_chunk_size', 'text')
+                ->setValue($settings['source:chunk_size'] ?? '500');
+
+        $src->getFieldSet('export_field_relationship_fields_fluid')
+            ->set('group', 'source_fluid')
+            ->setTitle('export_field_relationship_fields')
+            ->setDesc('export_hint_pipe_sep')
+            ->getField('src_fluid_relationship_fields', 'text')
+                ->setValue($settings['source:relationship_fields'] ?? 'title');
+
+        // sql ─────────────────────────────────────────────────────────────────
+        $src->getFieldSet('export_field_sql')
+            ->set('group', 'source_sql')
+            ->getField('src_sql_sql', 'textarea')
+                ->setValue($settings['source:sql'] ?? '');
 
         // ── Section 3 — Column selection ─────────────────────────────────────
-        // The picker itself needs AJAX-loaded checkboxes so it stays as html,
-        // but it is a single contained block rather than the whole source section.
 
         $col_mode       = 'all';
         $stored_fields  = $settings['fields']  ?? [];
         $stored_exclude = $settings['exclude'] ?? [];
-        if (! empty($stored_fields))  { $col_mode = 'whitelist'; }
+        if (! empty($stored_fields))      { $col_mode = 'whitelist'; }
         elseif (! empty($stored_exclude)) { $col_mode = 'blacklist'; }
 
         $fields_val  = is_array($stored_fields)  ? implode('|', $stored_fields)  : (string) $stored_fields;
         $exclude_val = is_array($stored_exclude) ? implode('|', $stored_exclude) : (string) $stored_exclude;
 
-        $col_html  = '<div class="export-col-mode">';
+        $col_html = '<div class="export-col-mode">';
         foreach (['all' => lang('export_col_all'), 'whitelist' => lang('export_col_whitelist'), 'blacklist' => lang('export_col_blacklist')] as $val => $lbl) {
             $col_html .= '<label style="margin-right:1em"><input type="radio" name="col_mode" value="' . $val . '"' . ($col_mode === $val ? ' checked' : '') . '> ' . $lbl . '</label>';
         }
         $col_html .= '</div>';
-        $col_html .= '<div class="export-col-picker" style="margin-top:.75em;' . ($col_mode === 'all' ? 'display:none' : '') . '">';
-        $col_html .= '<div class="export-col-checkboxes"></div>';
         $col_html .= '<input type="hidden" name="fields"  id="export_fields_val"  value="' . htmlspecialchars($fields_val) . '">';
         $col_html .= '<input type="hidden" name="exclude" id="export_exclude_val" value="' . htmlspecialchars($exclude_val) . '">';
-        $col_html .= '</div>';
 
-        $sections[] = [
-            [
-                'title'  => lang('export_section_columns'),
-                'desc'   => lang('export_section_columns_desc'),
-                'fields' => ['column_selection' => ['type' => 'html', 'content' => $col_html]],
-            ],
-        ];
+        $form->getGroup('export_section_columns')
+            ->getFieldSet('export_section_columns_desc')
+                ->setTitle('export_section_columns')
+                ->setDesc('export_section_columns_desc')
+                ->getField('column_selection', 'html')
+                    ->setContent($col_html);
 
         // ── Section 4 — Format ────────────────────────────────────────────────
 
-        $format = $settings['format'] ?? 'csv';
+        $fmt = $form->getGroup('export_section_format_options');
 
-        $format_rows = [
-            // format selector (always visible)
-            [
-                'title'  => lang('export_section_format'),
-                'fields' => [
-                    'format' => [
-                        'type'         => 'select',
-                        'value'        => $format,
-                        'choices'      => $format_choices,
-                        'group_toggle' => [
-                            'csv'  => 'format_csv',
-                            'xlsx' => 'format_xlsx',
-                            'xml'  => 'format_xml',
-                        ],
-                    ],
-                ],
-            ],
+        $fmt->getFieldSet('export_section_format')
+            ->getField('format', 'select')
+                ->setChoices($format_choices)
+                ->setValue($format)
+                ->set('group_toggle', [
+                    'csv'  => 'format_csv',
+                    'xlsx' => 'format_xlsx',
+                    'xml'  => 'format_xml',
+                ]);
 
-            // CSV options
-            [
-                'title'  => lang('export_format_separator'),
-                'desc'   => lang('export_format_separator_desc'),
-                'group'  => 'format_csv',
-                'fields' => ['fmt_separator' => ['type' => 'text', 'value' => $settings['format:separator'] ?? ',', 'maxlength' => 1]],
-            ],
-            [
-                'title'  => lang('export_format_enclosure'),
-                'desc'   => lang('export_format_enclosure_desc'),
-                'group'  => 'format_csv',
-                'fields' => ['fmt_enclosure' => ['type' => 'text', 'value' => $settings['format:enclosure'] ?? '"', 'maxlength' => 1]],
-            ],
-            [
-                'title'  => lang('export_format_escape'),
-                'desc'   => lang('export_format_escape_desc'),
-                'group'  => 'format_csv',
-                'fields' => ['fmt_escape' => ['type' => 'text', 'value' => $settings['format:escape'] ?? '\\', 'maxlength' => 1]],
-            ],
-            [
-                'title'  => lang('export_format_newline'),
-                'desc'   => lang('export_format_newline_desc'),
-                'group'  => 'format_csv',
-                'fields' => ['fmt_newline' => ['type' => 'select', 'value' => $settings['format:newline'] ?? '\n', 'choices' => $newline_choices]],
-            ],
+        $fmt->getFieldSet('export_format_separator')
+            ->set('group', 'format_csv')
+            ->setDesc('export_format_separator_desc')
+            ->getField('fmt_separator', 'text')
+                ->setValue($settings['format:separator'] ?? ',')
+                ->setMaxlength(1);
 
-            // XLSX options
-            [
-                'title'  => lang('export_format_bold_cols'),
-                'desc'   => lang('export_format_bold_cols_desc'),
-                'group'  => 'format_xlsx',
-                'fields' => ['fmt_bold_cols' => ['type' => 'toggle', 'value' => $settings['format:bold_cols'] ?? 'y']],
-            ],
-            [
-                'title'  => lang('export_format_sheet_name'),
-                'desc'   => lang('export_format_sheet_name_desc'),
-                'group'  => 'format_xlsx',
-                'fields' => ['fmt_sheet_name' => ['type' => 'text', 'value' => $settings['format:sheet_name'] ?? '']],
-            ],
+        $fmt->getFieldSet('export_format_enclosure')
+            ->set('group', 'format_csv')
+            ->setDesc('export_format_enclosure_desc')
+            ->getField('fmt_enclosure', 'text')
+                ->setValue($settings['format:enclosure'] ?? '"')
+                ->setMaxlength(1);
 
-            // XML options
-            [
-                'title'  => lang('export_format_root_name'),
-                'desc'   => lang('export_format_root_name_desc'),
-                'group'  => 'format_xml',
-                'fields' => ['fmt_root_name' => ['type' => 'text', 'value' => $settings['format:root_name'] ?? 'export']],
-            ],
-            [
-                'title'  => lang('export_format_branch_name'),
-                'desc'   => lang('export_format_branch_name_desc'),
-                'group'  => 'format_xml',
-                'fields' => ['fmt_branch_name' => ['type' => 'text', 'value' => $settings['format:branch_name'] ?? 'row']],
-            ],
-        ];
+        $fmt->getFieldSet('export_format_escape')
+            ->set('group', 'format_csv')
+            ->setDesc('export_format_escape_desc')
+            ->getField('fmt_escape', 'text')
+                ->setValue($settings['format:escape'] ?? '\\')
+                ->setMaxlength(1);
 
-        $sections[] = $format_rows;
+        $fmt->getFieldSet('export_format_newline')
+            ->set('group', 'format_csv')
+            ->setDesc('export_format_newline_desc')
+            ->getField('fmt_newline', 'select')
+                ->setChoices($newline_choices)
+                ->setValue($settings['format:newline'] ?? '\n');
+
+        $fmt->getFieldSet('export_format_bold_cols')
+            ->set('group', 'format_xlsx')
+            ->setDesc('export_format_bold_cols_desc')
+            ->getField('fmt_bold_cols', 'toggle')
+                ->setValue($settings['format:bold_cols'] ?? 'y');
+
+        $fmt->getFieldSet('export_format_sheet_name')
+            ->set('group', 'format_xlsx')
+            ->setDesc('export_format_sheet_name_desc')
+            ->getField('fmt_sheet_name', 'text')
+                ->setValue($settings['format:sheet_name'] ?? '');
+
+        $fmt->getFieldSet('export_format_root_name')
+            ->set('group', 'format_xml')
+            ->setDesc('export_format_root_name_desc')
+            ->getField('fmt_root_name', 'text')
+                ->setValue($settings['format:root_name'] ?? 'export');
+
+        $fmt->getFieldSet('export_format_branch_name')
+            ->set('group', 'format_xml')
+            ->setDesc('export_format_branch_name_desc')
+            ->getField('fmt_branch_name', 'text')
+                ->setValue($settings['format:branch_name'] ?? 'row');
 
         // ── Section 5 — Output ────────────────────────────────────────────────
 
-        $output   = $settings['output']          ?? 'download';
-        $filename = $settings['output:filename'] ?? '';
-        $path     = $settings['output:path']     ?? '';
+        $out = $form->getGroup('export_section_output');
 
-        $sections[] = [
-            [
-                'title'  => lang('export_section_output'),
-                'fields' => [
-                    'output' => [
-                        'type'         => 'select',
-                        'value'        => $output,
-                        'choices'      => $output_choices,
-                        'group_toggle' => [
-                            'local' => 'output_local',
-                        ],
-                    ],
-                ],
-            ],
-            [
-                'title'    => lang('export_field_filename'),
-                'required' => true,
-                'fields'   => ['output_filename' => ['type' => 'text', 'value' => $filename, 'required' => true]],
-            ],
-            [
-                'title'  => lang('export_field_path'),
-                'desc'   => lang('export_field_path_desc'),
-                'group'  => 'output_local',
-                'fields' => ['output_path' => ['type' => 'text', 'value' => $path]],
-            ],
-        ];
+        $out->getFieldSet('export_section_output')
+            ->setTitle('export_section_output')
+            ->getField('output', 'select')
+                ->setChoices($output_choices)
+                ->setValue($output)
+                ->set('group_toggle', ['local' => 'output_local']);
+
+        $out->getFieldSet('export_field_filename')
+            ->getField('output_filename', 'text')
+                ->setValue($settings['output:filename'] ?? '')
+                ->setRequired(true);
+
+        $out->getFieldSet('export_field_path')
+            ->set('group', 'output_local')
+            ->setDesc('export_field_path_desc')
+            ->getField('output_path', 'text')
+                ->setValue($settings['output:path'] ?? '');
 
         // ── Section 6 — Modifiers (MiniGrid) ─────────────────────────────────
-        //
-        // ee('CP/MiniGridInput') renders via ee:_shared/form/mini_grid.php.
-        // namespaceForGrid() rewrites bare input names to:
-        //   modify[rows][row_id_N][col]   — for saved rows  (numeric row_id)
-        //   modify[rows][new_row_N][col]  — for JS-added rows
-        //   modify[rows][new_row_0][col]  — the hidden blank-row template
 
-        $grid = ee('CP/MiniGridInput', ['field_name' => 'modify']);
-        $grid->loadAssets();
-
-        $grid->setColumns([
+        $mg = ee('CP/MiniGridInput', ['field_name' => 'modify']);
+        $mg->loadAssets();
+        $mg->setColumns([
             'column' => ['label' => lang('export_modifier_column')],
             'chain'  => ['label' => lang('export_modifier_chain')],
         ]);
-
-        // Both are standard EE lang keys
-        $grid->setNoResultsText('no_rows_created', 'add_a_row');
-
-        $grid->setBlankRow([
+        $mg->setNoResultsText('no_rows_created', 'add_a_row');
+        $mg->setBlankRow([
             ['html' => form_input('column', '', 'class="form-control" placeholder="column_name"')],
             ['html' => form_input('chain',  '', 'class="form-control" placeholder="ee_date[%Y-%m-%d]|uc_first"')],
         ]);
-
-        $grid->setData([]);
+        $mg->setData([]);
 
         $modifiers = [];
         foreach ($settings as $key => $value) {
@@ -748,7 +697,6 @@ class CpService
                 $modifiers[] = ['column' => substr($key, 7), 'chain' => $value];
             }
         }
-
         if ($modifiers) {
             $rows = [];
             foreach ($modifiers as $i => $mod) {
@@ -760,20 +708,17 @@ class CpService
                     ],
                 ];
             }
-            $grid->setData($rows);
+            $mg->setData($rows);
         }
 
-        $mod_html = ee('View')->make('ee:_shared/form/mini_grid')->render($grid->viewData());
+        $form->getGroup('export_section_modifiers')
+            ->getFieldSet('export_section_modifiers_desc')
+                ->setTitle('export_section_modifiers')
+                ->setDesc('export_section_modifiers_desc')
+                ->getField('modifiers_html', 'html')
+                    ->setContent(ee('View')->make('ee:_shared/form/mini_grid')->render($mg->viewData()));
 
-        $sections[] = [
-            [
-                'title'  => lang('export_section_modifiers'),
-                'desc'   => lang('export_section_modifiers_desc'),
-                'fields' => ['modifiers_html' => ['type' => 'html', 'content' => $mod_html]],
-            ],
-        ];
-
-        return $sections;
+        return $form;
     }
 
     // ── POST → settings conversion ────────────────────────────────────────────

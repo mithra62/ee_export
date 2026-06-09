@@ -68,19 +68,13 @@ class Edit extends AbstractRoute
 
     protected function renderForm($config, array $settings, string $source)
     {
-        $vars = [
-            'cp_page_title'         => lang('export_edit_heading') . ': ' . $config->name,
-            'base_url'              => $this->url('edit/' . $config->id),
-            'save_btn_text'         => lang('export_save'),
-            'save_btn_text_working' => lang('export_saving'),
-            'sections'              => ee('export:CpService')->buildFormSections($settings, $source),
-            'current_source'        => $source,
-            'current_format'        => $settings['format'] ?? 'csv',
-            'current_output'        => $settings['output'] ?? 'download',
-            'ajax_url'              => $this->url('ajax'),
-        ];
+        $form = ee('export:CpService')->buildForm($settings, $source);
+        $form->setCpPageTitle(lang('export_edit_heading') . ': ' . $config->name)
+             ->setBaseUrl($this->url('edit/' . $config->id))
+             ->setSaveBtnText(lang('export_save'))
+             ->setSaveBtnTextWorking(lang('export_saving'));
 
-        $this->setView('form', $vars);
+        $this->setView('form', $form->toArray());
 
         return $this;
     }

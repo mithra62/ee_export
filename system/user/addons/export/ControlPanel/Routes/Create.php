@@ -69,19 +69,13 @@ class Create extends AbstractRoute
 
     protected function renderForm(array $settings = [], string $source = 'entries')
     {
-        $vars = [
-            'cp_page_title'         => lang('export_create_heading'),
-            'base_url'              => $this->url('create'),
-            'save_btn_text'         => lang('export_save'),
-            'save_btn_text_working' => lang('export_saving'),
-            'sections'              => ee('export:CpService')->buildFormSections($settings, $source),
-            'current_source'        => $source,
-            'current_format'        => $settings['format'] ?? 'csv',
-            'current_output'        => $settings['output'] ?? 'download',
-            'ajax_url'              => $this->url('ajax'),
-        ];
+        $form = ee('export:CpService')->buildForm($settings, $source);
+        $form->setCpPageTitle(lang('export_create_heading'))
+             ->setBaseUrl($this->url('create'))
+             ->setSaveBtnText(lang('export_save'))
+             ->setSaveBtnTextWorking(lang('export_saving'));
 
-        $this->setView('form', $vars);
+        $this->setView('form', $form->toArray());
 
         return $this;
     }

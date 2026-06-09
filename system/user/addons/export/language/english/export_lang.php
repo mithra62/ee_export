@@ -66,6 +66,7 @@ $lang = [
     'export_field_path_desc'            => 'Absolute server path to the directory where the file should be saved (local output only).',
 
     // ── Form — section headings ───────────────────────────────────────────────
+    'export_section_identity'           => 'Export',
     'export_section_source_params'      => 'Source Options',
     'export_section_source_params_desc' => 'Configure filtering and pagination for the selected source.',
     'export_section_columns'            => 'Column Selection',

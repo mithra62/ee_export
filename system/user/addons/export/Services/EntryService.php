@@ -385,17 +385,92 @@ class EntryService extends AbstractService
      */
     public function getChannelFields(int $channel_id): array
     {
-        $query = ee()->db
-            ->select('cf.field_id, cf.field_name, cf.field_type, cf.field_label, cf.field_settings')
-            ->from('channel_fields cf')
-            ->join('channels_channel_fields ccf', 'cf.field_id = ccf.field_id')
-            ->where('ccf.channel_id', $channel_id)
-            ->order_by('cf.field_order', 'ASC')
+        $return = [];
+
+        // Tier 1: EE ORM via getAllCustomFields() — merges BOTH direct field
+        // assignments (channels_channel_fields) AND field-group assignments
+        // (channels_channel_field_groups → ChannelFields).  This is EE's own
+        // authoritative method for "what custom fields does this channel have".
+        try {
+            $channel = ee('Model')
+                ->get('Channel')
+                ->filter('channel_id', $channel_id)
+                ->first();
+
+            if ($channel) {
+                $fields = $channel->getAllCustomFields();
+                if ($fields && count($fields) > 0) {
+                    foreach ($fields as $field) {
+                        $settings = $field->field_settings;
+                        if (is_string($settings)) {
+                            $settings = @unserialize(base64_decode($settings)) ?: [];
+                        }
+                        $return[(int) $field->field_id] = [
+                            'field_id'       => (int) $field->field_id,
+                            'field_name'     => $field->field_name,
+                            'field_type'     => $field->field_type,
+                            'field_label'    => $field->field_label,
+                            'field_settings' => is_array($settings) ? $settings : [],
+                        ];
+                    }
+
+                    return $return;
+                }
+            }
+        } catch (\Throwable $e) {
+            // fall through to raw-query approach
+        }
+
+        // Tier 2: raw SQL — direct assignments via channels_channel_fields (EE 5.4+).
+        // No table aliases — avoids CI query-builder prefix mangling.
+        $q2 = ee()->db
+            ->select('channel_fields.field_id, channel_fields.field_name, channel_fields.field_type, channel_fields.field_label, channel_fields.field_settings')
+            ->from('channel_fields')
+            ->join('channels_channel_fields', 'channel_fields.field_id = channels_channel_fields.field_id')
+            ->where('channels_channel_fields.channel_id', $channel_id)
+            ->order_by('channel_fields.field_order', 'ASC')
             ->get();
 
-        $return = [];
-        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
-            foreach ($query->result_array() as $row) {
+        if ($q2 instanceof CI_DB_result && $q2->num_rows() > 0) {
+            foreach ($q2->result_array() as $row) {
+                $row['field_settings'] = $row['field_settings']
+                    ? @unserialize(base64_decode($row['field_settings'])) ?: []
+                    : [];
+                $return[(int) $row['field_id']] = $row;
+            }
+
+            return $return;
+        }
+
+        // Tier 3: field-group fallback via channels_channel_field_groups pivot (EE 6+).
+        // channels_channel_field_groups maps channel_id → group_id; channel_fields
+        // rows carry the matching group_id.
+        $gq = ee()->db
+            ->select('group_id')
+            ->from('channels_channel_field_groups')
+            ->where('channel_id', $channel_id)
+            ->get();
+
+        if (!($gq instanceof CI_DB_result) || $gq->num_rows() === 0) {
+            return $return;
+        }
+
+        $group_ids = array_column($gq->result_array(), 'group_id');
+        $group_ids = array_map('intval', array_filter($group_ids));
+
+        if (empty($group_ids)) {
+            return $return;
+        }
+
+        $q3 = ee()->db
+            ->select('field_id, field_name, field_type, field_label, field_settings')
+            ->from('channel_fields')
+            ->where_in('group_id', $group_ids)
+            ->order_by('field_order', 'ASC')
+            ->get();
+
+        if ($q3 instanceof CI_DB_result && $q3->num_rows() > 0) {
+            foreach ($q3->result_array() as $row) {
                 $row['field_settings'] = $row['field_settings']
                     ? @unserialize(base64_decode($row['field_settings'])) ?: []
                     : [];

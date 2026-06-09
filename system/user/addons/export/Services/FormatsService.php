@@ -19,10 +19,15 @@ class FormatsService extends AbstractService
     {
         $params = $this->getParams()->getDomainParams('format');
         if (empty($params['format'])) {
-            throw new FormatsServiceException('Source not set');
+            throw new FormatsServiceException('Format not set');
         }
 
-        $class = "\\Mithra62\\Export\\Formats\\" . Str::studly($params['format']);
+        $name = $params['format'];
+
+        // Provider map takes precedence; namespace resolution is the fallback.
+        $map   = $this->getProviderMap('formats');
+        $class = $map[$name] ?? ("\\Mithra62\\Export\\Formats\\" . Str::studly($name));
+
         if (class_exists($class)) {
             $obj = new $class();
             if ($obj instanceof AbstractFormat) {
@@ -31,6 +36,6 @@ class FormatsService extends AbstractService
             }
         }
 
-        throw new FormatsServiceException('Format not found ' . $class);
+        throw new FormatsServiceException('Format not found: ' . $name);
     }
 }

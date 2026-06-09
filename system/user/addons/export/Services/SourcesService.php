@@ -22,7 +22,12 @@ class SourcesService extends AbstractService
             throw new SourcesServiceException('Source not set');
         }
 
-        $class = "\\Mithra62\\Export\\Sources\\" . Str::studly($params['source']);
+        $name = $params['source'];
+
+        // Provider map takes precedence; namespace resolution is the fallback.
+        $map   = $this->getProviderMap('sources');
+        $class = $map[$name] ?? ("\\Mithra62\\Export\\Sources\\" . Str::studly($name));
+
         if (class_exists($class)) {
             $obj = new $class();
             if ($obj instanceof AbstractSource) {
@@ -31,6 +36,6 @@ class SourcesService extends AbstractService
             }
         }
 
-        throw new SourcesServiceException('Source not found ' . $class);
+        throw new SourcesServiceException('Source not found: ' . $name);
     }
 }

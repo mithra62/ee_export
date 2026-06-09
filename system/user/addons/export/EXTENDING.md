@@ -856,23 +856,60 @@ Grid:     $context['rel_data'][$row_id][$col_id][]     = $child_entry_id
 
 ## 7. Registering Custom Plugins
 
-No registration is required for Sources, Formats, Modifiers, and Outputs. The factory services resolve classes purely by name and namespace. Place your class in the correct namespace and ensure it is autoloaded — the pipeline will find it automatically.
+All five extension layers — Sources, Formats, Outputs, Modifiers, and Field Handlers — use the same `addon.setup.php` declaration pattern. Declare your classes in your own addon's `addon.setup.php` under the `export` key and they are discovered automatically on the next page load with no changes to Export's source code.
 
-Field Handlers are the exception: they must be declared in an `addon.setup.php` `export.fields` map (see §5) because they are keyed by field type string rather than resolved by a user-supplied name.
+### The `addon.setup.php` declaration
 
-### Adding classes to the Export addon directly
+```php
+// system/user/addons/my_addon/addon.setup.php
+return [
+    'name'      => 'My Addon',
+    'namespace' => 'MyAddon',
+    // ...
+    'export' => [
+        'sources' => [
+            'orders' => \MyAddon\Export\Sources\Orders::class,
+        ],
+        'formats' => [
+            'tsv' => \MyAddon\Export\Formats\Tsv::class,
+        ],
+        'outputs' => [
+            's3' => \MyAddon\Export\Output\S3::class,
+        ],
+        'modifiers' => [
+            'truncate'   => \MyAddon\Export\Modifiers\Truncate::class,
+            'strip_tags' => \MyAddon\Export\Modifiers\StripTags::class,
+        ],
+        'fields' => [
+            'bloqs'      => \MyAddon\Export\Fields\Bloqs::class,
+            'my_fieldtype' => \MyAddon\Export\Fields\MyFieldtype::class,
+        ],
+    ],
+];
+```
 
-Drop your file into the matching subdirectory (`Sources/`, `Formats/`, `Modifiers/`, `Output/`, `Fields/`) under `system/user/addons/export/`. Composer's PSR-4 autoloader for the `Mithra62\Export\` namespace picks it up automatically.
+Any subset of layers can be declared — omit the keys for layers your addon doesn't extend.
 
-### Distributing in a separate addon
+### How discovery works
 
-Keep your classes in your own addon's namespace. For Sources, Formats, Modifiers, and Outputs, the factory services use `Str::studly()` on the tag param to build a class name — they search the `Mithra62\Export\` namespace. To make your class discoverable under that namespace from an external addon, either:
+`AbstractService::getProviderMap(string $layer)` scans all installed addons via `ee('App')->getProviders()`, collects every `export.$layer` map, and merges them: Export's own built-in declarations form the baseline, third-party declarations are merged after and can override built-ins when needed. The result is cached statically so the scan runs at most once per PHP request per layer.
 
-- Register a PSR-4 autoload alias mapping `Mithra62\Export\Sources\YourSource` → your file, **or**
-- Add your class directly to this addon's `Sources/` directory
+Each factory service checks the provider map first, then falls back to namespace-based resolution (`Str::studly()` → `Mithra62\Export\{Layer}\{Name}`) for backward compatibility with classes placed directly in the Export namespace.
 
-For **Field Handlers**, use the `addon.setup.php` `export.fields` declaration pattern described in §5 — no namespace aliasing needed.
+### Override precedence
 
-### Custom tag method routing
+```
+addon.setup.php declaration (third-party) → highest priority
+addon.setup.php declaration (Export built-in)
+Str::studly() namespace fallback          → lowest priority
+```
 
-EE routes `{exp:export:foo}` to a tag class at `Tags\Foo`. Add your tag class to `Tags/` following the same pattern as the built-in ones (`Tags\Entries`, `Tags\Members`, etc.) and EE routes it automatically.
+This means a third-party addon can replace a built-in source, format, output, modifier, or field handler entirely by declaring the same key with a different class.
+
+### Namespace fallback
+
+For Sources, Formats, Outputs, and Modifiers, classes placed directly in the `Mithra62\Export\` namespace subtrees (`Sources\`, `Formats\`, `Output\`, `Modifiers\`) are still discovered automatically via `Str::studly()` if no `addon.setup.php` entry exists for that name. This preserves backward compatibility but the declaration approach is preferred for distributed addons.
+
+### Custom tag routing
+
+EE routes `{exp:export:foo}` to a tag class at `Tags\Foo`. Add your tag class to `Tags/` following the same pattern as the built-in ones (`Tags\Entries`, `Tags\Members`, etc.) and EE routes it automatically. No registration is required for tags.

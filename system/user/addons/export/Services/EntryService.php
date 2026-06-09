@@ -741,6 +741,61 @@ class EntryService extends AbstractService
     }
 
     /**
+     * Resolve a grid field name (or numeric ID string) to a field_id,
+     * validating that the field belongs to the given channel AND is of type 'grid'.
+     *
+     * Returns 0 when not found / wrong type.
+     */
+    public function getGridFieldId(string $field_name_or_id, int $channel_id): int
+    {
+        $channel_fields = $this->getChannelFields($channel_id);
+
+        // Accept a numeric ID directly
+        if (is_numeric($field_name_or_id)) {
+            $fid = (int) $field_name_or_id;
+            if (isset($channel_fields[$fid]) && $channel_fields[$fid]['field_type'] === 'grid') {
+                return $fid;
+            }
+            return 0;
+        }
+
+        // Look up by field_name
+        foreach ($channel_fields as $field_id => $field_info) {
+            if ($field_info['field_name'] === $field_name_or_id && $field_info['field_type'] === 'grid') {
+                return $field_id;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Batch-load relationship child IDs stored directly in grid column cells.
+     *
+     * Grid relationship columns store raw entry_id integers in col_id_X cells
+     * (not via the `relationships` pivot table). This helper collects all unique
+     * non-zero values from those columns across a slice of grid rows and returns
+     * a flat list suitable for passing to resolveRelatedEntries().
+     *
+     * @param  array $grid_rows  Flat row arrays from channel_grid_field_X
+     * @param  int[] $col_ids    Column IDs whose values are entry_id references
+     * @return int[]             Unique non-zero related entry_ids
+     */
+    public function collectGridRelatedIds(array $grid_rows, array $col_ids): array
+    {
+        $ids = [];
+        foreach ($grid_rows as $row) {
+            foreach ($col_ids as $col_id) {
+                $val = (int) ($row['col_id_' . $col_id] ?? 0);
+                if ($val > 0) {
+                    $ids[$val] = $val;
+                }
+            }
+        }
+        return array_values($ids);
+    }
+
+    /**
      * @param array $entry_ids
      * @return array
      */

@@ -22,11 +22,11 @@ class FluidField extends AbstractField
 {
     public function process(mixed $raw_value, array $field_info, int $entry_id, array $context = []): mixed
     {
-        $field_id        = (int) $field_info['field_id'];
-        $channel_fields  = $context['channel_fields']  ?? [];
-        $grid_columns    = $context['grid_columns']    ?? [];
+        $field_id = (int)$field_info['field_id'];
+        $channel_fields = $context['channel_fields'] ?? [];
+        $grid_columns = $context['grid_columns'] ?? [];
         $fluid_instances = $context['fluid_instances'] ?? [];
-        $fluid_values    = $context['fluid_values']    ?? [];
+        $fluid_values = $context['fluid_values'] ?? [];
         $fluid_grid_data = $context['fluid_grid_data'] ?? [];
 
         // Use pre-fetched batch data; fall back to live queries when context is absent
@@ -40,20 +40,20 @@ class FluidField extends AbstractField
 
         $export = [];
         foreach ($instances as $instance) {
-            $sub_field_id = (int) $instance['field_id'];
-            $fluid_id     = (int) $instance['id'];          // PK of fluid_field_data row
-            $data_id      = (int) $instance['field_data_id']; // FK into channel_data_field_X
-            $sub_info     = $channel_fields[$sub_field_id] ?? null;
-            $sub_type     = $sub_info['field_type'] ?? 'unknown';
+            $sub_field_id = (int)$instance['field_id'];
+            $fluid_id = (int)$instance['id'];          // PK of fluid_field_data row
+            $data_id = (int)$instance['field_data_id']; // FK into channel_data_field_X
+            $sub_info = $channel_fields[$sub_field_id] ?? null;
+            $sub_type = $sub_info['field_type'] ?? 'unknown';
 
             $item = [
-                'type'       => $sub_type,
+                'type' => $sub_type,
                 'field_name' => $sub_info['field_name'] ?? ('field_' . $sub_field_id),
-                'order'      => (int) $instance['order'],
+                'order' => (int)$instance['order'],
             ];
 
             if ($sub_type === 'grid') {
-                $cols    = $grid_columns[$sub_field_id]
+                $cols = $grid_columns[$sub_field_id]
                     ?? ee('export:EntryService')->getGridColumns($sub_field_id);
                 $col_map = [];
                 foreach ($cols as $col_id => $col_info) {
@@ -61,7 +61,7 @@ class FluidField extends AbstractField
                 }
 
                 // Use pre-fetched grid rows keyed by fluid instance PK
-                $raw_grid_rows       = $fluid_grid_data[$sub_field_id][$fluid_id] ?? null;
+                $raw_grid_rows = $fluid_grid_data[$sub_field_id][$fluid_id] ?? null;
                 $item['rows'] = $raw_grid_rows !== null
                     ? $this->mapGridRows($raw_grid_rows, array_flip($col_map))
                     : ee('export:EntryService')->getGridData(
@@ -70,7 +70,7 @@ class FluidField extends AbstractField
             } else {
                 // Use pre-fetched scalar value; fall back to live query
                 $item['value'] = array_key_exists($sub_field_id, $fluid_values)
-                    ? (string) ($fluid_values[$sub_field_id][$data_id] ?? '')
+                    ? (string)($fluid_values[$sub_field_id][$data_id] ?? '')
                     : ee('export:EntryService')->getFluidFieldData($entry_id, $field_id, $sub_field_id);
             }
 

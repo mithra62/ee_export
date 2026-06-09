@@ -10,6 +10,7 @@ Export allows for easy and customizable exports of data from within your Express
 2. Channel Entries, Members, and more, all through template tags
 3. Save exports to location or download through a browser
 4. Apply "modifiers" to exported data to transform it before save
+5. **Control Panel UI** (EE 7.2+) — build, save, and run export configurations without writing template code
 
 ### Basic Example
 
@@ -23,6 +24,21 @@ The below will force download of the export in JSON format, with a data from the
     output:filename="members.json"
 }
 ```
+
+## Control Panel (EE 7.2+)
+
+Export ships with a native ExpressionEngine Control Panel that lets operators create, manage, and run saved export configurations without touching template code. The CP requires EE 7.2 or later.
+
+Visit **Add-Ons → Export** from the EE Control Panel. From there you can:
+
+- **Create** a named export configuration for any source (Entries, Members, Grid, Fluid, SQL)
+- **Edit** saved configurations at any time — all parameters pre-fill
+- **Run** a saved configuration directly from the index table — download or local delivery works exactly as with template tags
+- **Delete** configurations you no longer need
+
+All source parameters, format options, output settings, column selection (include/exclude), and modifiers are available through the form. See `DOCUMENTATION.md` §14 for a complete field reference.
+
+---
 
 ## Template Tags
 

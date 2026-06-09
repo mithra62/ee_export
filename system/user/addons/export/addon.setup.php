@@ -17,6 +17,7 @@ use Mithra62\Export\Modifiers\UcWords;
 use Mithra62\Export\Output\Download;
 use Mithra62\Export\Output\Local;
 use Mithra62\Export\Services\ActionsService;
+use Mithra62\Export\Services\CpService;
 use Mithra62\Export\Services\EntryService;
 use Mithra62\Export\Services\ExcelService;
 use Mithra62\Export\Services\ExportService;
@@ -41,12 +42,15 @@ require_once __DIR__ . "/vendor/autoload.php";
 
 return [
     'name' => 'Export',
+    'models' => [
+        'ExportConfiguration' => 'Models\ExportConfiguration',
+    ],
     'description' => 'Export description',
     'version' => EXPORT_VERSION,
     'author' => 'mithra62',
     'author_url' => 'fdsa',
     'namespace' => 'Mithra62\Export',
-    'settings_exist' => false,
+    'settings_exist' => true,
     'services' => [
         'LoggerService' => function ($addon) {
             return new LoggerService();
@@ -95,6 +99,9 @@ return [
         'MemberService' => function ($addon) {
             return new MemberService();
         },
+        'CpService' => function ($addon) {
+            return new CpService();
+        },
     ],
 
     // ---------------------------------------------------------------------------
@@ -110,10 +117,10 @@ return [
     'export' => [
         'sources' => [
             'entries' => Entries::class,
-            'fluid'   => SourceFluid::class,
-            'grid'    => SourceGrid::class,
+            'fluid' => SourceFluid::class,
+            'grid' => SourceGrid::class,
             'members' => Members::class,
-            'sql'     => Sql::class,
+            'sql' => Sql::class,
         ],
         'formats' => [
             'csv' => Csv::class,

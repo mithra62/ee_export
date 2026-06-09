@@ -94,6 +94,20 @@ Export every row of an EE Grid field as a flat table. Each output row carries en
 }
 ```
 
+### Fluid
+
+Export every instance of an EE Fluid field as a flat table. Each output row represents one content block and carries entry context (`entry_id`, `entry_title`) alongside the block's position (`instance_order`), type metadata (`sub_field_type`, `sub_field_label`), and processed value (`value`). Relationship sub-fields are resolved, grid sub-fields are serialised as row arrays, and all types are routed through the same field-handler pipeline as Entries and Grid.
+
+```ee
+{exp:export:fluid
+    channel="blog"
+    field="page_builder"
+    format="csv"
+    output="download"
+    output:filename="page-builder-blocks.csv"
+}
+```
+
 ### Query (SQL)
 
 Export the result of any SQL query directly.
@@ -252,9 +266,11 @@ Third-party field types (e.g. Bloqs, Coilpack fields) can be supported by regist
 
 ## Streaming Architecture
 
-The Entries and Grid sources process data in configurable chunks (`chunk_size`, default 500 rows) and all four formats support streaming writes — meaning memory consumption stays constant regardless of how many rows are exported. A 1,000,000-row XLSX export uses the same peak memory as a 100-row one.
+The Entries, Grid, Fluid, and Members sources all process data in configurable chunks (`chunk_size`, default 500 rows) and all four formats support streaming writes — meaning memory consumption stays constant regardless of how many rows are exported. A 1,000,000-row XLSX export uses the same peak memory as a 100-row one.
 
-Non-streaming sources (Members, SQL) load all rows into memory before writing; these are suitable for datasets up to ~50k rows on typical shared hosting.
+Members also lazy-loads custom field definitions: if a site has no custom member fields the `member_data` JOIN is skipped entirely, keeping the query lean.
+
+The SQL source loads all rows into memory before writing and is suitable for datasets up to ~50k rows on typical shared hosting.
 
 ---
 

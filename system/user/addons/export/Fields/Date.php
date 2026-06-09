@@ -13,6 +13,6 @@ class Date extends AbstractField
 {
     public function process(mixed $raw_value, array $field_info, int $entry_id, array $context = []): mixed
     {
-        return (int) ($raw_value ?? 0);
+        return (int)($raw_value ?? 0);
     }
 }

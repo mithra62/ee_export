@@ -2,147 +2,261 @@
 
 namespace Mithra62\Export\Sources;
 
-use ExpressionEngine\Model\Member\Member as MemberModel;
+use CI_DB_result;
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
 
+/**
+ * Members source — exports EE member rows including custom member fields.
+ *
+ * Streaming is now supported. Members are fetched in configurable chunks
+ * (chunk_size, default 500) using raw CI DB queries so memory stays constant
+ * regardless of site size.
+ *
+ * Custom member fields are lazy-loaded:
+ *   - If no custom member fields exist the member_data JOIN is skipped entirely.
+ *   - Field definitions are loaded once in openStream() and cached for the
+ *     lifetime of the export, not re-fetched per row.
+ *   - Custom field values are routed through FieldsService using the same
+ *     handler pipeline as Entries, Grid, and Fluid sources.
+ *
+ * Filters available:
+ *   roles             pipe-separated primary role IDs
+ *   join_start        join date from (PHP-parseable date string)
+ *   join_end          join date to
+ *   last_login_start  last visit from
+ *   last_login_end    last visit to
+ *   limit             max members to export
+ *   offset            pagination offset
+ *   chunk_size        members per streaming chunk (default 500)
+ *   search:field      field-level search filter
+ */
 class Members extends AbstractSource
 {
+    // ── Streaming state ──────────────────────────────────────────────────────
+
+    protected int   $stream_offset     = 0;
+    protected int   $stream_chunk_size = 500;
 
     /**
-     * @return AbstractSource
-     * @throws NoDataException
+     * Custom member field definitions, keyed by m_field_id.
+     * Built once in openStream(); empty when no custom fields are defined.
+     *
+     * Each entry: {field_id, field_name, field_type, field_label, field_settings, column_key}
+     * where column_key is the literal DB column name (m_field_id_X).
+     *
+     * @var array<int, array>
      */
+    protected array $custom_fields     = [];
+
+    /** True only when at least one custom member field exists. */
+    protected bool  $has_custom_fields = false;
+
+    // ── AbstractSource contract ───────────────────────────────────────────────
+
     public function compile(): AbstractSource
     {
-        $members = ee('Model')
-            ->get('Member');
+        $this->openStream();
+        $rows = [];
+        while (true) {
+            $chunk = $this->nextChunk();
+            if (empty($chunk)) {
+                break;
+            }
+            foreach ($chunk as $row) {
+                $rows[] = $row;
+            }
+        }
+        $this->closeStream();
+
+        if (empty($rows)) {
+            throw new NoDataException("Nothing to export from your query");
+        }
+
+        $this->setExportData($rows);
+        return $this;
+    }
+
+    // ── Streaming interface ───────────────────────────────────────────────────
+
+    public function supportsStreaming(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Initialise stream state and lazy-load custom field definitions.
+     *
+     * Custom fields are loaded here rather than per-row so the MemberField
+     * ORM query runs exactly once. If no custom member fields are configured
+     * we skip the definition load and later skip the member_data JOIN entirely.
+     */
+    public function openStream(): void
+    {
+        $this->stream_offset     = (int) $this->getOption('offset', 0);
+        $this->stream_chunk_size = (int) $this->getOption('chunk_size', 500);
+
+        // Lazy-load: only pay for the MemberField query when custom fields exist
+        $raw_fields = ee('export:MemberService')->getFields();
+        if (!empty($raw_fields)) {
+            foreach ($raw_fields as $field) {
+                $settings = $field->m_field_settings ?? [];
+                if (is_string($settings)) {
+                    $settings = @unserialize($settings) ?: [];
+                }
+
+                $fid = (int) $field->m_field_id;
+                $this->custom_fields[$fid] = [
+                    'field_id'       => $fid,
+                    'field_name'     => $field->m_field_name,
+                    'field_type'     => $field->m_field_type,
+                    'field_label'    => $field->m_field_label,
+                    'field_settings' => is_array($settings) ? $settings : [],
+                    'column_key'     => 'm_field_id_' . $fid,
+                ];
+            }
+
+            $this->has_custom_fields = !empty($this->custom_fields);
+        }
+    }
+
+    public function nextChunk(): array
+    {
+        $limit = $this->stream_chunk_size;
+
+        if ($this->getOption('limit')) {
+            $hard_limit = (int) $this->getOption('limit') + (int) $this->getOption('offset', 0);
+            $remaining  = $hard_limit - $this->stream_offset;
+            if ($remaining <= 0) {
+                return [];
+            }
+            $limit = min($limit, $remaining);
+        }
+
+        // ── Build query ───────────────────────────────────────────────────────
+        //
+        // Always select all core member columns.
+        // When custom fields exist, select only the m_field_id_X columns from
+        // member_data (not member_id again) and LEFT JOIN the table.
+        // Skipping the JOIN when there are no custom fields avoids an unnecessary
+        // table scan on large installations.
+        //
+        $query = ee()->db->select('members.*')->from('members');
+
+        if ($this->has_custom_fields) {
+            foreach ($this->custom_fields as $field_info) {
+                $query->select('member_data.' . $field_info['column_key']);
+            }
+            $query->join('member_data', 'members.member_id = member_data.member_id', 'left');
+        }
+
+        // ── Filters ───────────────────────────────────────────────────────────
 
         if ($this->getOption('roles')) {
-            $members->filter('role_id', 'IN', $this->getOption('roles'));
+            $roles = $this->getOption('roles');
+            if (is_string($roles)) {
+                $roles = array_values(array_filter(array_map('trim', explode('|', $roles))));
+            }
+            if (!empty($roles)) {
+                $query->where_in('members.role_id', $roles);
+            }
         }
 
         if ($this->getOption('join_start') && $this->getOption('join_end')) {
-            $members->filter('join_date', '>=', strtotime($this->getOption('join_start')));
-            $members->filter('join_date', '<=', strtotime($this->getOption('join_end')));
+            $query->where('members.join_date >=', strtotime($this->getOption('join_start')));
+            $query->where('members.join_date <=', strtotime($this->getOption('join_end')));
         }
 
         if ($this->getOption('last_login_start') && $this->getOption('last_login_end')) {
-            $members->filter('last_visit', '>=', $this->getOption('last_login_start'));
-            $members->filter('last_visit', '<=', $this->getOption('last_login_end'));
+            $query->where('members.last_visit >=', $this->getOption('last_login_start'));
+            $query->where('members.last_visit <=', $this->getOption('last_login_end'));
         }
 
-        if ($this->getOption('search', [])) {
-            $map = $this->buildFieldMap($this->getOption('search'));
-            foreach ($map as $field => $search) {
-                $members->filter($field, $search);
-            }
+        $search = $this->getOption('search', []);
+        if (!empty($search)) {
+            $this->applySearchFilters($query, $search);
         }
 
-        if ($this->getOption('limit')) {
-            $members->limit($this->getOption('limit'));
+        // ── Execute ───────────────────────────────────────────────────────────
+
+        $result = $query->limit($limit, $this->stream_offset)->get();
+
+        if (!($result instanceof CI_DB_result) || $result->num_rows() === 0) {
+            return [];
         }
 
-        if ($members->count() > 0) {
-            $results = [];
-            foreach ($members->all() as $member) {
-                $results[] = $this->prepareData($member);
-            }
-
-            $this->setExportData($results);
-            return $this;
+        $rows = [];
+        foreach ($result->result_array() as $member_row) {
+            $rows[] = $this->buildRow($member_row);
         }
 
-        throw new NoDataException("Nothing to export from your query");
+        $this->stream_offset += count($rows);
+
+        return $rows;
     }
 
-    /**
-     * @param array $search
-     * @return array
-     */
-    protected function buildFieldMap(array $search): array
+    public function closeStream(): void
     {
-        $return = [];
-        $cols = ee('export:MemberService')->getColumns();
-        if ($cols) {
-            foreach ($cols as $col) {
-                if (array_key_exists($col, $search) && !empty($search[$col])) {
-                    $return[$col] = $search[$col];
-                }
-            }
-        }
-
-        $fields = ee('export:MemberService')->getFields();
-        if ($fields) {
-            foreach ($fields as $field) {
-                if (array_key_exists($field->m_field_name, $search)) {
-                    $return['m_field_id_' . $field->m_field_id] = $search[$field->m_field_name];
-                }
-            }
-        }
-
-        return $return;
     }
 
+    // ── Row assembly ──────────────────────────────────────────────────────────
+
     /**
-     * Build an export row from a Member model instance.
+     * Build an export row from a raw DB result array.
      *
-     * Standard member columns are passed through as-is (arrays are JSON-encoded).
-     * Custom member fields (m_field_id_X) are routed through FieldsService so
-     * the same field handlers used by the Entries source apply here too — date
-     * fields become timestamps, file fields become URLs, etc.
+     * Core member columns are included as-is (arrays JSON-encoded).
+     * Custom field columns (m_field_id_X) are skipped in the core pass and
+     * instead populated in a separate pass that routes each value through
+     * FieldsService, outputting under the human-readable field name.
+     *
+     * The m_field_ft_X "format" columns carried by the ORM are never present in
+     * raw query results so no filtering is needed.
      */
-    protected function prepareData(MemberModel $member): array
+    protected function buildRow(array $member_row): array
     {
         $return    = [];
-        $fields    = ee('export:MemberService')->getFields();
-        $member_id = (int) $member->member_id;
+        $member_id = (int) ($member_row['member_id'] ?? 0);
 
-        foreach ($member->toArray() as $key => $value) {
-            if (!str_starts_with($key, 'm_field_id_') && !str_starts_with($key, 'm_field_ft_')) {
-                // Standard member column — pass through; JSON-encode any array values
-                $return[$key] = is_array($value) ? json_encode($value) : $value;
-            } else {
-                // Custom member field — match to MemberField definition and process
-                foreach ($fields as $field) {
-                    if (str_starts_with($key, 'm_field_id_' . $field->m_field_id)) {
-                        $return[$field->m_field_name] = $this->processFieldValue(
-                            $value, $field, $member_id
-                        );
-                    }
-                }
+        // Core columns
+        foreach ($member_row as $key => $value) {
+            // Skip raw custom-field columns — handled below under readable names
+            if (str_starts_with($key, 'm_field_')) {
+                continue;
+            }
+            $return[$key] = is_array($value) ? json_encode($value) : $value;
+        }
+
+        // Custom member fields — processed through FieldsService
+        if ($this->has_custom_fields) {
+            foreach ($this->custom_fields as $field_info) {
+                $raw_value = $member_row[$field_info['column_key']] ?? null;
+                $return[$field_info['field_name']] = $this->processFieldValue(
+                    $raw_value,
+                    $field_info,
+                    $member_id
+                );
             }
         }
 
         return $this->cleanFields($return);
     }
 
+    // ── Field handler pipeline ────────────────────────────────────────────────
+
     /**
-     * Route a single member custom field value through the registered FieldsService
-     * handler for its field type, falling back to the raw value when none exists.
+     * Route a single custom member field value through the FieldsService handler
+     * for its field type, falling back to the raw value when none is registered.
      *
-     * The field_info shape matches the Entries source contract:
-     *   field_id, field_name, field_type, field_label, field_settings (decoded array)
+     * The field_info array already matches the AbstractField contract
+     * (field_id, field_name, field_type, field_label, field_settings) because it
+     * was pre-built from MemberField objects in openStream().
      *
-     * Context includes source_type = 'member' and member_id so third-party handlers
-     * can distinguish this call-site from an Entries or Grid context.
+     * Context includes source_type = 'member' and member_id so third-party
+     * handlers can distinguish this call-site from Entries, Grid, or Fluid.
      */
-    protected function processFieldValue(mixed $raw_value, object $field, int $member_id): mixed
+    protected function processFieldValue(mixed $raw_value, array $field_info, int $member_id): mixed
     {
-        $settings = $field->m_field_settings ?? [];
-        if (is_string($settings)) {
-            $settings = @unserialize($settings) ?: [];
-        }
-
-        $field_info = [
-            'field_id'       => (int) $field->m_field_id,
-            'field_name'     => $field->m_field_name,
-            'field_type'     => $field->m_field_type,
-            'field_label'    => $field->m_field_label,
-            'field_settings' => is_array($settings) ? $settings : [],
-        ];
-
-        $handler = ee('export:FieldsService')->getField($field->m_field_type);
+        $handler = ee('export:FieldsService')->getField($field_info['field_type']);
 
         if ($handler) {
             return $handler->process($raw_value, $field_info, $member_id, [
@@ -152,5 +266,38 @@ class Members extends AbstractSource
         }
 
         return $raw_value ?? '';
+    }
+
+    // ── Search filters ────────────────────────────────────────────────────────
+
+    /**
+     * Apply search:field_name filters to the active query builder instance.
+     *
+     * Core member columns are qualified with `members.` to avoid ambiguity
+     * when member_data is joined. Custom field searches are matched by field
+     * name and qualified with `member_data.`.
+     */
+    protected function applySearchFilters($query, array $search): void
+    {
+        $columns = ee('export:MemberService')->getColumns();
+
+        foreach ($search as $field_name => $value) {
+            if (empty($value)) {
+                continue;
+            }
+
+            if (isset($columns[$field_name])) {
+                // Standard member column
+                $query->where('members.' . $field_name, $value);
+            } elseif ($this->has_custom_fields) {
+                // Custom member field — look up by readable name
+                foreach ($this->custom_fields as $field_info) {
+                    if ($field_info['field_name'] === $field_name) {
+                        $query->where('member_data.' . $field_info['column_key'], $value);
+                        break;
+                    }
+                }
+            }
+        }
     }
 }

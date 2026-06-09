@@ -26,6 +26,7 @@
 11. [Extending — Modifiers](#11-extending--modifiers)
 12. [Extending — Field Handlers](#12-extending--field-handlers)
 13. [Field Handler Context Reference](#13-field-handler-context-reference)
+14. [Control Panel (EE 7.2+)](#14-control-panel-ee-72)
 
 ---
 
@@ -1228,3 +1229,193 @@ Grid:     $context['rel_data'][$row_id][$col_id][]     = $child_entry_id
 ```
 
 The structure is identical — only the scope of the outer key differs. `Fields\Relationship` uses `$entry_id` (the argument) as the outer key in both cases, which resolves correctly in both contexts because Grid passes `$row_id` as `$entry_id`.
+
+---
+
+## 14. Control Panel (EE 7.2+)
+
+Export ships with a native ExpressionEngine Control Panel available in EE 7.2 and later. The CP provides full CRUD management and one-click execution of saved export configurations — every option available through template tags is accessible through the form UI without writing any template code.
+
+### Requirements
+
+- ExpressionEngine 7.2 or later (uses the `ExpressionEngine\Service\Addon\Controllers\Mcp\AbstractRoute` routing paradigm)
+- The addon must be installed (or re-installed after upgrading from a version that lacked CP support) so the `exp_export_configurations` database table is created
+
+### Accessing the CP
+
+Navigate to **Add-Ons → Export** from the EE Control Panel. You must have the `can_access_addons` permission.
+
+### Saved Configurations
+
+Each saved configuration stores:
+
+| Field | Description |
+|-------|-------------|
+| Name | Human-readable label shown in the index table |
+| Source | Which data source to export (`entries`, `members`, `grid`, `fluid`, `sql`) |
+| Settings | All source parameters, format settings, output settings, column selection, and modifiers serialised as JSON |
+
+Configurations are site-aware — each EE site maintains its own list.
+
+### Index Page
+
+The index table lists all saved configurations for the current site. Each row shows the name, source, format, output type, and creation date alongside three toolbar actions:
+
+| Action | Behaviour |
+|--------|-----------|
+| **Run** | Executes the configuration immediately. `download` output streams the file to the browser; `local` output saves to the configured path and shows a success alert. |
+| **Edit** | Opens the edit form with all fields pre-populated from the stored settings. |
+| **Delete** | Deletes the configuration after confirmation; redirects to the index with an alert. |
+
+### Create / Edit Form
+
+The form is divided into sections that mirror the template tag parameter namespaces.
+
+#### Section 1 — Identity
+
+| Field | Input type | Required | Maps to |
+|-------|-----------|----------|---------|
+| Name | Text | ✅ | (stored separately; used for display only) |
+| Source | Select | ✅ | `source` param; controls which source-specific section is shown |
+
+#### Section 2 — Source Options
+
+Only the fields for the selected source are visible (the others are present but hidden and not submitted). All fields map to `source:*` parameters.
+
+**Entries**
+
+| Field | Input type | Maps to |
+|-------|-----------|---------|
+| Channel | Select | `source:channel` |
+| Status | Select (`open` / `closed` / `all`) | `source:status` |
+| Author ID | Short text | `source:author_id` |
+| Entry ID | Text (pipe-separated) | `source:entry_id` |
+| Limit | Short text | `source:limit` |
+| Offset | Short text | `source:offset` |
+| Chunk Size | Short text | `source:chunk_size` |
+| Relationship Fields | Text (pipe-separated) | `source:relationship_fields` |
+
+**Members**
+
+| Field | Input type | Maps to |
+|-------|-----------|---------|
+| Roles | Checkboxes | `source:roles` (stored pipe-separated) |
+| Join Start | Date (`YYYY-MM-DD`) | `source:join_start` |
+| Join End | Date (`YYYY-MM-DD`) | `source:join_end` |
+| Last Login Start | Date (`YYYY-MM-DD`) | `source:last_login_start` |
+| Last Login End | Date (`YYYY-MM-DD`) | `source:last_login_end` |
+| Limit | Short text | `source:limit` |
+| Offset | Short text | `source:offset` |
+| Chunk Size | Short text | `source:chunk_size` |
+
+> **Date fields:** Dates are stored as `YYYY-MM-DD` strings and accepted by `strtotime()` at run time, so they work identically to date strings passed directly in template tags.
+
+**Grid**
+
+Same fields as Entries plus:
+
+| Field | Input type | Maps to |
+|-------|-----------|---------|
+| Channel | Select | `source:channel` |
+| Grid Field | Select (AJAX-populated when channel changes) | `source:field` |
+
+**Fluid**
+
+Same fields as Entries plus:
+
+| Field | Input type | Maps to |
+|-------|-----------|---------|
+| Channel | Select | `source:channel` |
+| Fluid Field | Select (AJAX-populated when channel changes) | `source:field` |
+
+**SQL**
+
+| Field | Input type | Maps to |
+|-------|-----------|---------|
+| SQL Query | Textarea | `source:sql` |
+
+#### Section 3 — Column Selection
+
+Three mutually exclusive radio options control the `fields` / `exclude` parameters:
+
+| Radio | Behaviour |
+|-------|-----------|
+| **All columns** | `fields` and `exclude` are both empty; source returns every column |
+| **Include only (whitelist)** | An AJAX-loaded checkbox list appears; checked columns populate `fields` |
+| **Exclude (blacklist)** | An AJAX-loaded checkbox list appears; checked columns populate `exclude` |
+
+The available column list is fetched live from the server via the `ajax` route using the currently selected source and source parameters. Changing the source or channel triggers an automatic refresh.
+
+#### Section 4 — Format
+
+| Field | Input type | Maps to |
+|-------|-----------|---------|
+| Format | Select (`csv` / `json` / `xlsx` / `xml`) | `format` |
+
+Format-specific options appear below the select based on the chosen format.
+
+**CSV**
+
+| Field | Input type | Maps to |
+|-------|-----------|---------|
+| Separator | Short text (1 char) | `format:separator` |
+| Enclosure | Short text (1 char) | `format:enclosure` |
+| Escape | Short text (1 char) | `format:escape` |
+| Newline | Select (LF / CRLF / CR) | `format:newline` |
+
+**XLSX**
+
+| Field | Input type | Maps to |
+|-------|-----------|---------|
+| Bold column headers | Toggle | `format:bold_cols` |
+| Sheet name | Text | `format:sheet_name` |
+
+**XML**
+
+| Field | Input type | Required | Maps to |
+|-------|-----------|----------|---------|
+| Root element name | Text | ✅ | `format:root_name` |
+| Branch element name | Text | ✅ | `format:branch_name` |
+
+#### Section 5 — Output
+
+| Field | Input type | Maps to |
+|-------|-----------|---------|
+| Output | Select (`download` / `local`) | `output` |
+| Filename | Text | `output:filename` |
+| Path | Text (shown only when output = `local`) | `output:path` |
+
+#### Section 6 — Modifiers
+
+A dynamic table of column → modifier-chain pairs. Each row maps to a `modify:{column}="{chain}"` template tag parameter. Rows can be added or removed without a page reload. Modifier chain syntax is identical to template tags — e.g. `ee_date[%Y-%m-%d]|uc_first`.
+
+### Database Schema
+
+Saved configurations are stored in `exp_export_configurations`:
+
+```sql
+CREATE TABLE `exp_export_configurations` (
+    `id`         INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `site_id`    INT(10) UNSIGNED NOT NULL DEFAULT 1,
+    `name`       VARCHAR(255)     NOT NULL,
+    `source`     VARCHAR(50)      NOT NULL,
+    `settings`   MEDIUMTEXT,
+    `created_at` INT(10) UNSIGNED NOT NULL DEFAULT 0,
+    `updated_at` INT(10) UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    KEY `site_id` (`site_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+The `settings` column is a JSON object whose keys follow the same `source:*` / `format:*` / `output:*` / `modify:*` namespacing as template tag parameters. `fields` and `exclude` are stored as arrays.
+
+### CP Architecture (Developer Notes)
+
+The CP uses the EE 7.2+ addon routing paradigm:
+
+- **Gateway:** `mcp.export.php` — minimal class extending `ExpressionEngine\Service\Addon\Mcp`
+- **Routes:** `ControlPanel/Routes/` — one class per URL segment, auto-discovered via `Str::studly()`; all extend a shared `AbstractRoute` that enforces `can_access_addons`
+- **Views:** `views/index.php` and `views/form.php` — use `ee:_shared/table` and `ee:_shared/form` respectively; no custom HTML renderers
+- **Model:** `Models/ExportConfiguration` — standard EE Model with typed columns and JSON encode/decode helpers
+- **Service:** `Services/CpService` — registered as a singleton (`ee('export:CpService')`); provides channel lists, role lists, column introspection, settings ↔ POST conversion, and form section building
+- **AJAX endpoint:** `ControlPanel/Routes/Ajax.php` — handles `action=columns` (available export columns for a source config) and `action=fields` (Grid/Fluid field selects populated when a channel is chosen)

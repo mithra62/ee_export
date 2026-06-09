@@ -146,11 +146,55 @@ class Entries extends AbstractSource
             $grid_data[$field_id] = ee('export:EntryService')->batchGridData($field_id, $entry_ids);
         }
 
+        // Batch-load fluid data — replaces per-entry getFluidData() / getFluidFieldData() calls.
+        // Two passes: first fetch all fluid_field_data rows for the chunk, then batch-fetch
+        // sub-field values grouped by field_id to avoid N+1 inside FluidField::process().
+        $fluid_instances  = [];
+        $fluid_values     = [];
+        $fluid_grid_data  = [];
+        if ($this->fluid_field_ids) {
+            $fluid_instances = ee('export:EntryService')
+                ->batchFluidInstances($entry_ids, $this->fluid_field_ids);
+
+            // Segregate scalar vs grid sub-fields so we can batch each correctly
+            $scalar_data_ids = []; // [sub_field_id => [field_data_id, ...]]
+            $grid_data_ids   = []; // [sub_field_id => [fluid_instance_id, ...]]
+
+            foreach ($fluid_instances as $entry_fluid) {
+                foreach ($entry_fluid as $instances) {
+                    foreach ($instances as $inst) {
+                        $sub_field_id = (int) $inst['field_id'];
+                        $sub_type     = $this->channel_fields[$sub_field_id]['field_type'] ?? '';
+
+                        if ($sub_type === 'grid') {
+                            $grid_data_ids[$sub_field_id][] = (int) $inst['id'];
+                        } else {
+                            $scalar_data_ids[$sub_field_id][] = (int) $inst['field_data_id'];
+                        }
+                    }
+                }
+            }
+
+            foreach ($scalar_data_ids as $sub_field_id => $data_ids) {
+                $fluid_values[$sub_field_id] = ee('export:EntryService')
+                    ->batchFluidSubFieldValues($sub_field_id, array_unique($data_ids));
+            }
+
+            foreach ($grid_data_ids as $sub_field_id => $instance_ids) {
+                $fluid_grid_data[$sub_field_id] = ee('export:EntryService')
+                    ->batchFluidGridData($sub_field_id, array_unique($instance_ids));
+            }
+        }
+
         // Build rows
         $rows = [];
         foreach ($entry_rows as $entry) {
             $entry_id = (int)$entry['entry_id'];
-            $row = $this->buildRow($entry, $entry_id, $field_data, $cat_data, $rel_data, $rel_cache, $grid_data);
+            $row = $this->buildRow(
+                $entry, $entry_id, $field_data, $cat_data,
+                $rel_data, $rel_cache, $grid_data,
+                $fluid_instances, $fluid_values, $fluid_grid_data
+            );
             $rows[] = $this->cleanFields($row);
         }
 
@@ -174,29 +218,33 @@ class Entries extends AbstractSource
         array $cat_data,
         array $rel_data,
         array $rel_cache,
-        array $grid_data
-    ): array
-    {
+        array $grid_data,
+        array $fluid_instances = [],
+        array $fluid_values    = [],
+        array $fluid_grid_data = []
+    ): array {
         $row = [
-            'entry_id' => $entry['entry_id'],
-            'title' => $entry['title'],
-            'url_title' => $entry['url_title'],
-            'status' => $entry['status'],
-            'entry_date' => $entry['entry_date'],
+            'entry_id'        => $entry['entry_id'],
+            'title'           => $entry['title'],
+            'url_title'       => $entry['url_title'],
+            'status'          => $entry['status'],
+            'entry_date'      => $entry['entry_date'],
             'expiration_date' => $entry['expiration_date'],
-            'author_id' => $entry['author_id'],
-            'edit_date' => $entry['edit_date'],
-            'categories' => $cat_data[$entry_id] ?? '',
+            'author_id'       => $entry['author_id'],
+            'edit_date'       => $entry['edit_date'],
+            'categories'      => $cat_data[$entry_id] ?? '',
         ];
 
         $raw_fields = $field_data[$entry_id] ?? [];
 
         foreach ($this->channel_fields as $field_id => $field_info) {
-            $col = 'field_id_' . $field_id;
+            $col       = 'field_id_' . $field_id;
             $raw_value = $raw_fields[$col] ?? null;
 
             $row[$field_info['field_name']] = $this->processFieldValue(
-                $raw_value, $field_info, $entry_id, $rel_data, $rel_cache, $grid_data
+                $raw_value, $field_info, $entry_id,
+                $rel_data, $rel_cache, $grid_data,
+                $fluid_instances, $fluid_values, $fluid_grid_data
             );
         }
 
@@ -209,18 +257,23 @@ class Entries extends AbstractSource
         int   $entry_id,
         array $rel_data,
         array $rel_cache,
-        array $grid_data
-    ): mixed
-    {
+        array $grid_data,
+        array $fluid_instances = [],
+        array $fluid_values    = [],
+        array $fluid_grid_data = []
+    ): mixed {
         $field = ee('export:FieldsService')->getField($field_info['field_type']);
 
         if ($field) {
             return $field->process($raw_value, $field_info, $entry_id, [
-                'rel_data' => $rel_data,
-                'rel_cache' => $rel_cache,
-                'grid_data' => $grid_data,
-                'channel_fields' => $this->channel_fields,
-                'grid_columns' => $this->grid_columns,
+                'rel_data'        => $rel_data,
+                'rel_cache'       => $rel_cache,
+                'grid_data'       => $grid_data,
+                'channel_fields'  => $this->channel_fields,
+                'grid_columns'    => $this->grid_columns,
+                'fluid_instances' => $fluid_instances,
+                'fluid_values'    => $fluid_values,
+                'fluid_grid_data' => $fluid_grid_data,
             ]);
         }
 

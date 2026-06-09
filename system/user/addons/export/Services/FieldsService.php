@@ -15,6 +15,12 @@ class FieldsService extends AbstractService
     protected array $cache = [];
 
     /**
+     * Cached result of getAll() so provider scanning happens only once per request.
+     * @var array<string, class-string<AbstractField>>|null
+     */
+    protected ?array $all_cache = null;
+
+    /**
      * Return every registered field handler across all EE providers.
      *
      * Any add-on (including Export itself) can declare handlers in addon.setup.php:
@@ -31,6 +37,10 @@ class FieldsService extends AbstractService
      */
     public function getAll(): array
     {
+        if ($this->all_cache !== null) {
+            return $this->all_cache;
+        }
+
         $map = [];
         $internal = [];
 
@@ -46,7 +56,7 @@ class FieldsService extends AbstractService
         }
 
         // Built-in handlers form the baseline; third-party declarations override them.
-        return array_merge($internal, $map);
+        return $this->all_cache = array_merge($internal, $map);
     }
 
     /**

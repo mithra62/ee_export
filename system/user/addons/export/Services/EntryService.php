@@ -137,7 +137,7 @@ class EntryService extends AbstractService
                     $key = 'field_id_' . $row['field_id'];
                     $result = $query->row_array();
                     if (array_key_exists($key, $result)) {
-                        $return = $result[$key];
+                        $return = (string) ($result[$key] ?? '');
                         break;
                     }
                 }
@@ -640,6 +640,101 @@ class EntryService extends AbstractService
         $return = [];
         foreach ($raw as $entry_id => $names) {
             $return[$entry_id] = implode('|', $names);
+        }
+
+        return $return;
+    }
+
+    /**
+     * Batch-load all fluid_field_data rows for a set of entries and fluid field IDs.
+     * Returns [entry_id][fluid_field_id][] = instance row
+     * (each row includes: id, entry_id, fluid_field_id, field_id, field_data_id, order)
+     */
+    public function batchFluidInstances(array $entry_ids, array $fluid_field_ids): array
+    {
+        if (empty($entry_ids) || empty($fluid_field_ids)) {
+            return [];
+        }
+
+        $query = ee()->db
+            ->from('fluid_field_data')
+            ->where_in('entry_id', $entry_ids)
+            ->where_in('fluid_field_id', $fluid_field_ids)
+            ->order_by('entry_id')
+            ->order_by('fluid_field_id')
+            ->order_by('order', 'ASC')
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $return[(int) $row['entry_id']][(int) $row['fluid_field_id']][] = $row;
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * Batch-load sub-field values from channel_data_field_X for a set of data IDs.
+     * Returns [data_id => value]
+     */
+    public function batchFluidSubFieldValues(int $field_id, array $data_ids): array
+    {
+        if (empty($data_ids)) {
+            return [];
+        }
+
+        $table = 'channel_data_field_' . $field_id;
+        if (!ee()->db->table_exists($table)) {
+            return [];
+        }
+
+        $col   = 'field_id_' . $field_id;
+        $query = ee()->db
+            ->select('id, ' . $col)
+            ->from($table)
+            ->where_in('id', $data_ids)
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $return[(int) $row['id']] = $row[$col] ?? null;
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * Batch-load grid rows nested inside fluid field instances.
+     * Queries channel_grid_field_X using fluid_field_data_id (the fluid instance PK).
+     * Returns [fluid_instance_id][] = grid row array
+     */
+    public function batchFluidGridData(int $field_id, array $fluid_instance_ids): array
+    {
+        if (empty($fluid_instance_ids)) {
+            return [];
+        }
+
+        $table = 'channel_grid_field_' . $field_id;
+        if (!ee()->db->table_exists($table)) {
+            return [];
+        }
+
+        $query = ee()->db
+            ->from($table)
+            ->where_in('fluid_field_data_id', $fluid_instance_ids)
+            ->order_by('fluid_field_data_id')
+            ->order_by('row_order', 'ASC')
+            ->get();
+
+        $return = [];
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                $return[(int) $row['fluid_field_data_id']][] = $row;
+            }
         }
 
         return $return;

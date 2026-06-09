@@ -242,33 +242,6 @@ class EntryService extends AbstractService
     }
 
     /**
-     * @param string $market
-     * @param $channel_id
-     * @return array
-     */
-    public function getMarketChannelEntryIds(string $market, $channel_id): array
-    {
-        $return = [];
-        $cat_id = $this->getCatId($market, 1);
-        if ($cat_id) {
-            $where = ['cat_id' => $cat_id, 'channel_id' => $channel_id, 'status' => 'open'];
-            $query = ee()->db->select('channel_titles.entry_id')->from('category_posts')
-                ->where($where)
-                ->join('channel_titles', 'category_posts.entry_id = channel_titles.entry_id')
-                ->order_by('entry_id', 'DESC');
-
-            $query = $query->get();
-            if ($query instanceof CI_DB_result) {
-                foreach ($query->result_array() as $row) {
-                    $return[] = $row['entry_id'];
-                }
-            }
-        }
-
-        return $return;
-    }
-
-    /**
      * @param $entry_ids
      * @param array $types
      * @return array
@@ -379,17 +352,28 @@ class EntryService extends AbstractService
      */
     public function getChannelId(string $channel_name): int
     {
+        // Try by short name first
         $query = ee()->db->select('channel_id')
             ->from('channels')
-            ->group_start()
-                ->where('channel_name', $channel_name)
-                ->or_where('channel_id', (int) $channel_name)
-            ->group_end()
+            ->where('channel_name', $channel_name)
             ->limit(1)
             ->get();
 
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             return (int) $query->row('channel_id');
+        }
+
+        // Fall back to numeric ID
+        if (is_numeric($channel_name)) {
+            $query = ee()->db->select('channel_id')
+                ->from('channels')
+                ->where('channel_id', (int) $channel_name)
+                ->limit(1)
+                ->get();
+
+            if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+                return (int) $query->row('channel_id');
+            }
         }
 
         return 0;

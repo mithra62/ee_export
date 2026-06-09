@@ -69,27 +69,21 @@ abstract class AbstractSource extends AbstractPlugin
     }
 
     /**
+     * Remove any fields listed in the `fields` tag param from the row.
+     * When `fields` is not set the full row is returned unchanged, so new
+     * fields added to a channel are automatically included without any tag
+     * edits.
+     *
      * @param array $data
      * @return array
      */
     public function cleanFields(array $data): array
     {
-        if ($this->getOption('fields')) {
-            foreach ($data as $key => $value) {
-                if (!in_array($key, $this->getOption('fields'))) {
-                    unset($data[$key]);
-                }
+        $exclude = $this->getOption('fields', []);
+        if (!empty($exclude)) {
+            foreach ($exclude as $field) {
+                unset($data[$field]);
             }
-
-            //now we order 'em
-            $return = [];
-            foreach ($this->getOption('fields') as $field) {
-                if(isset($data[$field])) {
-                    $return[$field] = $data[$field];
-                }
-            }
-
-            $data = $return;
         }
 
         return $data;

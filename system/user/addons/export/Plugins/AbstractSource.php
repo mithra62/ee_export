@@ -69,8 +69,8 @@ abstract class AbstractSource extends AbstractPlugin
     }
 
     /**
-     * Remove any fields listed in the `fields` tag param from the row.
-     * When `fields` is not set the full row is returned unchanged, so new
+     * Remove any columns listed in the `exclude` tag param from the row.
+     * When `exclude` is not set the full row is returned unchanged, so new
      * fields added to a channel are automatically included without any tag
      * edits.
      *
@@ -79,7 +79,7 @@ abstract class AbstractSource extends AbstractPlugin
      */
     public function cleanFields(array $data): array
     {
-        $exclude = $this->getOption('fields', []);
+        $exclude = $this->getOption('exclude', []);
         if (!empty($exclude)) {
             foreach ($exclude as $field) {
                 unset($data[$field]);

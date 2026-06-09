@@ -142,7 +142,7 @@ abstract class AbstractTag extends AbstractRoute
             }
         }
 
-        $return['fields'] = $this->explodeParam('fields');
+        $return['exclude'] = $this->explodeParam('exclude');
         return $return;
     }
 

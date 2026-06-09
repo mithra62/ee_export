@@ -13,7 +13,7 @@ This document explains how to add custom Sources, Formats, Modifiers, Output des
   - [Class resolution](#class-resolution)
   - [Reading options inside a plugin](#reading-options-inside-a-plugin)
   - [Validation](#validation)
-  - [The `fields=` exclusion param](#the-fields-exclusion-param)
+  - [The `exclude` param](#the-exclude-param)
 - [1. Creating and Using Source Objects](#1-creating-and-using-source-objects)
   - [Contract](#contract)
   - [Inherited helpers](#inherited-helpers)
@@ -151,14 +151,14 @@ protected function getValidator(): Validator
 }
 ```
 
-### The `fields=` exclusion param
+### The `exclude` param
 
-Every source calls `$this->cleanFields($row)` before appending each row to the output. That method reads the `fields` tag param as a **pipe-separated exclusion list** — any column name listed is removed from the row. All other columns pass through unchanged.
+Every source calls `$this->cleanFields($row)` before appending each row to the output. That method reads the `exclude` tag param as a pipe-separated list — any column name listed is removed from the row. All other columns pass through unchanged.
 
 ```ee
 {exp:export:entries
     channel="blog"
-    fields="field_internal_notes|field_raw_html"
+    exclude="field_internal_notes|field_raw_html"
     format="csv"
     output="download"
     output:filename="blog.csv"
@@ -191,7 +191,7 @@ Either populate the export data and return `$this`, or throw `NoDataException` w
 |---|---|
 | `$this->getOption('key', $default)` | Read a source param |
 | `$this->setExportData(array $rows)` | Store the 2-D result array |
-| `$this->cleanFields(array $row)` | Remove columns listed in the `fields=` exclusion param |
+| `$this->cleanFields(array $row)` | Remove columns listed in the `exclude` param |
 
 ### Example — simple non-streaming `Orders` source
 
@@ -343,7 +343,7 @@ Template usage:
 ```ee
 {exp:export:orders
     status="pending"
-    fields="order_id|customer_email|total"
+    exclude="order_id|customer_email|total"
     format="csv"
     output="download"
     output:filename="orders.csv"

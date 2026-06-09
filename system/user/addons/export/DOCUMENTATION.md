@@ -103,7 +103,7 @@ Exports channel entry rows. Each row contains standard entry columns plus every 
 | `offset` | | `0` | Entry-level pagination offset |
 | `chunk_size` | | `500` | Entries processed per streaming chunk |
 | `relationship_fields` | | `title` | Pipe-separated fields to pull from related entries |
-| `fields` | | — | Pipe-separated column names to **exclude** from output |
+| `exclude` | | — | Pipe-separated column names to **exclude** from output |
 
 #### Standard columns in every row
 
@@ -172,7 +172,7 @@ All custom channel fields follow, keyed by `field_name`.
 {!-- Exclude sensitive fields --}
 {exp:export:entries
     channel="members_channel"
-    fields="field_ssn|field_dob"
+    exclude="field_ssn|field_dob"
     format="csv"
     output="download"
     output:filename="export.csv"
@@ -206,7 +206,7 @@ Exports member rows. Standard member columns are included alongside any custom m
 | `last_login_end` | | — | Filter last login to |
 | `limit` | | — | Maximum number of members to export |
 | `search:field_name` | | — | Filter by any member field value (see below) |
-| `fields` | | — | Pipe-separated column names to **exclude** |
+| `exclude` | | — | Pipe-separated column names to **exclude** |
 
 #### Field-level search filters
 
@@ -245,7 +245,7 @@ Prefix any member column or custom field name with `search:` to filter:
 
 {!-- Exclude password hash and private fields --}
 {exp:export:members
-    fields="password|salt|m_field_private_notes"
+    exclude="password|salt|m_field_private_notes"
     format="csv"
     output="download"
     output:filename="members-safe.csv"
@@ -283,7 +283,7 @@ Exports EE Grid field rows as a flat tabular dataset. Each exported row represen
 | `offset` | | `0` | Entry-level pagination offset |
 | `chunk_size` | | `500` | Entries per streaming chunk |
 | `relationship_fields` | | `title` | Fields to pull from relationship-column targets |
-| `fields` | | — | Pipe-separated column names to **exclude** |
+| `exclude` | | — | Pipe-separated column names to **exclude** |
 
 #### Output shape
 
@@ -351,7 +351,7 @@ Exports the result of a raw SQL query. Column names in the query result become t
 | `sql` | ✅ | — | Full SQL query string |
 | `format` | ✅ | — | `csv`, `json`, `xlsx`, `xml` |
 | `output` | ✅ | — | `download`, `local` |
-| `fields` | | — | Pipe-separated column names to **exclude** |
+| `exclude` | | — | Pipe-separated column names to **exclude** |
 
 > **Note:** The SQL query runs with the database user configured for your EE installation. Validate and sanitise any user-supplied values before interpolating them into the query string.
 
@@ -508,7 +508,7 @@ These parameters are available on all tags.
 
 | Parameter | Description |
 |-----------|-------------|
-| `fields="col_a\|col_b"` | Pipe-separated list of column names to **exclude** from every output row. All other columns are included automatically. |
+| `exclude="col_a\|col_b"` | Pipe-separated list of column names to **exclude** from every output row. All other columns are included automatically. |
 | `modify:col="modifier"` | Apply one or more modifiers to a column (see §6). |
 
 ---

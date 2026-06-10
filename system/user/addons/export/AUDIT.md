@@ -72,10 +72,10 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### H-2 — `Output/Local.php` path traversal via filename option
+### H-2 — `Output/Local.php` path traversal via filename option ✅
 
 - **File:** `Output/Local.php::process()` line ~24
-- **Status:** Open
+- **Status:** Resolved — `basename()` applied to filename before path construction
 - **Description:** The destination path is constructed as `rtrim($path, '/\\') . DIRECTORY_SEPARATOR . $this->getOption('filename')`. The `dirExists`/`dirWritable` validators only check the *directory* component. The filename itself is never sanitised. A stored filename of `../../config/database.php` would write the export file two directories above the approved path, potentially overwriting arbitrary server files.
 - **Fix:** Apply `basename()` to strip any directory components from the filename before building the path:
   ```php
@@ -343,7 +343,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | C-1 | Critical | Security — SQL tag permission gate | Open |
 | C-2 | Critical | Resource leak — streaming temp files | ✅ Resolved |
 | H-1 | High | Bug — XLSX bold header | Open |
-| H-2 | High | Security — Local output path traversal | Open |
+| H-2 | High | Security — Local output path traversal | ✅ Resolved |
 | H-3 | High | Security — SQL injection via relationship_fields | Open |
 | H-4 | High | Bug — MemberService hardcoded table prefix | Open |
 | H-5 | High | Bug — Entries missing documented columns | Open |

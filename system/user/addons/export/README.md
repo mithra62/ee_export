@@ -1,8 +1,8 @@
 # Export for ExpressionEngine
 
-A flexible, streaming-capable data export addon for ExpressionEngine. Export channel entries, members, grid field rows, or the results of any SQL query to CSV, JSON, XLSX, or XML — and deliver the file as a browser download or save it to the server filesystem.
+You have data in ExpressionEngine. Someone wants a spreadsheet. These two facts are going to be reconciled one way or another, with a custom controller, a for loop, and three hours you'll never get back, or with a template tag. Export is the template tag option.
 
-Every layer of the pipeline is independently extensible. Third-party addons can ship their own sources, formats, outputs, modifiers, and field handlers with a single `addon.setup.php` declaration and zero changes to Export's codebase.
+It handles channel entries, members, Grid rows, Fluid blocks, and raw SQL queries; outputs CSV, JSON, XLSX, or XML; and delivers the result as a browser download or drops it on the server filesystem. Every layer of the pipeline is a named plugin that any installed EE addon can replace or extend without touching Export's source code.
 
 ---
 
@@ -41,7 +41,7 @@ Every export is triggered by a template tag. At minimum you need a **source**, a
 }
 ```
 
-Calling this tag from a template URL immediately streams a CSV download to the browser.
+Drop that tag in any EE template, hit the URL, and the browser receives a CSV. That's the whole surface area for the simple case.
 
 The `templates/` directory contains ready-to-use example templates covering every tag and the most common parameter combinations. Copy one into your EE templates directory, adjust the channel name and filename, and you're done.
 
@@ -220,7 +220,7 @@ The `fields` param also controls column order — the output columns appear in t
 
 ## Extending
 
-Export is built around a factory + strategy pattern. Every layer is a named plugin resolved at runtime, and any installed EE addon can register its own implementations via `addon.setup.php` — no changes to Export's source code required.
+Export is built around a factory + strategy pattern. Every layer is a named plugin resolved at runtime, and any installed EE addon can register its own implementations via `addon.setup.php`; no changes to Export's source code required.
 
 ```php
 // your_addon/addon.setup.php
@@ -272,7 +272,7 @@ Export ships with a native Control Panel. Navigate to **Add-Ons → Export** to 
 
 - All source, format, output, column selection, and modifier options are available through the form UI.
 - Source-specific and format-specific field groups appear and hide automatically as you change the Source and Format selects.
-- **Inline validation.** Driver-level validation rules (channel exists, XML element names required, local path writable, etc.) surface as inline fieldset errors — not hard error pages.
+- **Inline validation.** Driver-level validation rules (channel exists, XML element names required, local path writable, etc.) surface as inline fieldset errors, not hard error pages.
 - **Delete requires confirmation.** The Delete action shows a confirmation toggle before removing anything. Delete is restricted to Super Admins.
 - **SQL source restricted to Super Admins.** Template tags are unaffected.
 
@@ -282,7 +282,7 @@ See §14 of [DOCUMENTATION.md](DOCUMENTATION.md) for a complete field reference 
 
 ## Streaming Architecture
 
-The Entries, Grid, Fluid, and Members sources all process data in configurable chunks (`chunk_size`, default 500 rows) and all four formats support streaming writes — meaning memory consumption stays constant regardless of how many rows are exported. A 1,000,000-row XLSX export uses the same peak memory as a 100-row one.
+The Entries, Grid, Fluid, and Members sources all process data in configurable chunks (`chunk_size`, default 500 rows) and all four formats support streaming writes; memory consumption stays constant regardless of how many rows are exported. A 1,000,000-row XLSX export uses the same peak memory as a 100-row one.
 
 Members also lazy-loads custom field definitions: if a site has no custom member fields the `member_data` JOIN is skipped entirely, keeping the query lean.
 

@@ -42,7 +42,7 @@
 
 ## 1. Overview
 
-Export is an ExpressionEngine addon that exports data from multiple **sources** (channel entries, members, grid fields, raw SQL) through multiple **formats** (CSV, JSON, XLSX, XML) to multiple **destinations** (browser download, local filesystem). Each layer is independently extensible via a factory + strategy pattern, and any installed EE addon can register custom field handlers, sources, formats, modifiers, and outputs without modifying the Export codebase.
+Export routes each tag call through a five-stage pipeline: source fetches the data, format writes it, output delivers it, modifiers post-process column values, and field handlers translate complex EE field types into something a spreadsheet can hold. Each stage is a named plugin. Any installed EE addon can swap in its own implementation for any stage without touching Export's codebase.
 
 ---
 
@@ -68,7 +68,7 @@ ExportService::build()
 output->process(path)           →  download / copy / etc.
 ```
 
-**Streaming sources** (Entries, Grid, Fluid, Members) process data in configurable chunks so memory stays constant regardless of dataset size. Members also lazy-loads custom field definitions — the `member_data` JOIN is skipped entirely when no custom member fields are configured.  
+**Streaming sources** (Entries, Grid, Fluid, Members) process data in configurable chunks so memory stays constant regardless of dataset size. Members also lazy-loads custom field definitions; the `member_data` JOIN is skipped entirely when no custom member fields are configured.  
 **Non-streaming sources** (SQL) load all rows into memory before writing.
 
 ### Param namespacing
@@ -100,7 +100,7 @@ Tag parameters are routed by prefix:
 
 ### 3.1 Entries
 
-Exports channel entry rows. Each row contains standard entry columns plus every custom field assigned to the channel. Streams in configurable chunks for memory efficiency.
+Exports channel entry rows: standard columns plus every custom field assigned to the channel. Complex fields (Grid, Relationship, Fluid) come out as JSON-encoded strings in flat formats like CSV and XLSX, and as native nested structures in JSON and XML. The whole thing streams in chunks, so a 500,000-entry export uses roughly the same memory as a 50-entry one.
 
 ```ee
 {exp:export:entries
@@ -206,7 +206,7 @@ All custom channel fields follow, keyed by `field_name`.
 
 ### 3.2 Members
 
-Exports member rows in streaming chunks. Standard member columns are included alongside any custom member fields, which are routed through the same FieldsService handler pipeline as Entries, Grid, and Fluid. Custom field definitions are lazy-loaded — if no custom member fields exist the `member_data` join is skipped entirely.
+Exports member rows in streaming chunks. Standard member columns are included alongside any custom member fields, which are routed through the same FieldsService handler pipeline as Entries, Grid, and Fluid. Custom field definitions are lazy-loaded; if no custom member fields exist the `member_data` join is skipped entirely.
 
 ```ee
 {exp:export:members
@@ -282,7 +282,7 @@ Prefix any member column or custom field name with `search:` to filter:
 
 ### 3.3 Grid
 
-Exports EE Grid field rows as a flat tabular dataset. Each exported row represents one grid row and carries entry-level context columns alongside all grid column values. Streams in chunks.
+Exports EE Grid field rows as a flat tabular dataset. Each output row carries entry-level context (`entry_id`, `entry_title`, `row_order`) alongside the grid column values. Streams in chunks. `limit` controls entries processed, not grid rows; a channel with 100 entries and 5 rows each produces up to 500 output rows.
 
 ```ee
 {exp:export:grid
@@ -360,13 +360,13 @@ entry_id | entry_title | row_order | <col_name_1> | <col_name_2> | ...
 
 ### 3.4 Fluid
 
-Exports EE Fluid field instances as a flat tabular dataset. Each exported row represents one content block (fluid instance) and carries entry-level context alongside the block's metadata and processed value. Streams in chunks.
+Exports EE Fluid field instances as a flat tabular dataset. Each output row represents one content block and carries entry-level context alongside the block's metadata and processed value. Streams in chunks. Like Grid, `limit` controls entries processed; one entry with five blocks produces five output rows.
 
 All sub-field types are routed through the FieldsService handler pipeline:
-- **Relationship sub-fields** — resolved via the `relationships` table (EE stores fluid relationship values keyed by `fluid_field_data_id`, not in `channel_data_field_X`)
-- **Grid sub-fields** — resolved via `Fields/Grid`, including relationship columns nested within the grid
-- **Date, File, and all other registered types** — routed through their respective field handlers
-- **Unregistered types** — raw stored value
+- **Relationship sub-fields:** resolved via the `relationships` table (EE stores fluid relationship values keyed by `fluid_field_data_id`, not in `channel_data_field_X`)
+- **Grid sub-fields:** resolved via `Fields/Grid`, including relationship columns nested within the grid
+- **Date, File, and all other registered types:** routed through their respective field handlers
+- **Unregistered types:** raw stored value
 
 ```ee
 {exp:export:fluid
@@ -445,7 +445,7 @@ entry_id | entry_title  | instance_order | sub_field_id | sub_field_type | sub_f
 
 ### 3.5 Query (SQL)
 
-Exports the result of a raw SQL query. Column names in the query result become the export column headers.
+Hand Export a SELECT statement and it turns the result set into whatever format you've specified, column names and all. It's the escape hatch for data that doesn't fit any of the structured sources; it also bypasses the field-handler pipeline entirely, so what you SELECT is exactly what you get, unprocessed.
 
 ```ee
 {exp:export:query
@@ -548,7 +548,7 @@ modify:column_name="modifier_name[param1][param2]"
 modify:column_name="modifier_a|modifier_b[param]"
 ```
 
-Modifiers chain left to right — the output of each is the input to the next.
+Modifiers chain left to right; the output of each is the input to the next. Order matters: `ee_date[%Y-%m-%d]|uc_first` formats the timestamp first and then title-cases the result, which will produce unexpected output on a date string. Pipe with intent.
 
 ### Built-in modifiers
 
@@ -1361,7 +1361,7 @@ The structure is identical — only the scope of the outer key differs. `Fields\
 
 ## 14. Control Panel
 
-Export ships with a native ExpressionEngine Control Panel. The CP provides full CRUD management and one-click execution of saved export configurations — every option available through template tags is accessible through the form UI without writing any template code.
+Export ships with a native ExpressionEngine Control Panel. The CP provides full CRUD management and one-click execution of saved export configurations; every option available through template tags is accessible through the form UI without writing any template code.
 
 ### Requirements
 

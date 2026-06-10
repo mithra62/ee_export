@@ -1,12 +1,14 @@
 # Extending Export
 
-Export's plugin system lets any installed ExpressionEngine add-on register custom Sources, Formats, Modifiers, Output destinations, and Field Handlers — without modifying Export's own source code.
+Export's plugin system lets any installed ExpressionEngine add-on register custom Sources, Formats, Modifiers, Output destinations, and Field Handlers. No changes to Export's own source code. No hooks. Just a key in `addon.setup.php` and a class that follows the contract.
 
 > **Extension requires a standalone EE add-on.** You cannot extend Export by editing its files directly. All custom plugin code, companion template tags, and `addon.setup.php` declarations must live in your own separately-installed EE add-on.
 
 ---
 
 ## Prerequisites
+
+Extension means writing a separate EE add-on, not dropping a file into Export's directory. A real addon with its own namespace, its own `addon.setup.php`, and its own autoloading. The checklist below is the minimum bar to get started.
 
 - ExpressionEngine with Export installed and enabled (see [System Requirements](README.md#system-requirements))
 - Basic EE add-on development: `addon.setup.php`, PSR-4 autoloading, PHP 8.0+
@@ -63,7 +65,7 @@ Export's plugin system lets any installed ExpressionEngine add-on register custo
 
 ## §1 Quickstart: Your First Extension Add-on
 
-This section walks through a complete, minimal add-on that registers a custom Orders source and exposes it via a companion template tag. All subsequent sections use the same `store_export` add-on as their example context.
+Everything in this document references the same fictional `store_export` add-on. Walk through this section once and the examples will be self-evident; skim it and you'll spend the rest of the document interpolating.
 
 ### What we'll build
 
@@ -238,6 +240,8 @@ Any subset of layers may be declared — omit keys for layers your add-on does n
 
 ### How discovery works
 
+The discovery mechanism is worth understanding because it determines load order and what "override" actually means.
+
 `AbstractService::getProviderMap(string $layer)` scans all installed add-ons via `ee('App')->getProviders()`, collects every `export.$layer` map, and merges them. Export's own built-in declarations form the baseline; third-party declarations are merged afterward and can override built-ins when needed. The result is cached statically so the scan runs at most once per PHP request per layer.
 
 ### Override precedence
@@ -256,7 +260,7 @@ For Sources, Formats, Outputs, and Modifiers, classes placed directly in the `Mi
 
 ### Companion tag routing
 
-EE routes `{exp:your_addon:foo}` to `Tags\Foo::process()` in your add-on's namespace. Add a tag class to `Tags/` extending `Mithra62\Export\Tags\AbstractTag`, set up params in `process()`, and call `$this->compile($params)`. No additional registration is required — EE discovers the tag class automatically.
+EE routes `{exp:your_addon:foo}` to `Tags\Foo::process()` in your add-on's namespace. Add a tag class to `Tags/` extending `Mithra62\Export\Tags\AbstractTag`, set up params in `process()`, and call `$this->compile($params)`. No additional registration is required; EE discovers the tag class automatically.
 
 **Custom sources always need a companion tag.** The built-in Export tags (`{exp:export:entries}`, `{exp:export:members}`, etc.) hardcode their own source key in PHP. There is no template-level `source=` override. To expose a custom source, your add-on must provide its own tag class that sets `$params['source'] = 'your_source_key'` before calling `$this->compile()`.
 
@@ -1125,7 +1129,7 @@ Fluid:    $context['rel_data'][$instance_id][$field_id][] = $child_entry_id
 
 ## §10 Using Third-Party Plugins with Built-In Tags
 
-Once a third-party add-on registers custom formats, outputs, or modifiers, those keys are immediately available as param values in **any** Export template tag — including the built-in first-party tags. No additional wiring is needed.
+Once a third-party add-on registers custom formats, outputs, or modifiers, those keys are immediately available as param values in **any** Export template tag, including the built-in first-party tags. No additional wiring is needed. Register once; use anywhere.
 
 ### Custom format with a built-in tag
 

@@ -37,7 +37,7 @@ class FieldsService extends AbstractService
             return $this->cache[$field_type];
         }
 
-        $map   = $this->getAll();
+        $map = $this->getAll();
         $class = $map[$field_type] ?? null;
 
         if (!$class || !class_exists($class)) {

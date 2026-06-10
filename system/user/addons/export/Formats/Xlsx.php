@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Formats;
 
 use Mithra62\Export\Plugins\AbstractFormat;
@@ -21,16 +22,19 @@ class Xlsx extends AbstractFormat
         return $this->finalizeFile();
     }
 
-    public function supportsStreaming(): bool { return true; }
+    public function supportsStreaming(): bool
+    {
+        return true;
+    }
 
     public function openFile(array $first_row = []): void
     {
         $this->stream_path = $this->getCacheDirPath() . $this->getCacheFilename() . '.xlsx';
-        $this->writer      = new Writer(new Options());
+        $this->writer = new Writer(new Options());
         $this->writer->openToFile($this->stream_path);
 
         if (!empty($first_row)) {
-            $bold  = in_array($this->getOption('bold_cols'), [true, 'y', '1', 1], true);
+            $bold = in_array($this->getOption('bold_cols'), [true, 'y', '1', 1], true);
             $style = $bold ? (new Style())->setFontBold() : new Style();
 
             $this->writer->addRow(Row::fromValues(array_keys($first_row), $style));
@@ -54,7 +58,7 @@ class Xlsx extends AbstractFormat
             return empty($value) ? '' : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
 
-        return (string) ($value ?? '');
+        return (string)($value ?? '');
     }
 
     public function finalizeFile(): string

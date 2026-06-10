@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Sources;
 
 use CI_DB_result;
@@ -23,7 +24,7 @@ class Sql extends AbstractSource
     public function compile(): AbstractSource
     {
         $query = ee()->db->query($this->getOption('query'));
-        if($query instanceof CI_DB_result && $query->num_rows() > 0) {
+        if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             $this->setExportData($query->result_array());
             return $this;
         }
@@ -45,7 +46,7 @@ class Sql extends AbstractSource
             $clean = trim($clean);
 
             // Must begin with SELECT
-            if (! preg_match('/^select\s/i', $clean)) {
+            if (!preg_match('/^select\s/i', $clean)) {
                 return 'query must be a SELECT statement';
             }
 
@@ -57,7 +58,7 @@ class Sql extends AbstractSource
             // Belt-and-suspenders: block destructive keywords as whole words so a
             // comment-stripped payload like "SELECT 1 DROP TABLE foo" is rejected.
             $blocked = ['insert', 'update', 'delete', 'drop', 'truncate', 'alter',
-                        'create', 'replace', 'call', 'exec'];
+                'create', 'replace', 'call', 'exec'];
             foreach ($blocked as $kw) {
                 if (preg_match('/\b' . $kw . '\b/i', $clean)) {
                     return 'query contains disallowed keyword: ' . strtoupper($kw);

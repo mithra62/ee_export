@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Formats;
 
 use Mithra62\Export\Plugins\AbstractFormat;
@@ -17,13 +18,16 @@ class Json extends AbstractFormat
         return $this->finalizeFile();
     }
 
-    public function supportsStreaming(): bool { return true; }
+    public function supportsStreaming(): bool
+    {
+        return true;
+    }
 
     public function openFile(array $first_row = []): void
     {
         $this->stream_path = $this->getCacheDirPath() . $this->getCacheFilename() . '.json';
-        $this->fp          = fopen($this->stream_path, 'w');
-        $this->first_row   = true;
+        $this->fp = fopen($this->stream_path, 'w');
+        $this->first_row = true;
 
         if ($this->fp === false) {
             throw new \RuntimeException(

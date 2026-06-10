@@ -17,10 +17,10 @@ use ExpressionEngine\Service\Model\Model;
 class ExportConfiguration extends Model
 {
     protected static $_primary_key = 'id';
-    protected static $_table_name  = 'export_configurations';
+    protected static $_table_name = 'export_configurations';
 
     protected static $_typed_columns = [
-        'site_id'    => 'int',
+        'site_id' => 'int',
         'created_at' => 'int',
         'updated_at' => 'int',
     ];

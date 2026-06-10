@@ -210,7 +210,7 @@ class ExportService extends AbstractService
 
     protected function buildStreaming(\Mithra62\Export\Plugins\AbstractSource $source): void
     {
-        $format    = $this->getFormats()->getFormat();
+        $format = $this->getFormats()->getFormat();
         $modifiers = $this->getModifiers();
 
         // $path is set only after finalizeFile() returns successfully.

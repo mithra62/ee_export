@@ -120,7 +120,7 @@ class Entries extends AbstractSource
             $query->where('author_id', (int)$this->getOption('author_id'));
         }
 
-        $entry_id_filter = array_filter(array_map('intval', explode('|', (string) $this->getOption('entry_id', ''))));
+        $entry_id_filter = array_filter(array_map('intval', explode('|', (string)$this->getOption('entry_id', ''))));
         if (count($entry_id_filter) === 1) {
             $query->where('entry_id', reset($entry_id_filter));
         } elseif (count($entry_id_filter) > 1) {
@@ -231,7 +231,7 @@ class Entries extends AbstractSource
 
     protected function buildRow(
         array $entry,
-        int $entry_id,
+        int   $entry_id,
         array $field_data,
         array $cat_data,
         array $rel_data,
@@ -245,8 +245,8 @@ class Entries extends AbstractSource
         // Spread all channel_titles columns fetched by nextChunk() so the row
         // always contains exactly the columns the SELECT returns.  categories is
         // appended after so it follows the core columns in default output order.
-        $row                = $entry;
-        $row['categories']  = $cat_data[$entry_id] ?? '';
+        $row = $entry;
+        $row['categories'] = $cat_data[$entry_id] ?? '';
 
         $raw_fields = $field_data[$entry_id] ?? [];
 
@@ -267,7 +267,7 @@ class Entries extends AbstractSource
     protected function processFieldValue(
         mixed $raw_value,
         array $field_info,
-        int $entry_id,
+        int   $entry_id,
         array $rel_data,
         array $rel_cache,
         array $grid_data,

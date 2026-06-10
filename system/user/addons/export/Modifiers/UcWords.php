@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Modifiers;
 
 use Mithra62\Export\Plugins\AbstractModifier;

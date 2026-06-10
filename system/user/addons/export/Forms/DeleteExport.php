@@ -16,8 +16,8 @@ class DeleteExport extends AbstractExportForm
 
         $form->getGroup('export_delete_form_heading')
             ->getFieldSet('export_delete_confirm')
-                ->setDesc('export_delete_confirm_desc')
-                ->getField('confirm', 'yes_no');
+            ->setDesc('export_delete_confirm_desc')
+            ->getField('confirm', 'yes_no');
 
         return $form->toArray();
     }

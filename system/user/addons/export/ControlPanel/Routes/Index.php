@@ -11,7 +11,7 @@ use ExpressionEngine\Library\CP\Table;
  */
 class Index extends AbstractRoute
 {
-    protected $route_path    = 'index';
+    protected $route_path = 'index';
     protected $cp_page_title = 'export_cp_heading';
 
     public function process($id = false)
@@ -21,25 +21,25 @@ class Index extends AbstractRoute
         // ── Load all configs for this site ──────────────────────────────────
         $configs = ee('Model')
             ->get('export:ExportConfiguration')
-            ->filter('site_id', (int) ee()->config->item('site_id'))
+            ->filter('site_id', (int)ee()->config->item('site_id'))
             ->order('name', 'asc')
             ->all();
 
         // ── Build table ─────────────────────────────────────────────────────
         $table = ee('CP/Table', [
-            'lang_cols'  => true,
-            'reorder'    => false,
-            'sortable'   => false,
-            'class'      => 'export-configs',
+            'lang_cols' => true,
+            'reorder' => false,
+            'sortable' => false,
+            'class' => 'export-configs',
         ]);
 
         $table->setColumns([
-            'export_col_name'    => ['sort' => false],
-            'export_col_source'  => ['sort' => false],
-            'export_col_format'  => ['sort' => false],
-            'export_col_output'  => ['sort' => false],
+            'export_col_name' => ['sort' => false],
+            'export_col_source' => ['sort' => false],
+            'export_col_format' => ['sort' => false],
+            'export_col_output' => ['sort' => false],
             'export_col_created' => ['sort' => false],
-            'manage'             => ['type' => Table::COL_TOOLBAR],
+            'manage' => ['type' => Table::COL_TOOLBAR],
         ]);
 
         $table->setNoResultsText(lang('export_no_configs'), lang('export_create_new'), $this->url('create'));
@@ -56,15 +56,15 @@ class Index extends AbstractRoute
                 [
                     'toolbar_items' => [
                         'download' => [
-                            'href'  => $this->url('run/' . $config->id),
+                            'href' => $this->url('run/' . $config->id),
                             'title' => lang('export_run'),
                         ],
                         'edit' => [
-                            'href'  => $this->url('edit/' . $config->id),
+                            'href' => $this->url('edit/' . $config->id),
                             'title' => lang('export_edit'),
                         ],
                         'remove' => [
-                            'href'  => $this->url('delete/' . $config->id),
+                            'href' => $this->url('delete/' . $config->id),
                             'title' => lang('export_delete'),
                         ],
                     ],
@@ -77,7 +77,7 @@ class Index extends AbstractRoute
         $table_url = ee('CP/URL')->make($this->base_url . '/index');
 
         $vars = [
-            'table'      => $table->viewData($table_url),
+            'table' => $table->viewData($table_url),
             'create_url' => $this->url('create'),
         ];
 

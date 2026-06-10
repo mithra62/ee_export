@@ -26,7 +26,7 @@ class OutputService extends AbstractService
         $name = $params['output'];
 
         // Provider map takes precedence; namespace resolution is the fallback.
-        $map   = $this->getProviderMap('outputs');
+        $map = $this->getProviderMap('outputs');
         $class = $map[$name] ?? ("\\Mithra62\\Export\\Output\\" . Str::studly($name));
 
         if (class_exists($class)) {

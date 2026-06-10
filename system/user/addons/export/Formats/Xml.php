@@ -9,7 +9,7 @@ use Mithra62\Export\Services\XmlService;
 class Xml extends AbstractFormat
 {
     protected array $rules = [
-        'root_name'   => 'required',
+        'root_name' => 'required',
         'branch_name' => 'required',
     ];
 
@@ -23,12 +23,15 @@ class Xml extends AbstractFormat
         return $this->finalizeFile();
     }
 
-    public function supportsStreaming(): bool { return true; }
+    public function supportsStreaming(): bool
+    {
+        return true;
+    }
 
     public function openFile(array $first_row = []): void
     {
         $this->stream_path = $this->getCacheDirPath() . $this->getCacheFilename() . '.xml';
-        $this->xml         = new XmlService();
+        $this->xml = new XmlService();
         $this->xml->setRootName($this->getOption('root_name'));
         $this->xml->initiateFile($this->stream_path);
     }

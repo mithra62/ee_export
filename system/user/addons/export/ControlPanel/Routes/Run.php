@@ -15,18 +15,18 @@ namespace Mithra62\Export\ControlPanel\Routes;
  */
 class Run extends AbstractRoute
 {
-    protected $route_path    = 'run';
+    protected $route_path = 'run';
     protected $cp_page_title = 'export_run_heading';
 
     public function process($id = false)
     {
         $config = ee('Model')
             ->get('export:ExportConfiguration')
-            ->filter('id', (int) $id)
-            ->filter('site_id', (int) ee()->config->item('site_id'))
+            ->filter('id', (int)$id)
+            ->filter('site_id', (int)ee()->config->item('site_id'))
             ->first();
 
-        if (! $config) {
+        if (!$config) {
             ee('CP/Alert')->makeInline('shared-form')
                 ->asIssue()
                 ->withTitle(lang('export_err_not_found'))
@@ -42,7 +42,7 @@ class Run extends AbstractRoute
 
         $export = ee('export:ExportService')->setParameters($params);
 
-        if (! $export->validate()) {
+        if (!$export->validate()) {
             ee('CP/Alert')->makeInline('shared-form')
                 ->asIssue()
                 ->withTitle(lang('export_err_heading'))

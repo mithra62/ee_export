@@ -109,7 +109,7 @@ class EntryService extends AbstractService
                     $key = 'field_id_' . $row['field_id'];
                     $result = $query->row_array();
                     if (array_key_exists($key, $result)) {
-                        $return = (string) ($result[$key] ?? '');
+                        $return = (string)($result[$key] ?? '');
                         break;
                     }
                 }
@@ -182,19 +182,19 @@ class EntryService extends AbstractService
             ->get();
 
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
-            return (int) $query->row('channel_id');
+            return (int)$query->row('channel_id');
         }
 
         // Fall back to numeric ID
         if (is_numeric($channel_name)) {
             $query = ee()->db->select('channel_id')
                 ->from('channels')
-                ->where('channel_id', (int) $channel_name)
+                ->where('channel_id', (int)$channel_name)
                 ->limit(1)
                 ->get();
 
             if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
-                return (int) $query->row('channel_id');
+                return (int)$query->row('channel_id');
             }
         }
 
@@ -227,11 +227,11 @@ class EntryService extends AbstractService
                         if (is_string($settings)) {
                             $settings = @unserialize(base64_decode($settings)) ?: [];
                         }
-                        $return[(int) $field->field_id] = [
-                            'field_id'       => (int) $field->field_id,
-                            'field_name'     => $field->field_name,
-                            'field_type'     => $field->field_type,
-                            'field_label'    => $field->field_label,
+                        $return[(int)$field->field_id] = [
+                            'field_id' => (int)$field->field_id,
+                            'field_name' => $field->field_name,
+                            'field_type' => $field->field_type,
+                            'field_label' => $field->field_label,
                             'field_settings' => is_array($settings) ? $settings : [],
                         ];
                     }
@@ -258,7 +258,7 @@ class EntryService extends AbstractService
                 $row['field_settings'] = $row['field_settings']
                     ? @unserialize(base64_decode($row['field_settings'])) ?: []
                     : [];
-                $return[(int) $row['field_id']] = $row;
+                $return[(int)$row['field_id']] = $row;
             }
 
             return $return;
@@ -296,7 +296,7 @@ class EntryService extends AbstractService
                 $row['field_settings'] = $row['field_settings']
                     ? @unserialize(base64_decode($row['field_settings'])) ?: []
                     : [];
-                $return[(int) $row['field_id']] = $row;
+                $return[(int)$row['field_id']] = $row;
             }
         }
 
@@ -322,7 +322,7 @@ class EntryService extends AbstractService
                 $row['col_settings'] = $row['col_settings']
                     ? @json_decode($row['col_settings'], true) ?: []
                     : [];
-                $return[(int) $row['col_id']] = $row;
+                $return[(int)$row['col_id']] = $row;
             }
         }
 
@@ -342,7 +342,7 @@ class EntryService extends AbstractService
         $return = [];
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             foreach ($query->result_array() as $row) {
-                $return[(int) $row['entry_id']] = $row;
+                $return[(int)$row['entry_id']] = $row;
             }
         }
 
@@ -372,7 +372,7 @@ class EntryService extends AbstractService
         $return = [];
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             foreach ($query->result_array() as $row) {
-                $return[(int) $row['entry_id']][] = $row;
+                $return[(int)$row['entry_id']][] = $row;
             }
         }
 
@@ -397,7 +397,7 @@ class EntryService extends AbstractService
         $return = [];
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             foreach ($query->result_array() as $row) {
-                $return[(int) $row['parent_id']][(int) $row['field_id']][] = (int) $row['child_id'];
+                $return[(int)$row['parent_id']][(int)$row['field_id']][] = (int)$row['child_id'];
             }
         }
 
@@ -416,7 +416,7 @@ class EntryService extends AbstractService
         }
 
         $select = 'ct.entry_id, ct.title';
-        $extra  = array_filter(array_diff($rel_fields, ['title']), fn($f) => preg_match('/^[a-z0-9_]+$/i', $f));
+        $extra = array_filter(array_diff($rel_fields, ['title']), fn($f) => preg_match('/^[a-z0-9_]+$/i', $f));
         if ($extra) {
             $select .= ', cd.' . implode(', cd.', $extra);
         }
@@ -431,7 +431,7 @@ class EntryService extends AbstractService
         $return = [];
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             foreach ($query->result_array() as $row) {
-                $return[(int) $row['entry_id']] = $row;
+                $return[(int)$row['entry_id']] = $row;
             }
         }
 
@@ -455,7 +455,7 @@ class EntryService extends AbstractService
         $raw = [];
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             foreach ($query->result_array() as $row) {
-                $raw[(int) $row['entry_id']][] = $row['cat_name'];
+                $raw[(int)$row['entry_id']][] = $row['cat_name'];
             }
         }
 
@@ -490,7 +490,7 @@ class EntryService extends AbstractService
         $return = [];
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             foreach ($query->result_array() as $row) {
-                $return[(int) $row['entry_id']][(int) $row['fluid_field_id']][] = $row;
+                $return[(int)$row['entry_id']][(int)$row['fluid_field_id']][] = $row;
             }
         }
 
@@ -512,7 +512,7 @@ class EntryService extends AbstractService
             return [];
         }
 
-        $col   = 'field_id_' . $field_id;
+        $col = 'field_id_' . $field_id;
         $query = ee()->db
             ->select('id, ' . $col)
             ->from($table)
@@ -522,7 +522,7 @@ class EntryService extends AbstractService
         $return = [];
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             foreach ($query->result_array() as $row) {
-                $return[(int) $row['id']] = $row[$col] ?? null;
+                $return[(int)$row['id']] = $row[$col] ?? null;
             }
         }
 
@@ -555,7 +555,7 @@ class EntryService extends AbstractService
         $return = [];
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             foreach ($query->result_array() as $row) {
-                $return[(int) $row['fluid_field_data_id']][] = $row;
+                $return[(int)$row['fluid_field_data_id']][] = $row;
             }
         }
 
@@ -572,8 +572,8 @@ class EntryService extends AbstractService
      *
      * Returns [fluid_instance_id][field_id][] = child_entry_id, ordered by `order`.
      *
-     * @param int[] $instance_ids   fluid_field_data.id values to query
-     * @param int[] $field_ids      relationship field IDs (channel_fields.field_id)
+     * @param int[] $instance_ids fluid_field_data.id values to query
+     * @param int[] $field_ids relationship field IDs (channel_fields.field_id)
      */
     public function batchFluidRelationshipIds(array $instance_ids, array $field_ids): array
     {
@@ -593,7 +593,7 @@ class EntryService extends AbstractService
         $return = [];
         if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
             foreach ($query->result_array() as $row) {
-                $return[(int) $row['fluid_field_data_id']][(int) $row['field_id']][] = (int) $row['child_id'];
+                $return[(int)$row['fluid_field_data_id']][(int)$row['field_id']][] = (int)$row['child_id'];
             }
         }
 
@@ -612,7 +612,7 @@ class EntryService extends AbstractService
 
         // Accept a numeric ID directly
         if (is_numeric($field_name_or_id)) {
-            $fid = (int) $field_name_or_id;
+            $fid = (int)$field_name_or_id;
             if (isset($channel_fields[$fid]) && $channel_fields[$fid]['field_type'] === 'grid') {
                 return $fid;
             }
@@ -640,7 +640,7 @@ class EntryService extends AbstractService
         $channel_fields = $this->getChannelFields($channel_id);
 
         if (is_numeric($field_name_or_id)) {
-            $fid = (int) $field_name_or_id;
+            $fid = (int)$field_name_or_id;
             if (isset($channel_fields[$fid]) && $channel_fields[$fid]['field_type'] === 'fluid_field') {
                 return $fid;
             }
@@ -683,7 +683,7 @@ class EntryService extends AbstractService
                     $settings = @unserialize(base64_decode($settings)) ?: [];
                 }
                 $row['field_settings'] = is_array($settings) ? $settings : [];
-                $return[(int) $row['field_id']] = $row;
+                $return[(int)$row['field_id']] = $row;
             }
         }
 
@@ -698,8 +698,8 @@ class EntryService extends AbstractService
      * non-zero values from those columns across a slice of grid rows and returns
      * a flat list suitable for passing to resolveRelatedEntries().
      *
-     * @param  array $grid_rows  Flat row arrays from channel_grid_field_X
-     * @param  int[] $col_ids    Column IDs whose values are entry_id references
+     * @param array $grid_rows Flat row arrays from channel_grid_field_X
+     * @param int[] $col_ids Column IDs whose values are entry_id references
      * @return int[]             Unique non-zero related entry_ids
      */
     public function collectGridRelatedIds(array $grid_rows, array $col_ids): array
@@ -707,7 +707,7 @@ class EntryService extends AbstractService
         $ids = [];
         foreach ($grid_rows as $row) {
             foreach ($col_ids as $col_id) {
-                $val = (int) ($row['col_id_' . $col_id] ?? 0);
+                $val = (int)($row['col_id_' . $col_id] ?? 0);
                 if ($val > 0) {
                     $ids[$val] = $val;
                 }

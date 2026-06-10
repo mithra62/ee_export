@@ -44,17 +44,17 @@ use Mithra62\Export\Plugins\AbstractSource;
 class Fluid extends AbstractSource
 {
     protected array $rules = [
-        'source'  => 'required',
+        'source' => 'required',
         'channel' => 'required|validChannel',
-        'field'   => 'required|validFluidField',
+        'field' => 'required|validFluidField',
     ];
 
     // ── Streaming state ──────────────────────────────────────────────────────
 
-    protected int $stream_offset     = 0;
+    protected int $stream_offset = 0;
     protected int $stream_chunk_size = 500;
     protected int $stream_channel_id = 0;
-    protected int $stream_field_id   = 0;
+    protected int $stream_field_id = 0;
 
     // ── AbstractSource contract ───────────────────────────────────────────────
 
@@ -90,26 +90,26 @@ class Fluid extends AbstractSource
 
     public function openStream(): void
     {
-        $this->stream_offset     = (int) $this->getOption('offset', 0);
-        $this->stream_chunk_size = (int) $this->getOption('chunk_size', 500);
+        $this->stream_offset = (int)$this->getOption('offset', 0);
+        $this->stream_chunk_size = (int)$this->getOption('chunk_size', 500);
 
         $this->stream_channel_id = ee('export:EntryService')
-            ->getChannelId((string) $this->getOption('channel', ''));
+            ->getChannelId((string)$this->getOption('channel', ''));
 
         $this->stream_field_id = ee('export:EntryService')
-            ->getFluidFieldId((string) $this->getOption('field', ''), $this->stream_channel_id);
+            ->getFluidFieldId((string)$this->getOption('field', ''), $this->stream_channel_id);
     }
 
     public function nextChunk(): array
     {
-        $channel_id     = $this->stream_channel_id;
+        $channel_id = $this->stream_channel_id;
         $fluid_field_id = $this->stream_field_id;
-        $limit          = $this->stream_chunk_size;
+        $limit = $this->stream_chunk_size;
 
         // Respect hard limit (applies to entries, not instances)
         if ($this->getOption('limit')) {
-            $hard_limit = (int) $this->getOption('limit') + (int) $this->getOption('offset', 0);
-            $remaining  = $hard_limit - $this->stream_offset;
+            $hard_limit = (int)$this->getOption('limit') + (int)$this->getOption('offset', 0);
+            $remaining = $hard_limit - $this->stream_offset;
             if ($remaining <= 0) {
                 return [];
             }
@@ -124,9 +124,9 @@ class Fluid extends AbstractSource
             ->where('status', $this->getOption('status', 'open'));
 
         if ($this->getOption('author_id')) {
-            $query->where('author_id', (int) $this->getOption('author_id'));
+            $query->where('author_id', (int)$this->getOption('author_id'));
         }
-        $entry_id_filter = array_filter(array_map('intval', explode('|', (string) $this->getOption('entry_id', ''))));
+        $entry_id_filter = array_filter(array_map('intval', explode('|', (string)$this->getOption('entry_id', ''))));
         if (count($entry_id_filter) === 1) {
             $query->where('entry_id', reset($entry_id_filter));
         } elseif (count($entry_id_filter) > 1) {
@@ -140,11 +140,11 @@ class Fluid extends AbstractSource
         }
 
         $entry_rows = $result->result_array();
-        $entry_ids  = array_map('intval', array_column($entry_rows, 'entry_id'));
+        $entry_ids = array_map('intval', array_column($entry_rows, 'entry_id'));
 
         $entry_map = [];
         foreach ($entry_rows as $entry) {
-            $entry_map[(int) $entry['entry_id']] = $entry;
+            $entry_map[(int)$entry['entry_id']] = $entry;
         }
 
         // ── 2. Batch-load fluid instances ─────────────────────────────────────
@@ -156,10 +156,10 @@ class Fluid extends AbstractSource
             ->batchFluidInstances($entry_ids, [$fluid_field_id]);
 
         // ── 3. Collect sub-field IDs and classify by storage type ─────────────
-        $sub_field_ids  = [];
+        $sub_field_ids = [];
         foreach ($all_instances as $entry_instances) {
             foreach ($entry_instances[$fluid_field_id] ?? [] as $inst) {
-                $sub_field_ids[(int) $inst['field_id']] = (int) $inst['field_id'];
+                $sub_field_ids[(int)$inst['field_id']] = (int)$inst['field_id'];
             }
         }
 
@@ -173,30 +173,30 @@ class Fluid extends AbstractSource
 
         // Bucket instance IDs by sub-field storage type
         $grid_inst_ids_by_field = [];  // [sfid][] = instance_id
-        $rel_field_ids          = [];  // sfid => sfid  (relationship sub-fields)
-        $rel_instance_ids       = [];  // instance_id => instance_id
-        $data_ids_by_field      = [];  // [sfid][] = field_data_id  (all other types)
+        $rel_field_ids = [];  // sfid => sfid  (relationship sub-fields)
+        $rel_instance_ids = [];  // instance_id => instance_id
+        $data_ids_by_field = [];  // [sfid][] = field_data_id  (all other types)
 
         foreach ($all_instances as $entry_instances) {
             foreach ($entry_instances[$fluid_field_id] ?? [] as $inst) {
-                $sfid = (int) $inst['field_id'];
-                $def  = $sub_field_defs[$sfid] ?? null;
+                $sfid = (int)$inst['field_id'];
+                $def = $sub_field_defs[$sfid] ?? null;
                 if (!$def) {
                     continue;
                 }
 
                 switch ($def['field_type']) {
                     case 'grid':
-                        $grid_inst_ids_by_field[$sfid][] = (int) $inst['id'];
+                        $grid_inst_ids_by_field[$sfid][] = (int)$inst['id'];
                         break;
 
                     case 'relationship':
-                        $rel_field_ids[$sfid]         = $sfid;
-                        $rel_instance_ids[(int) $inst['id']] = (int) $inst['id'];
+                        $rel_field_ids[$sfid] = $sfid;
+                        $rel_instance_ids[(int)$inst['id']] = (int)$inst['id'];
                         break;
 
                     default:
-                        $data_ids_by_field[$sfid][] = (int) $inst['field_data_id'];
+                        $data_ids_by_field[$sfid][] = (int)$inst['field_data_id'];
                         break;
                 }
             }
@@ -253,7 +253,7 @@ class Fluid extends AbstractSource
         // rel_cache [child_entry_id] = ['title' => ..., ...]
         //   — shared across both relationship sub-fields and grid relationship cols
         //
-        $rel_data      = [];
+        $rel_data = [];
         $all_child_ids = [];
 
         // 6a. Relationship sub-fields
@@ -282,7 +282,7 @@ class Fluid extends AbstractSource
                 $col_key = 'col_id_' . $col_info['col_id'];
                 foreach ($rows_by_inst as $grid_rows) {
                     foreach ($grid_rows as $grid_row) {
-                        $cid = (int) ($grid_row[$col_key] ?? 0);
+                        $cid = (int)($grid_row[$col_key] ?? 0);
                         if ($cid > 0) {
                             $all_child_ids[$cid] = $cid;
                         }
@@ -294,19 +294,19 @@ class Fluid extends AbstractSource
         $rel_cache = [];
         if ($all_child_ids) {
             $rel_fields = $this->parseRelationshipFields();
-            $rel_cache  = ee('export:EntryService')
+            $rel_cache = ee('export:EntryService')
                 ->resolveRelatedEntries(array_values($all_child_ids), $rel_fields);
         }
 
         // ── 7. Build output rows ──────────────────────────────────────────────
         $rows = [];
         foreach ($entry_ids as $entry_id) {
-            $entry           = $entry_map[$entry_id];
+            $entry = $entry_map[$entry_id];
             $entry_instances = $all_instances[$entry_id][$fluid_field_id] ?? [];
 
             foreach ($entry_instances as $inst) {
-                $sfid = (int) $inst['field_id'];
-                $def  = $sub_field_defs[$sfid] ?? null;
+                $sfid = (int)$inst['field_id'];
+                $def = $sub_field_defs[$sfid] ?? null;
                 if (!$def) {
                     continue;
                 }
@@ -322,13 +322,13 @@ class Fluid extends AbstractSource
                 );
 
                 $row = [
-                    'entry_id'        => $entry_id,
-                    'entry_title'     => $entry['title'],
-                    'instance_order'  => (int) $inst['order'],
-                    'sub_field_id'    => $sfid,
-                    'sub_field_type'  => $def['field_type'],
+                    'entry_id' => $entry_id,
+                    'entry_title' => $entry['title'],
+                    'instance_order' => (int)$inst['order'],
+                    'sub_field_id' => $sfid,
+                    'sub_field_type' => $def['field_type'],
                     'sub_field_label' => $def['field_label'],
-                    'value'           => $value,
+                    'value' => $value,
                 ];
 
                 $rows[] = $this->cleanFields($row);
@@ -368,24 +368,25 @@ class Fluid extends AbstractSource
      * entry_id are always present so third-party handlers can detect Fluid context.
      */
     protected function processInstanceValue(
-        array  $inst,
-        array  $sub_field_def,
-        array  $values_by_field,
-        array  $grid_rows_by_field,
-        array  $grid_columns_cache,
-        array  $rel_data,
-        array  $rel_cache
-    ): mixed {
-        $sfid        = (int) $inst['field_id'];
-        $instance_id = (int) $inst['id'];
-        $entry_id    = (int) $inst['entry_id'];
-        $field_type  = $sub_field_def['field_type'];
+        array $inst,
+        array $sub_field_def,
+        array $values_by_field,
+        array $grid_rows_by_field,
+        array $grid_columns_cache,
+        array $rel_data,
+        array $rel_cache
+    ): mixed
+    {
+        $sfid = (int)$inst['field_id'];
+        $instance_id = (int)$inst['id'];
+        $entry_id = (int)$inst['entry_id'];
+        $field_type = $sub_field_def['field_type'];
 
         $base_context = [
-            'source_type'       => 'fluid',
+            'source_type' => 'fluid',
             'fluid_instance_id' => $instance_id,
-            'fluid_field_id'    => (int) $inst['fluid_field_id'],
-            'entry_id'          => $entry_id,
+            'fluid_field_id' => (int)$inst['fluid_field_id'],
+            'entry_id' => $entry_id,
         ];
 
         // ── Relationship sub-field ────────────────────────────────────────────
@@ -397,9 +398,9 @@ class Fluid extends AbstractSource
             $handler = ee('export:FieldsService')->getField('relationship');
             if ($handler) {
                 return $handler->process(null, $sub_field_def, $instance_id, $base_context + [
-                    'rel_data'  => $rel_data,
-                    'rel_cache' => $rel_cache,
-                ]);
+                        'rel_data' => $rel_data,
+                        'rel_cache' => $rel_cache,
+                    ]);
             }
             // Fallback: return raw child IDs from rel_data
             return $rel_data[$instance_id][$sfid] ?? [];
@@ -421,10 +422,10 @@ class Fluid extends AbstractSource
                 ];
 
                 return $handler->process(null, $sub_field_def, $instance_id, $base_context + [
-                    'grid_data'    => $grid_data,
-                    'grid_columns' => $grid_columns,
-                    'rel_cache'    => $rel_cache,
-                ]);
+                        'grid_data' => $grid_data,
+                        'grid_columns' => $grid_columns,
+                        'rel_cache' => $rel_cache,
+                    ]);
             }
 
             // Fallback: manual serialization if Fields/Grid is not registered
@@ -433,7 +434,7 @@ class Fluid extends AbstractSource
                 return [];
             }
             $grid_columns = $grid_columns_cache[$sfid] ?? [];
-            $serialized   = [];
+            $serialized = [];
             foreach ($grid_rows as $grid_row) {
                 $mapped = [];
                 foreach ($grid_columns as $col_id => $col_info) {
@@ -445,7 +446,7 @@ class Fluid extends AbstractSource
         }
 
         // ── All other sub-fields ──────────────────────────────────────────────
-        $data_id   = (int) $inst['field_data_id'];
+        $data_id = (int)$inst['field_data_id'];
         $raw_value = $values_by_field[$sfid][$data_id] ?? null;
 
         $handler = ee('export:FieldsService')->getField($field_type);
@@ -471,15 +472,15 @@ class Fluid extends AbstractSource
         $validator = parent::getValidator();
 
         $validator->defineRule('validChannel', function ($key, $value) {
-            return ee('export:EntryService')->getChannelId((string) $value) > 0
+            return ee('export:EntryService')->getChannelId((string)$value) > 0
                 ? true
                 : 'channel not found';
         });
 
         $validator->defineRule('validFluidField', function ($key, $value) {
-            $channel    = (string) $this->getOption('channel', '');
+            $channel = (string)$this->getOption('channel', '');
             $channel_id = ee('export:EntryService')->getChannelId($channel);
-            return ee('export:EntryService')->getFluidFieldId((string) $value, $channel_id) > 0
+            return ee('export:EntryService')->getFluidFieldId((string)$value, $channel_id) > 0
                 ? true
                 : 'fluid_field not found on channel';
         });

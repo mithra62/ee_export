@@ -47,9 +47,9 @@ abstract class AbstractModifier extends AbstractPlugin
     {
         $params = array_flip($this->params);
         $return = $default;
-        if(isset($params[$param])){
+        if (isset($params[$param])) {
             $set = $this->getParams();
-            if(isset($set[$params[$param]])) {
+            if (isset($set[$params[$param]])) {
                 $return = $set[$params[$param]];
             }
         }

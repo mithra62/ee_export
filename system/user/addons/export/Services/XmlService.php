@@ -204,12 +204,12 @@ class XmlService extends XMLWriter
      */
     public function addXmlNodes($key, $value): XmlService
     {
-        $numeric_key = is_int($key) || ctype_digit((string) $key);
+        $numeric_key = is_int($key) || ctype_digit((string)$key);
 
         if (!is_array($value)) {
-            $wrap  = !is_numeric($value);
-            $attrs = $numeric_key ? ['index' => (string) $key] : [];
-            $name  = $numeric_key ? 'item' : $key;
+            $wrap = !is_numeric($value);
+            $attrs = $numeric_key ? ['index' => (string)$key] : [];
+            $name = $numeric_key ? 'item' : $key;
             $this->addNode($name, $value, $attrs, $wrap);
             return $this;
         }
@@ -217,7 +217,7 @@ class XmlService extends XMLWriter
         // Open the branch element, using <item index="N"> for numeric keys
         if ($numeric_key) {
             $this->startElement('item');
-            $this->writeAttribute('index', (string) $key);
+            $this->writeAttribute('index', (string)$key);
         } else {
             $this->startBranch($key);
         }

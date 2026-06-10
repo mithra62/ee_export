@@ -19,7 +19,7 @@ abstract class AbstractRoute extends EeAbstractRoute
 
     public function __construct()
     {
-        if (! ee('Permission')->hasAll('can_access_addons')) {
+        if (!ee('Permission')->hasAll('can_access_addons')) {
             show_error(lang('unauthorized_access'), 403);
         }
 
@@ -42,7 +42,7 @@ abstract class AbstractRoute extends EeAbstractRoute
      * Errors end up in CI's state, so EE's fieldset.php reads them via
      * form_error($field) / form_error_class($field) and renders them inline.
      *
-     * @param  array $post  Raw $_POST
+     * @param array $post Raw $_POST
      * @return bool         True when all rules pass; false when any fail
      */
     protected function validate(array $post): bool
@@ -56,8 +56,8 @@ abstract class AbstractRoute extends EeAbstractRoute
         );
 
         // ── Step 1: Core CP-layer rules (always apply) ────────────────────────
-        ee()->form_validation->set_rules('name',            lang('export_field_name'),     'required');
-        ee()->form_validation->set_rules('source',          lang('export_field_source'),   'required');
+        ee()->form_validation->set_rules('name', lang('export_field_name'), 'required');
+        ee()->form_validation->set_rules('source', lang('export_field_source'), 'required');
         ee()->form_validation->set_rules('output_filename', lang('export_field_filename'), 'required');
 
         // Numeric source params — only validate when the field is non-empty so
@@ -70,7 +70,7 @@ abstract class AbstractRoute extends EeAbstractRoute
             }
         }
         $chunk_key = $prefix . 'chunk_size';
-        if (! empty($post[$chunk_key])) {
+        if (!empty($post[$chunk_key])) {
             ee()->form_validation->set_rules($chunk_key, 'chunk_size', 'is_natural_no_zero');
         }
 
@@ -86,17 +86,17 @@ abstract class AbstractRoute extends EeAbstractRoute
         //
         // Note: error() applies $_error_prefix/_error_suffix when reading, so we
         // store the raw message (no HTML wrapping needed here).
-        $bridge        = new \Mithra62\Export\Services\CpValidationBridge();
+        $bridge = new \Mithra62\Export\Services\CpValidationBridge();
         $driver_errors = $bridge->getErrors($post, $source);
 
         foreach ($driver_errors as $cp_field => $message) {
             ee()->form_validation->_field_data[$cp_field] = [
-                'field'    => $cp_field,
-                'label'    => $cp_field,
-                'rules'    => '',
+                'field' => $cp_field,
+                'label' => $cp_field,
+                'rules' => '',
                 'is_array' => false,
                 'postdata' => $post[$cp_field] ?? '',
-                'error'    => $message,
+                'error' => $message,
             ];
         }
 
@@ -109,7 +109,7 @@ abstract class AbstractRoute extends EeAbstractRoute
      */
     protected function requireSuperAdmin(): void
     {
-        if (! ee('Permission')->isSuperAdmin()) {
+        if (!ee('Permission')->isSuperAdmin()) {
             show_error(lang('unauthorized_access'), 403);
         }
     }

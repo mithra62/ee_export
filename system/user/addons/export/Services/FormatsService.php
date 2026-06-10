@@ -25,7 +25,7 @@ class FormatsService extends AbstractService
         $name = $params['format'];
 
         // Provider map takes precedence; namespace resolution is the fallback.
-        $map   = $this->getProviderMap('formats');
+        $map = $this->getProviderMap('formats');
         $class = $map[$name] ?? ("\\Mithra62\\Export\\Formats\\" . Str::studly($name));
 
         if (class_exists($class)) {

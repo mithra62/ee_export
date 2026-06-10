@@ -29,7 +29,7 @@ class CpService
 
         $list = [];
         foreach ($channels as $channel) {
-            $list[(int) $channel->channel_id] = $channel->channel_title;
+            $list[(int)$channel->channel_id] = $channel->channel_title;
         }
 
         return $list;
@@ -42,8 +42,8 @@ class CpService
      * of that type are returned, making this suitable for the AJAX field-
      * selector used by the Grid and Fluid form sections.
      *
-     * @param int         $channel_id
-     * @param string|null $field_type  EE field type slug, or null for all
+     * @param int $channel_id
+     * @param string|null $field_type EE field type slug, or null for all
      *
      * @return array  [field_id => field_label]
      */
@@ -55,7 +55,7 @@ class CpService
                 ->filter('channel_id', $channel_id)
                 ->first();
 
-            if (! $channel) {
+            if (!$channel) {
                 return [];
             }
 
@@ -64,7 +64,7 @@ class CpService
             // the CustomFields relationship alone, which misses group-assigned fields.
             $all_fields = $channel->getAllCustomFields();
 
-            if (! $all_fields || ! count($all_fields)) {
+            if (!$all_fields || !count($all_fields)) {
                 return [];
             }
 
@@ -73,7 +73,7 @@ class CpService
                 if ($field_type && $field->field_type !== $field_type) {
                     continue;
                 }
-                $list[(int) $field->field_id] = $field->field_label ?: $field->field_name;
+                $list[(int)$field->field_id] = $field->field_label ?: $field->field_name;
             }
 
             return $list;
@@ -88,9 +88,9 @@ class CpService
     public function getMemberRoles(): array
     {
         $roles = ee('Model')->get('Role')->order('name', 'asc')->all();
-        $list  = [];
+        $list = [];
         foreach ($roles as $role) {
-            $list[(int) $role->role_id] = $role->name;
+            $list[(int)$role->role_id] = $role->name;
         }
         return $list;
     }
@@ -103,8 +103,8 @@ class CpService
      * Used by the AJAX 'columns' endpoint to populate the whitelist/blacklist
      * checkbox UI. Returns an empty array when the source/channel is ambiguous.
      *
-     * @param string $source  Source key: entries|members|grid|fluid|sql
-     * @param array  $params  Raw POST params from the form
+     * @param string $source Source key: entries|members|grid|fluid|sql
+     * @param array $params Raw POST params from the form
      *
      * @return string[]
      */
@@ -112,14 +112,14 @@ class CpService
     {
         switch ($source) {
             case 'entries':
-                return $this->columnsForEntries((int) ($params['channel_id'] ?? 0));
+                return $this->columnsForEntries((int)($params['channel_id'] ?? 0));
 
             case 'members':
                 return $this->columnsForMembers();
 
             case 'grid':
-                $channel_id = (int) ($params['channel_id'] ?? 0);
-                $field_id   = (int) ($params['field_id'] ?? 0);
+                $channel_id = (int)($params['channel_id'] ?? 0);
+                $field_id = (int)($params['field_id'] ?? 0);
                 return $this->columnsForGrid($channel_id, $field_id);
 
             case 'fluid':
@@ -222,14 +222,14 @@ class CpService
      * modify:* keys. This method just stitches the 'source' key back in and
      * converts any array-valued 'fields' or 'exclude' back to pipe strings.
      *
-     * @param string $source   The top-level source key (e.g. 'entries')
-     * @param array  $settings Decoded settings from ExportConfiguration::getSettings()
+     * @param string $source The top-level source key (e.g. 'entries')
+     * @param array $settings Decoded settings from ExportConfiguration::getSettings()
      *
      * @return array
      */
     public function buildParamsFromSettings(string $source, array $settings): array
     {
-        $params           = $settings;
+        $params = $settings;
         $params['source'] = $source;
 
         // Re-join arrays that were serialised as JSON arrays for storage
@@ -261,7 +261,7 @@ class CpService
      * Convert raw POST data from the Create/Edit form into a settings array
      * ready to be stored as JSON in ExportConfiguration::$settings.
      *
-     * @param array  $post   Raw $_POST
+     * @param array $post Raw $_POST
      * @param string $source The selected source key
      *
      * @return array
@@ -278,15 +278,15 @@ class CpService
         // Template tag access roles — top-level setting, not source-prefixed
         $raw_roles = $post['allowed_roles'] ?? [];
         $settings['allowed_roles'] = array_values(array_filter(
-            array_map('intval', is_array($raw_roles) ? $raw_roles : explode('|', (string) $raw_roles))
+            array_map('intval', is_array($raw_roles) ? $raw_roles : explode('|', (string)$raw_roles))
         ));
 
         // Source-specific params — strip the `src_{source}_` prefix.
         // Grid and Fluid channel/field are stored under source-specific keys
         // (grid:channel, fluid:field, etc.) so switching source type in the
         // editor never pre-fills the wrong channel or field on the other source.
-        $prefix          = 'src_' . $source . '_';
-        $scoped_params   = in_array($source, ['grid', 'fluid'], true) ? ['channel', 'field'] : [];
+        $prefix = 'src_' . $source . '_';
+        $scoped_params = in_array($source, ['grid', 'fluid'], true) ? ['channel', 'field'] : [];
         foreach ($post as $key => $value) {
             if (str_starts_with($key, $prefix)) {
                 $param_name = substr($key, strlen($prefix));
@@ -301,14 +301,14 @@ class CpService
         $col_mode = $post['col_mode'] ?? 'all';
         if ($col_mode === 'whitelist') {
             $raw = trim($post['fields'] ?? '');
-            $settings['fields']  = $raw ? array_filter(explode('|', $raw)) : [];
+            $settings['fields'] = $raw ? array_filter(explode('|', $raw)) : [];
             $settings['exclude'] = [];
         } elseif ($col_mode === 'blacklist') {
             $raw = trim($post['exclude'] ?? '');
-            $settings['fields']  = [];
+            $settings['fields'] = [];
             $settings['exclude'] = $raw ? array_filter(explode('|', $raw)) : [];
         } else {
-            $settings['fields']  = [];
+            $settings['fields'] = [];
             $settings['exclude'] = [];
         }
 
@@ -316,11 +316,13 @@ class CpService
         $settings['format'] = $post['format'] ?? 'csv';
 
         // Single-char fields stored verbatim; all others trimmed
-        $char_fields   = ['separator', 'enclosure', 'escape'];
-        $format_keys   = ['separator', 'enclosure', 'escape', 'newline', 'bold_cols', 'sheet_name', 'root_name', 'branch_name'];
+        $char_fields = ['separator', 'enclosure', 'escape'];
+        $format_keys = ['separator', 'enclosure', 'escape', 'newline', 'bold_cols', 'sheet_name', 'root_name', 'branch_name'];
         foreach ($format_keys as $fk) {
             $field_name = 'fmt_' . $fk;
-            if (! isset($post[$field_name])) { continue; }
+            if (!isset($post[$field_name])) {
+                continue;
+            }
             $val = in_array($fk, $char_fields, true) ? $post[$field_name] : trim($post[$field_name]);
             if ($val !== '') {
                 $settings['format:' . $fk] = $val;
@@ -328,12 +330,12 @@ class CpService
         }
 
         // bold_cols is a checkbox — absent from POST means unchecked
-        if ($settings['format'] === 'xlsx' && ! isset($post['fmt_bold_cols'])) {
+        if ($settings['format'] === 'xlsx' && !isset($post['fmt_bold_cols'])) {
             $settings['format:bold_cols'] = 'n';
         }
 
         // Output
-        $settings['output']          = $post['output']          ?? 'download';
+        $settings['output'] = $post['output'] ?? 'download';
         $settings['output:filename'] = $post['output_filename'] ?? '';
         if (!empty($post['output_path'])) {
             $settings['output:path'] = $post['output_path'];
@@ -344,8 +346,8 @@ class CpService
         // values; skipping empty column/chain naturally filters it out.
         $modifier_rows = $post['modify']['rows'] ?? [];
         foreach ($modifier_rows as $row) {
-            $col   = trim($row['column'] ?? '');
-            $chain = trim($row['chain']  ?? '');
+            $col = trim($row['column'] ?? '');
+            $chain = trim($row['chain'] ?? '');
             if ($col !== '' && $chain !== '') {
                 $settings['modify:' . $col] = $chain;
             }

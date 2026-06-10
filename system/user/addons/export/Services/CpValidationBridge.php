@@ -32,7 +32,7 @@ class CpValidationBridge extends AbstractService
      * $_field_data after run() so that form_error() / form_error_class()
      * render them inline in EE's shared form template.
      *
-     * @param array  $post   Raw $_POST
+     * @param array $post Raw $_POST
      * @param string $source Active source key (e.g. 'entries', 'grid')
      * @return array         [cp_field_name => raw_error_message]
      */
@@ -41,7 +41,7 @@ class CpValidationBridge extends AbstractService
         $format = $post['format'] ?? 'csv';
         $output = $post['output'] ?? 'download';
 
-        $errors  = $this->runSource($post, $source);
+        $errors = $this->runSource($post, $source);
         $errors += $this->runFormat($post, $format);
         $errors += $this->runOutput($post, $output);
 
@@ -53,7 +53,7 @@ class CpValidationBridge extends AbstractService
     protected function runSource(array $post, string $source): array
     {
         $driver = $this->instantiate('sources', $source);
-        if (! $driver) {
+        if (!$driver) {
             return [];
         }
 
@@ -68,7 +68,7 @@ class CpValidationBridge extends AbstractService
     protected function runFormat(array $post, string $format): array
     {
         $driver = $this->instantiate('formats', $format);
-        if (! $driver) {
+        if (!$driver) {
             return [];
         }
 
@@ -82,7 +82,7 @@ class CpValidationBridge extends AbstractService
     protected function runOutput(array $post, string $output): array
     {
         $driver = $this->instantiate('outputs', $output);
-        if (! $driver) {
+        if (!$driver) {
             return [];
         }
 
@@ -101,7 +101,7 @@ class CpValidationBridge extends AbstractService
     protected function extractPrefixed(array $post, string $prefix): array
     {
         $params = [];
-        $len    = strlen($prefix);
+        $len = strlen($prefix);
 
         foreach ($post as $k => $v) {
             if (str_starts_with($k, $prefix)) {
@@ -150,7 +150,7 @@ class CpValidationBridge extends AbstractService
      */
     protected function instantiate(string $layer, string $key): ?AbstractPlugin
     {
-        $map   = $this->getProviderMap($layer);
+        $map = $this->getProviderMap($layer);
         $class = $map[$key] ?? null;
 
         if ($class && class_exists($class)) {

@@ -16,8 +16,8 @@ class ExcelService
 
     public function reset(): ExcelService
     {
-        $this->rows      = [];
-        $this->cols      = [];
+        $this->rows = [];
+        $this->cols = [];
         $this->file_name = '';
         return $this;
     }
@@ -63,7 +63,7 @@ class ExcelService
 
     public function save(string $dir): void
     {
-        $path   = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . $this->file_name;
+        $path = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . $this->file_name;
         $writer = $this->buildWriter($path);
         $writer->close();
     }

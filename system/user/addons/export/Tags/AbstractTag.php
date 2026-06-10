@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Tags;
 
 use ExpressionEngine\Service\Addon\Controllers\Tag\AbstractRoute;
@@ -134,15 +135,15 @@ abstract class AbstractTag extends AbstractRoute
     public function params(): array
     {
         $return = [];
-        foreach(ee()->TMPL->tagparams AS $key => $param) {
-            if(str_starts_with($key, 'search:') && $param != '') {
+        foreach (ee()->TMPL->tagparams as $key => $param) {
+            if (str_starts_with($key, 'search:') && $param != '') {
                 $return['source:search'][str_replace('search:', '', $key)] = $this->param($key);
             } else {
                 $return[$key] = $this->param($key, '');
             }
         }
 
-        $return['fields']  = $this->explodeParam('fields');
+        $return['fields'] = $this->explodeParam('fields');
         $return['exclude'] = $this->explodeParam('exclude');
         return $return;
     }
@@ -311,9 +312,9 @@ abstract class AbstractTag extends AbstractRoute
         if (is_string($allowed) && $allowed !== '') {
             $allowed = array_values(array_filter(array_map('intval', explode('|', $allowed))));
         }
-        if (! empty($allowed)) {
+        if (!empty($allowed)) {
             $user_roles = $this->getRoles();
-            if (empty(array_intersect(array_map('intval', (array) $user_roles), $allowed))) {
+            if (empty(array_intersect(array_map('intval', (array)$user_roles), $allowed))) {
                 show_error(lang('export_err_role_denied'), 403);
                 return;
             }

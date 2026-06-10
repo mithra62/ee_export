@@ -15,8 +15,8 @@ class Preset extends AbstractTag
 {
     public function process(): void
     {
-        $config_id = (int) $this->param('id', 0);
-        if (! $config_id) {
+        $config_id = (int)$this->param('id', 0);
+        if (!$config_id) {
             show_error('export:preset requires a numeric id param.');
             return;
         }
@@ -27,7 +27,7 @@ class Preset extends AbstractTag
             ->filter('site_id', ee()->config->item('site_id'))
             ->first();
 
-        if (! $config) {
+        if (!$config) {
             ee()->TMPL->no_results();
             return;
         }

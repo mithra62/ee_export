@@ -61,7 +61,7 @@ abstract class AbstractService
      * Results are cached statically so the provider scan runs at most once per
      * PHP request per layer.
      *
-     * @param  string $layer  One of: sources, formats, outputs, modifiers, fields
+     * @param string $layer One of: sources, formats, outputs, modifiers, fields
      * @return array<string, class-string>
      */
     public function getProviderMap(string $layer): array

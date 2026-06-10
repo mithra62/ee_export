@@ -35,8 +35,8 @@ class Members extends AbstractSource
 {
     // ── Streaming state ──────────────────────────────────────────────────────
 
-    protected int   $stream_offset     = 0;
-    protected int   $stream_chunk_size = 500;
+    protected int $stream_offset = 0;
+    protected int $stream_chunk_size = 500;
 
     /**
      * Custom member field definitions, keyed by m_field_id.
@@ -47,10 +47,10 @@ class Members extends AbstractSource
      *
      * @var array<int, array>
      */
-    protected array $custom_fields     = [];
+    protected array $custom_fields = [];
 
     /** True only when at least one custom member field exists. */
-    protected bool  $has_custom_fields = false;
+    protected bool $has_custom_fields = false;
 
     // ── AbstractSource contract ───────────────────────────────────────────────
 
@@ -93,8 +93,8 @@ class Members extends AbstractSource
      */
     public function openStream(): void
     {
-        $this->stream_offset     = (int) $this->getOption('offset', 0);
-        $this->stream_chunk_size = (int) $this->getOption('chunk_size', 500);
+        $this->stream_offset = (int)$this->getOption('offset', 0);
+        $this->stream_chunk_size = (int)$this->getOption('chunk_size', 500);
 
         // Lazy-load: only pay for the MemberField query when custom fields exist
         $raw_fields = ee('export:MemberService')->getFields();
@@ -111,7 +111,7 @@ class Members extends AbstractSource
                     $settings = @unserialize($settings) ?: [];
                 }
 
-                $fid        = (int) $field->m_field_id;
+                $fid = (int)$field->m_field_id;
                 $column_key = 'm_field_id_' . $fid;
 
                 // Skip fields whose column doesn't actually exist in exp_member_data
@@ -120,12 +120,12 @@ class Members extends AbstractSource
                 }
 
                 $this->custom_fields[$fid] = [
-                    'field_id'       => $fid,
-                    'field_name'     => $field->m_field_name,
-                    'field_type'     => $field->m_field_type,
-                    'field_label'    => $field->m_field_label,
+                    'field_id' => $fid,
+                    'field_name' => $field->m_field_name,
+                    'field_type' => $field->m_field_type,
+                    'field_label' => $field->m_field_label,
                     'field_settings' => is_array($settings) ? $settings : [],
-                    'column_key'     => $column_key,
+                    'column_key' => $column_key,
                 ];
             }
 
@@ -138,8 +138,8 @@ class Members extends AbstractSource
         $limit = $this->stream_chunk_size;
 
         if ($this->getOption('limit')) {
-            $hard_limit = (int) $this->getOption('limit') + (int) $this->getOption('offset', 0);
-            $remaining  = $hard_limit - $this->stream_offset;
+            $hard_limit = (int)$this->getOption('limit') + (int)$this->getOption('offset', 0);
+            $remaining = $hard_limit - $this->stream_offset;
             if ($remaining <= 0) {
                 return [];
             }
@@ -231,8 +231,8 @@ class Members extends AbstractSource
      */
     protected function buildRow(array $member_row): array
     {
-        $return    = [];
-        $member_id = (int) ($member_row['member_id'] ?? 0);
+        $return = [];
+        $member_id = (int)($member_row['member_id'] ?? 0);
 
         // Core columns
         foreach ($member_row as $key => $value) {
@@ -278,7 +278,7 @@ class Members extends AbstractSource
         if ($handler) {
             return $handler->process($raw_value, $field_info, $member_id, [
                 'source_type' => 'member',
-                'member_id'   => $member_id,
+                'member_id' => $member_id,
             ]);
         }
 

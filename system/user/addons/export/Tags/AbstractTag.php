@@ -307,7 +307,9 @@ abstract class AbstractTag extends AbstractRoute
      */
     public function compile(array $params = []): void
     {
-        if ($this->param('format') && $this->param('output')) {
+        $fmt = $params['format'] ?? $this->param('format');
+        $out = $params['output'] ?? $this->param('output');
+        if ($fmt && $out) {
             $export = ee('export:ExportService')->setParameters($params);
             if ($export->validate()) {
                 try {

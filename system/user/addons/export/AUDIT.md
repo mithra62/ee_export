@@ -286,7 +286,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 ### L-5 — Cache directory created world-writable (`0777`)
 
 - **File:** `Plugins/AbstractPlugin.php` line ~93
-- **Status:** Open
+- **Status:** ✅ Resolved
 - **Description:** `mkdir($cache_path, 0777, true)` makes the temp export cache directory world-writable. On shared hosting any process can read or modify files in `PATH_CACHE/export/` — including temp files containing PII (member data, entries, etc.) before they are unlinked.
 - **Fix:** Use `0750` (owner full, group read+execute, world none). Consider also writing an `index.html` deny-all file into the directory on creation.
 - **Notes:**
@@ -360,7 +360,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | L-2 | Low | Dead code — getCacheContent() reads directory | ✅ Resolved |
 | L-3 | Low | Error handling — fopen() failure not checked | ✅ Resolved |
 | L-4 | Low | Docs — Grid phpdoc wrong for fields= param | ✅ Resolved |
-| L-5 | Low | Security — cache dir created 0777 | Open |
+| L-5 | Low | Security — cache dir created 0777 | ✅ Resolved |
 | L-6 | Low | PHP 8 — nullable type declarations missing | ✅ Resolved |
 | L-7 | Low | UX — no {if no_results} support | ✅ Resolved |
 | L-8 | Low | Code quality — empty lang key | ✅ Resolved |

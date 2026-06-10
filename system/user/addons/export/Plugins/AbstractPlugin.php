@@ -85,7 +85,8 @@ abstract class AbstractPlugin implements ValidationAware
         if (!$this->cache_path) {
             $cache_path = PATH_CACHE . 'export/';
             if (!is_dir($cache_path)) {
-                mkdir($cache_path, 0777, true);
+                mkdir($cache_path, 0755, true);
+                @file_put_contents($cache_path . 'index.html', '');
             }
 
             $this->cache_path = $cache_path;

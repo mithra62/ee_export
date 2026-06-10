@@ -88,6 +88,8 @@ Tag parameters are routed by prefix:
 
 ## 3. Template Tags
 
+> **Example templates.** The `templates/` directory in the addon root contains ready-to-use EE template files for every tag and the most common parameter combinations. Each file includes inline comments identifying exactly what to change. Copy one into your site's templates directory and adjust the parameters to get started without writing anything from scratch.
+
 > **Empty results.** When a source returns no data (e.g. a channel with no entries matching the filters), all export tags honour EE's standard `{if no_results}` conditional. If the block is present it is rendered; if absent the tag produces no output and no error. Download exports simply deliver nothing to the browser.
 >
 > ```ee

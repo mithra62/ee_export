@@ -43,6 +43,8 @@ Every export is triggered by a template tag. At minimum you need a **source**, a
 
 Calling this tag from a template URL immediately streams a CSV download to the browser.
 
+The `templates/` directory contains ready-to-use example templates covering every tag and the most common parameter combinations. Copy one into your EE templates directory, adjust the channel name and filename, and you're done.
+
 ---
 
 ## Template Tags

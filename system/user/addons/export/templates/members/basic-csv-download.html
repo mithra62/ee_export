@@ -1,0 +1,16 @@
+{!-- ============================================================
+     Export: Members — Basic CSV download (all members)
+     ============================================================
+     Exports all members including standard columns and any custom
+     member fields. No filters applied.
+
+     Customise before use:
+       output:filename → desired download filename
+       format          → csv, json, xlsx, or xml
+     ============================================================ --}
+
+{exp:export:members
+    format="csv"
+    output="download"
+    output:filename="members.csv"
+}

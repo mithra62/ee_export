@@ -65,7 +65,7 @@ class ExportService extends AbstractService
      * @param OutputService|null $output
      * @return $this
      */
-    public function setOutput(OutputService $output = null): ExportService
+    public function setOutput(?OutputService $output = null): ExportService
     {
         if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
@@ -89,7 +89,7 @@ class ExportService extends AbstractService
      * @return $this
      * @throws ExportServiceException
      */
-    public function setSources(SourcesService $sources = null): ExportService
+    public function setSources(?SourcesService $sources = null): ExportService
     {
         if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
@@ -112,7 +112,7 @@ class ExportService extends AbstractService
      * @return $this
      * @throws ExportServiceException
      */
-    public function setModifiers(ModifiersService $post = null): ExportService
+    public function setModifiers(?ModifiersService $post = null): ExportService
     {
         if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
@@ -135,7 +135,7 @@ class ExportService extends AbstractService
      * @return $this
      * @throws ExportServiceException
      */
-    public function setFormats(FormatsService $formats = null): ExportService
+    public function setFormats(?FormatsService $formats = null): ExportService
     {
         if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
@@ -190,7 +190,14 @@ class ExportService extends AbstractService
      */
     public function build(): void
     {
-        $source = $this->getSources()->getSource()->compile();
+        $source = $this->getSources()->getSource();
+
+        if ($source->supportsStreaming()) {
+            $this->buildStreaming($source);
+            return;
+        }
+
+        $source->compile();
 
         $modifiers = $this->getModifiers();
         $source = $modifiers->process($source);
@@ -198,6 +205,70 @@ class ExportService extends AbstractService
         $format = $this->getFormats()->getFormat();
         $path = $format->compile($source);
 
+        $this->deliver($path);
+    }
+
+    protected function buildStreaming(\Mithra62\Export\Plugins\AbstractSource $source): void
+    {
+        $format    = $this->getFormats()->getFormat();
+        $modifiers = $this->getModifiers();
+
+        // $path is set only after finalizeFile() returns successfully.
+        // The catch block uses it to decide whether to call finalizeFile()
+        // (to close the file handle) before attempting cleanup.
+        $path = null;
+
+        try {
+            $source->openStream();
+            $header_written = false;
+
+            while (true) {
+                $chunk = $source->nextChunk();
+                if (empty($chunk)) {
+                    break;
+                }
+
+                $chunk = $modifiers->processChunk($chunk);
+
+                if (!$header_written) {
+                    $format->openFile($chunk[0]);
+                    $header_written = true;
+                }
+
+                $format->writeChunk($chunk);
+            }
+
+            $source->closeStream();
+            $path = $format->finalizeFile();
+            $this->deliver($path);
+
+        } catch (\Throwable $e) {
+            // Ensure the temp export file is removed on any failure so that
+            // partial files do not accumulate in PATH_CACHE/export/.
+            //
+            // If finalizeFile() was never called ($path === null) the file handle
+            // is still open; call finalizeFile() first to close it before unlinking.
+            // If finalizeFile() itself throws (e.g. format was never opened because
+            // NoDataException fired before the first chunk), we swallow that inner
+            // error and leave $path null — there is nothing to remove.
+            if ($path === null) {
+                try {
+                    $path = $format->finalizeFile();
+                } catch (\Throwable) {
+                    // Format was never opened; no file to clean up.
+                }
+            }
+
+            if ($path !== null && file_exists($path)) {
+                @unlink($path);
+            }
+
+            throw $e;
+        }
+    }
+
+    protected function deliver(string $path): void
+    {
         $output = $this->getOutput()->getDestination();
         if ($output->process($path) !== false) {
             if (file_exists($path)) {

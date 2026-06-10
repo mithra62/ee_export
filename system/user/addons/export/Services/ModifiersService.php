@@ -24,19 +24,21 @@ class ModifiersService extends AbstractService
      */
     protected function getModifier($processor, array $params = []): ?AbstractModifier
     {
-        $return = null;
-        $class = "\\Mithra62\\Export\\Modifiers\\" . Str::studly($processor);
+        // Provider map takes precedence; namespace resolution is the fallback.
+        $map   = $this->getProviderMap('modifiers');
+        $class = $map[$processor] ?? ("\\Mithra62\\Export\\Modifiers\\" . Str::studly($processor));
+
         if (class_exists($class)) {
             $obj = new $class();
             if ($obj instanceof AbstractModifier) {
-                if($params) {
+                if ($params) {
                     $obj->setParams($params);
                 }
-                $return = $obj;
+                return $obj;
             }
         }
 
-        return $return;
+        return null;
     }
 
     /**
@@ -84,6 +86,26 @@ class ModifiersService extends AbstractService
         }
 
         return $return;
+    }
+
+    /**
+     * @param array $rows
+     * @return array
+     */
+    public function processChunk(array $rows): array
+    {
+        $processes = $this->getModifiers();
+        if ($processes) {
+            foreach ($rows as $key => $item) {
+                foreach ($processes as $field => $process) {
+                    if (isset($item[$field])) {
+                        $rows[$key][$field] = $this->runModifiers($item[$field], $process);
+                    }
+                }
+            }
+        }
+
+        return $rows;
     }
 
     /**

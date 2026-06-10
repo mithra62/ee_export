@@ -1,0 +1,28 @@
+{!-- ============================================================
+     Export: Query (SQL) — Basic CSV download from a raw SQL query
+     ============================================================
+     Runs a SELECT query against the database and exports the result
+     set. Column names from the query become the export headers.
+
+     Security rules enforced at validation time:
+       - Only SELECT statements are accepted
+       - Semicolons are rejected (prevents multi-statement injection)
+       - SQL comment sequences (-- and /* */) are rejected
+       - Destructive keywords (INSERT, UPDATE, DELETE, DROP, etc.)
+         are rejected as whole words
+       - In the Control Panel, this source is restricted to Super Admins
+
+     Customise before use:
+       sql            → your SELECT query; use EE's table prefix
+                        convention (exp_ prefix), e.g. exp_members,
+                        exp_channel_titles, exp_channel_data
+       output:filename → desired download filename
+       format          → csv, json, xlsx, or xml
+     ============================================================ --}
+
+{exp:export:query
+    sql="SELECT member_id, username, email FROM exp_members WHERE group_id = 1"
+    format="csv"
+    output="download"
+    output:filename="admins.csv"
+}

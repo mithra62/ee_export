@@ -1,0 +1,26 @@
+{!-- ============================================================
+     Export: Members — CSV download with field-level search filters
+     ============================================================
+     Prefix any member column or custom member field name with
+     search: to filter rows to only those matching the given value.
+     Multiple search: params are combined with AND logic.
+
+     Standard columns you can search on:
+       username, email, screen_name, ip_address, location, url
+
+     Custom member fields use their field short name (e.g. m_field_*).
+
+     Customise before use:
+       search:username        → exact username to match (or remove this line)
+       search:my_custom_field → replace with your actual field short name
+                                and the value you want to match
+       output:filename        → desired download filename
+     ============================================================ --}
+
+{exp:export:members
+    search:username="admin"
+    search:my_custom_field="active"
+    format="csv"
+    output="download"
+    output:filename="filtered-members.csv"
+}

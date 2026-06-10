@@ -7,7 +7,6 @@ class EeDecrypt extends AbstractModifier
 {
     public function process(mixed $value): mixed
     {
-        return $value;
         return ee('Encrypt')->decrypt($value);
     }
 }

@@ -23,7 +23,12 @@ class OutputService extends AbstractService
             throw new OutputServiceException('Output object not set');
         }
 
-        $class = "\\Mithra62\\Export\\Output\\" . Str::studly($params['output']);
+        $name = $params['output'];
+
+        // Provider map takes precedence; namespace resolution is the fallback.
+        $map   = $this->getProviderMap('outputs');
+        $class = $map[$name] ?? ("\\Mithra62\\Export\\Output\\" . Str::studly($name));
+
         if (class_exists($class)) {
             $obj = new $class();
             if ($obj instanceof AbstractDestination) {
@@ -32,7 +37,7 @@ class OutputService extends AbstractService
             }
         }
 
-        $this->logger()->debug('Output destination not found ' . $class);
-        throw new OutputServiceException('Output destination not found ' . $class);
+        $this->logger()->debug('Output destination not found: ' . $name);
+        throw new OutputServiceException('Output destination not found: ' . $name);
     }
 }

@@ -3,6 +3,7 @@ namespace Mithra62\Export\Tags;
 
 use ExpressionEngine\Service\Addon\Controllers\Tag\AbstractRoute;
 use Mithra62\Export\Exceptions\Exception;
+use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Traits\LoggerTrait;
 
 abstract class AbstractTag extends AbstractRoute
@@ -141,7 +142,8 @@ abstract class AbstractTag extends AbstractRoute
             }
         }
 
-        $return['fields'] = $this->explodeParam('fields');
+        $return['fields']  = $this->explodeParam('fields');
+        $return['exclude'] = $this->explodeParam('exclude');
         return $return;
     }
 
@@ -287,17 +289,8 @@ abstract class AbstractTag extends AbstractRoute
      */
     public function memberLoggedIn(): bool
     {
-        return $this->getMemberId() !== 0;
-    }
-
-    /**
-     * @return void
-     */
-    protected function guardLoggedOutRedirect(): void
-    {
-        if (!$this->memberLoggedIn() && $this->hasParam('logged_out_redirect')) {
-            ee()->template_helper->tag_redirect($this->param('logged_out_redirect'));
-        }
+        $id = $this->getMemberId();
+        return $id !== false && $id > 0;
     }
 
     /**
@@ -319,6 +312,14 @@ abstract class AbstractTag extends AbstractRoute
             if ($export->validate()) {
                 try {
                     $export->build();
+                } catch (NoDataException $e) {
+                    // Nothing to export. Invoke EE's standard no_results mechanism
+                    // so template authors can handle the empty state with an
+                    // {if no_results}...{/if} block. Without that block EE
+                    // outputs nothing — identical to the previous behaviour but
+                    // now correctly routed through the standard tag contract.
+                    ee()->TMPL->no_results();
+                    return;
                 } catch (Exception $e) {
                     show_error($e->getMessage());
                 }

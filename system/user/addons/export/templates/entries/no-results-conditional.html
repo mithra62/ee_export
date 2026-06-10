@@ -1,0 +1,24 @@
+{!-- ============================================================
+     Export: Entries — CSV download with no-results handling
+     ============================================================
+     When no entries match the filter criteria the tag renders the
+     {if no_results} block instead of producing a download. Use
+     this pattern on pages where filters may legitimately return
+     zero rows and you want to show a message rather than a blank
+     (or missing) file.
+
+     Customise before use:
+       channel        → your channel short name or numeric ID
+       status         → entry status filter
+       output:filename → desired download filename
+     ============================================================ --}
+
+{exp:export:entries
+    channel="blog"
+    status="open"
+    format="csv"
+    output="download"
+    output:filename="blog.csv"
+}
+    {if no_results}No entries matched your export criteria.{/if}
+{/exp:export:entries}

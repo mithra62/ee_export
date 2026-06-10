@@ -1,0 +1,25 @@
+{!-- ============================================================
+     Export: Members — JSON saved to server, filtered by join date
+     ============================================================
+     Exports members who registered within a specific date window.
+     Any PHP-parseable date string is accepted (YYYY-MM-DD recommended).
+
+     You can also filter by last login date using:
+       last_login_start="YYYY-MM-DD"
+       last_login_end="YYYY-MM-DD"
+
+     Customise before use:
+       join_start     → start of join date range (inclusive)
+       join_end       → end of join date range (inclusive)
+       output:path    → absolute server path, must exist and be writable
+       output:filename → filename on the server
+     ============================================================ --}
+
+{exp:export:members
+    join_start="2025-01-01"
+    join_end="2025-12-31"
+    format="json"
+    output="local"
+    output:path="/var/exports/"
+    output:filename="members-2025.json"
+}

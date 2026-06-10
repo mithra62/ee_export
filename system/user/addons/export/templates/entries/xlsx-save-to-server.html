@@ -1,0 +1,22 @@
+{!-- ============================================================
+     Export: Entries — XLSX saved to server filesystem
+     ============================================================
+     Customise before use:
+       channel        → your channel short name or numeric ID
+       status         → entry status (pipe-separate multiple: "open|closed")
+       limit          → max entries to export (remove line to export all)
+       offset         → starting position for pagination (0-based)
+       output:filename → filename on the server
+       output:path    → absolute server path, must exist and be writable
+     ============================================================ --}
+
+{exp:export:entries
+    channel="orders"
+    status="open|closed"
+    limit="1000"
+    offset="0"
+    format="xlsx"
+    output="local"
+    output:filename="orders.xlsx"
+    output:path="/var/exports/"
+}

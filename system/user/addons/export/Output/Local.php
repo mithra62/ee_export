@@ -21,7 +21,12 @@ class Local extends AbstractDestination
      */
     public function process(string $finished_export): bool|int
     {
-        return copy($finished_export, $this->getOption('path') . '/' . $this->getOption('filename'));
+        // basename() strips any directory components from the filename so that
+        // a stored value like '../../config/database.php' cannot traverse outside
+        // the approved destination directory.
+        $filename = basename((string) $this->getOption('filename'));
+        $path     = rtrim($this->getOption('path'), '/\\') . DIRECTORY_SEPARATOR . $filename;
+        return copy($finished_export, $path);
     }
 
     /**

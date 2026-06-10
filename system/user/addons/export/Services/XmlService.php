@@ -82,29 +82,50 @@ class XmlService extends XMLWriter
     }
 
     /**
+     * Open an XML file for streaming; rows are written directly to disk.
+     * @param string $path
      * @return $this
      */
-    public function initiate(): XmlService
+    public function initiateFile(string $path): XmlService
     {
-        // Create new xmlwriter using memory for string output.
-        $this->openMemory();
+        $this->openUri($path);
+        $this->applySettings();
+        return $this;
+    }
 
-        // Set indenting, if any.
+    /**
+     * Close a file-backed XML stream opened with initiateFile().
+     */
+    public function closeFile(): void
+    {
+        $this->endElement();
+        $this->endDocument();
+        $this->flush();
+    }
+
+    protected function applySettings(): void
+    {
         if ($this->indent_string) {
             $this->setIndent(true);
             $this->setIndentString($this->indent_string);
         }
 
-        // Set DTD.
         $this->startDocument($this->xml_version, $this->char_set);
 
-        // Set XSLT stylesheet path, if any.
         if ($this->xslt_file_path) {
             $this->writePi('xml-stylesheet', 'type="text/xsl" href="' . $this->xslt_file_path . '"');
         }
 
-        // Set the root tag.
         $this->startElement($this->root_name);
+    }
+
+    /**
+     * @return $this
+     */
+    public function initiate(): XmlService
+    {
+        $this->openMemory();
+        $this->applySettings();
         return $this;
     }
 

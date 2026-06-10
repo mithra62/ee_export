@@ -1,0 +1,21 @@
+{!-- ============================================================
+     Export: Members — CSV download excluding sensitive columns
+     ============================================================
+     Use the exclude parameter to strip columns you don't want in
+     the output. All other standard and custom member columns are
+     included automatically.
+
+     Common columns to exclude:
+       password, salt, unique_id, crypt_key, reset_token
+
+     Customise before use:
+       exclude        → pipe-separated list of column names to omit
+       output:filename → desired download filename
+     ============================================================ --}
+
+{exp:export:members
+    exclude="password|salt|m_field_private_notes"
+    format="csv"
+    output="download"
+    output:filename="members-safe.csv"
+}

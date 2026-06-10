@@ -140,10 +140,10 @@ class Logger implements LoggerInterface
      */
     public function log($level, string $message, array $context = []): void
     {
-        if (ee('hidden_files:LoggerService')->shouldLog($level)) {
-            $logger = ee('hidden_files:LoggerService')->getLogger();
+        if (ee('export:LoggerService')->shouldLog($level)) {
+            $logger = ee('export:LoggerService')->getLogger();
 
-            $message = ee('hidden_files:LoggerService')->format($level, $message, $context);
+            $message = ee('export:LoggerService')->format($level, $message, $context);
             $logger->log($message . ' : ' . $this->getCalledClass());
         }
     }

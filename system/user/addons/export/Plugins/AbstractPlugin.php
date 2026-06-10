@@ -164,20 +164,6 @@ abstract class AbstractPlugin implements ValidationAware
     }
 
     /**
-     * @return array
-     */
-    public function getCacheContent(): array
-    {
-        $return = [];
-        $content = file_get_contents($this->getCachePath());
-        if ($content) {
-            $return = json_decode($content, true);
-        }
-
-        return $return;
-    }
-
-    /**
      * @return string
      */
     public function getCacheFilename(): string

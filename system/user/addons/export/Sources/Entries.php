@@ -99,8 +99,19 @@ class Entries extends AbstractSource
             $limit = min($limit, $remaining);
         }
 
+        // Select all documented core columns so the export matches what the CP
+        // column picker advertises.  Listing them explicitly (rather than SELECT *)
+        // keeps the column order stable and avoids pulling in any internal EE
+        // columns that may be added in future EE versions.
         $query = ee()->db
-            ->select('entry_id, title, url_title, status, entry_date, expiration_date, author_id, edit_date')
+            ->select(
+                'entry_id, channel_id, author_id, forum_topic_id, ip_address, ' .
+                'title, url_title, status, versioning_enabled, ' .
+                'view_count_one, view_count_two, view_count_three, view_count_four, ' .
+                'allow_comments, sticky, ' .
+                'entry_date, year, month, day, expiration_date, ' .
+                'comment_expiration_date, edit_date, recent_comment_date, comment_total'
+            )
             ->from('channel_titles')
             ->where('channel_id', $channel_id)
             ->where('status', $this->getOption('status', 'open'));
@@ -224,17 +235,11 @@ class Entries extends AbstractSource
         array $fluid_grid_data = []
     ): array
     {
-        $row = [
-            'entry_id' => $entry['entry_id'],
-            'title' => $entry['title'],
-            'url_title' => $entry['url_title'],
-            'status' => $entry['status'],
-            'entry_date' => $entry['entry_date'],
-            'expiration_date' => $entry['expiration_date'],
-            'author_id' => $entry['author_id'],
-            'edit_date' => $entry['edit_date'],
-            'categories' => $cat_data[$entry_id] ?? '',
-        ];
+        // Spread all channel_titles columns fetched by nextChunk() so the row
+        // always contains exactly the columns the SELECT returns.  categories is
+        // appended after so it follows the core columns in default output order.
+        $row                = $entry;
+        $row['categories']  = $cat_data[$entry_id] ?? '';
 
         $raw_fields = $field_data[$entry_id] ?? [];
 

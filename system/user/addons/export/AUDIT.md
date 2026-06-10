@@ -117,10 +117,10 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### H-5 — `Entries::nextChunk()` fetches only 8 of the documented columns
+### H-5 — `Entries::nextChunk()` fetches only 8 of the documented columns ✅
 
 - **File:** `Sources/Entries.php` line ~103
-- **Status:** Open
+- **Status:** Resolved — SELECT expanded to all 24 core columns matching `columnsForEntries()`; `buildRow()` now spreads `$entry` directly so SELECT and row output stay permanently in sync
 - **Description:** The SELECT in `nextChunk()` hardcodes `entry_id, title, url_title, status, entry_date, expiration_date, author_id, edit_date`. The CP column picker (via `CpService::columnsForEntries()`) also offers `sticky`, `comment_total`, `channel_id`, `ip_address`, `view_count_one`–`four`, `allow_comments`, and others. Users who configure a whitelist or see these columns listed in the CP will get empty values for all of them silently.
 - **Fix:** Expand the SELECT to cover all columns exposed by `columnsForEntries()`, or use `channel_titles.*` and let `cleanFields()` handle the whitelist/blacklist filtering.
 - **Notes:**
@@ -346,7 +346,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | H-2 | High | Security — Local output path traversal | ✅ Resolved |
 | H-3 | High | Security — SQL injection via relationship_fields | Open |
 | H-4 | High | Bug — MemberService hardcoded table prefix | ✅ Resolved |
-| H-5 | High | Bug — Entries missing documented columns | Open |
+| H-5 | High | Bug — Entries missing documented columns | ✅ Resolved |
 | M-1 | Medium | Security — CSRF verification on CP routes | Open |
 | M-2 | Medium | Bug — XML invalid element names for numeric keys | Open |
 | M-3 | Medium | Bug — last_login filters pass string to int column | Open |

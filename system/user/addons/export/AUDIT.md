@@ -154,10 +154,10 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### M-3 — `last_login_start`/`last_login_end` compare date strings against a Unix int column
+### M-3 — `last_login_start`/`last_login_end` compare date strings against a Unix int column ✅
 
 - **File:** `Sources/Members.php` lines ~170–173
-- **Status:** Open
+- **Status:** Resolved — `strtotime()` applied to both values, matching the existing `join_start`/`join_end` pattern
 - **Description:** `join_start` and `join_end` correctly call `strtotime()` before being used in `WHERE` clauses against the `join_date` INT column. `last_login_start` and `last_login_end` pass the raw string directly — MySQL implicitly casts a date string like `'2024-01-01'` to `2024` (the year component as an integer) and produces completely wrong filter results with no error.
 - **Fix:**
   ```php
@@ -226,10 +226,10 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### M-9 — Grid/Fluid `limit` applies to entries, not output rows — undocumented
+### M-9 — Grid/Fluid `limit` applies to entries, not output rows — undocumented ✅
 
 - **File:** `Sources/Grid.php` line ~109, `Tags/Grid.php`, `Tags/Fluid.php`
-- **Status:** Open
+- **Status:** Resolved — clarified in `Tags/Grid.php` and `Tags/Fluid.php` phpdocs; added `export_field_limit_grid_desc` / `export_field_limit_fluid_desc` lang strings with `setDesc()` wired in CpService; DOCUMENTATION.md §3.3 and §3.4 parameter tables updated inline
 - **Description:** `$this->stream_offset` and `limit` count *entries* processed, not grid/fluid rows produced. A `limit="10"` export processes 10 entries' worth of rows, which may produce hundreds of output rows if each entry has many grid rows. This is correct behaviour, but it is not documented anywhere — template authors and CP users will expect `limit` to cap output rows.
 - **Fix:** Add a clear note in the template tag phpdoc blocks and in the CP field description: "Limits the number of *entries* processed, not the number of output rows."
 - **Notes:**
@@ -273,10 +273,10 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### L-4 — `Tags/Grid.php` phpdoc describes `fields=` as an exclusion list
+### L-4 — `Tags/Grid.php` phpdoc describes `fields=` as an exclusion list ✅
 
 - **File:** `Tags/Grid.php` line ~28
-- **Status:** Open
+- **Status:** Resolved — fixed during M-9 pass; `fields=` now correctly described as whitelist, `exclude=` added as a separate entry
 - **Description:** The docblock says `fields="col1|col2"` is "Columns to exclude from output (exclusion list)". It is the *inclusion* whitelist. `exclude=` is the exclusion list. Any developer reading the source to understand the tag params will get the wrong behaviour.
 - **Fix:** Correct the phpdoc to match `AbstractSource::cleanFields()` semantics.
 - **Notes:**
@@ -349,17 +349,17 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | H-5 | High | Bug — Entries missing documented columns | ✅ Resolved |
 | M-1 | Medium | Security — CSRF verification on CP routes | Open |
 | M-2 | Medium | Bug — XML invalid element names for numeric keys | Open |
-| M-3 | Medium | Bug — last_login filters pass string to int column | Open |
+| M-3 | Medium | Bug — last_login filters pass string to int column | ✅ Resolved |
 | M-4 | Medium | Code quality — dead code with hardcoded field IDs | Open |
 | M-5 | Medium | PHP 8.2 — dynamic property access in toArray() | Open |
 | M-6 | Medium | Bug — Run route skips ExportService::validate() | Open |
 | M-7 | Medium | UX — Entries entry_id pipe hint vs int cast | Open |
 | M-8 | Medium | Feature gap — search: param ignored for non-Members | Open |
-| M-9 | Medium | Docs — Grid/Fluid limit applies to entries not rows | Open |
+| M-9 | Medium | Docs — Grid/Fluid limit applies to entries not rows | ✅ Resolved |
 | L-1 | Low | Upgrade — update() stub needs comment | Open |
 | L-2 | Low | Dead code — getCacheContent() reads directory | Open |
 | L-3 | Low | Error handling — fopen() failure not checked | Open |
-| L-4 | Low | Docs — Grid phpdoc wrong for fields= param | Open |
+| L-4 | Low | Docs — Grid phpdoc wrong for fields= param | ✅ Resolved |
 | L-5 | Low | Security — cache dir created 0777 | Open |
 | L-6 | Low | PHP 8 — nullable type declarations missing | Open |
 | L-7 | Low | UX — no {if no_results} support | Open |

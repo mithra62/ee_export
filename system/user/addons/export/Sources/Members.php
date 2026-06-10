@@ -168,8 +168,12 @@ class Members extends AbstractSource
         }
 
         if ($this->getOption('last_login_start') && $this->getOption('last_login_end')) {
-            $query->where('members.last_visit >=', $this->getOption('last_login_start'));
-            $query->where('members.last_visit <=', $this->getOption('last_login_end'));
+            // last_visit is a Unix timestamp (INT). Apply strtotime() so a date
+            // string like '2024-01-01' is converted before comparison — MySQL
+            // would otherwise implicitly cast it to the integer 2024 and silently
+            // produce wrong results.
+            $query->where('members.last_visit >=', strtotime($this->getOption('last_login_start')));
+            $query->where('members.last_visit <=', strtotime($this->getOption('last_login_end')));
         }
 
         $search = $this->getOption('search', []);

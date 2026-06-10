@@ -285,7 +285,7 @@ Exports EE Grid field rows as a flat tabular dataset. Each exported row represen
 | `status` | | `open` | Entry status filter |
 | `author_id` | | — | Filter entries by member ID |
 | `entry_id` | | — | Export grid rows for a single entry only |
-| `limit` | | — | Maximum number of **entries** to process |
+| `limit` | | — | Maximum number of **entries** to process. Each entry can have many grid rows — total output rows may be much higher. |
 | `offset` | | `0` | Entry-level pagination offset |
 | `chunk_size` | | `500` | Entries per streaming chunk |
 | `relationship_fields` | | `title` | Fields to pull from relationship-column targets |
@@ -369,7 +369,7 @@ All sub-field types are routed through the FieldsService handler pipeline:
 | `status` | | `open` | Entry status filter |
 | `author_id` | | — | Filter entries by member ID |
 | `entry_id` | | — | Export instances for a single entry only |
-| `limit` | | — | Maximum number of **entries** to process |
+| `limit` | | — | Maximum number of **entries** to process. Each entry can have many fluid instances — total output rows may be much higher. |
 | `offset` | | `0` | Entry-level pagination offset |
 | `chunk_size` | | `500` | Entries per streaming chunk |
 | `relationship_fields` | | `title` | Pipe-separated fields to pull from related entries |

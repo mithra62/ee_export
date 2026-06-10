@@ -492,6 +492,7 @@ class CpService
         $src->getFieldSet('export_field_limit_grid')
             ->set('group', 'source_grid')
             ->setTitle('export_field_limit')
+            ->setDesc('export_field_limit_grid_desc')
             ->getField('src_grid_limit', 'text')
                 ->setValue($settings['source:limit'] ?? '');
 
@@ -549,6 +550,7 @@ class CpService
         $src->getFieldSet('export_field_limit_fluid')
             ->set('group', 'source_fluid')
             ->setTitle('export_field_limit')
+            ->setDesc('export_field_limit_fluid_desc')
             ->getField('src_fluid_limit', 'text')
                 ->setValue($settings['source:limit'] ?? '');
 

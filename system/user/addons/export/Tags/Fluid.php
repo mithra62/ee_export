@@ -17,7 +17,9 @@ namespace Mithra62\Export\Tags;
  *   status="open"                  Entry status filter (default: open)
  *   author_id="5"                  Filter entries by member ID
  *   entry_id="42"                  Export fluid instances for a single entry only
- *   limit="100"                    Max entries to process
+ *   limit="100"                    Max number of *entries* to process. Each entry can have
+ *                                  many fluid instances, so the total output row count may be
+ *                                  much higher than this value.
  *   offset="0"                     Entry-level pagination offset
  *   chunk_size="500"               Entries per streaming chunk (default: 500)
  *   fields="col1|col2"             Whitelist — return only these output columns

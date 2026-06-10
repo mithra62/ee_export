@@ -1,0 +1,23 @@
+{!-- ============================================================
+     Export: Entries — CSV download with column whitelist
+     ============================================================
+     Use the fields parameter to return only the columns you need,
+     in exactly the order listed. When fields is set, exclude is
+     ignored and all other columns are dropped.
+
+     Customise before use:
+       channel        → your channel short name or numeric ID
+       fields         → pipe-separated list of columns to include,
+                        in the order you want them to appear
+                        (standard columns: title, entry_date, status,
+                        entry_id, url_title, author_id, etc.)
+       output:filename → desired download filename
+     ============================================================ --}
+
+{exp:export:entries
+    channel="blog"
+    fields="title|entry_date"
+    format="csv"
+    output="download"
+    output:filename="titles.csv"
+}

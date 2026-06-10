@@ -1,0 +1,28 @@
+{!-- ============================================================
+     Export: Fluid — CSV download with a column whitelist
+     ============================================================
+     Use the fields parameter to return only the columns you need,
+     in exactly the order listed. All other columns are dropped.
+
+     Available Fluid output columns:
+       entry_id, entry_title, instance_order,
+       sub_field_id, sub_field_type, sub_field_label, value
+
+     Customise before use:
+       channel              → your channel short name or numeric ID
+       field                → Fluid field short name or numeric field_id
+       fields               → pipe-separated columns to include, in order
+       relationship_fields  → pipe-separated fields to pull from any
+                              relationship sub-fields (remove if unused)
+       output:filename      → desired download filename
+     ============================================================ --}
+
+{exp:export:fluid
+    channel="blog"
+    field="page_builder"
+    fields="entry_title|instance_order|sub_field_label|value"
+    relationship_fields="title|field_url"
+    format="csv"
+    output="download"
+    output:filename="blocks-summary.csv"
+}

@@ -1,0 +1,22 @@
+{!-- ============================================================
+     Export: Fluid — JSON download for a single entry's blocks
+     ============================================================
+     Exports the Fluid field blocks belonging to one specific entry.
+     Useful for per-entry export links in templates.
+
+     Customise before use:
+       channel        → your channel short name or numeric ID
+       field          → Fluid field short name or numeric field_id
+       entry_id       → the numeric entry ID to export blocks for
+                        (can be set dynamically, e.g. entry_id="{entry_id}")
+       output:filename → desired download filename
+     ============================================================ --}
+
+{exp:export:fluid
+    channel="blog"
+    field="page_builder"
+    entry_id="42"
+    format="json"
+    output="download"
+    output:filename="entry-42-blocks.json"
+}

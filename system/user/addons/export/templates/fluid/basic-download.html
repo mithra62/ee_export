@@ -1,0 +1,27 @@
+{!-- ============================================================
+     Export: Fluid — XLSX download of all fluid field blocks
+     ============================================================
+     Exports every Fluid field instance across all matching entries
+     as a flat tabular dataset. Each output row represents one
+     content block and carries:
+       entry_id, entry_title, instance_order,
+       sub_field_id, sub_field_type, sub_field_label, value
+
+     Note: limit controls the number of entries processed. An entry
+     with 5 fluid blocks counts as 1 against the limit but produces
+     5 output rows.
+
+     Customise before use:
+       channel        → your channel short name or numeric ID
+       field          → Fluid field short name or numeric field_id
+       output:filename → desired download filename
+       format          → csv, json, xlsx, or xml
+     ============================================================ --}
+
+{exp:export:fluid
+    channel="blog"
+    field="page_builder"
+    format="xlsx"
+    output="download"
+    output:filename="page-builder.xlsx"
+}

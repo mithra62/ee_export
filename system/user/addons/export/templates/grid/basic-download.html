@@ -1,0 +1,25 @@
+{!-- ============================================================
+     Export: Grid — XLSX download of all grid rows
+     ============================================================
+     Exports every row from a Grid field across all matching entries.
+     Each output row contains entry-level context columns (entry_id,
+     entry_title, row_order) plus every Grid column value.
+
+     Note: limit controls the number of entries processed, not grid
+     rows. An entry with 5 grid rows counts as 1 against the limit
+     but produces 5 output rows.
+
+     Customise before use:
+       channel        → your channel short name or numeric ID
+       field          → Grid field short name or numeric field_id
+       output:filename → desired download filename
+       format          → csv, json, xlsx, or xml
+     ============================================================ --}
+
+{exp:export:grid
+    channel="products"
+    field="variants"
+    format="xlsx"
+    output="download"
+    output:filename="variants.xlsx"
+}

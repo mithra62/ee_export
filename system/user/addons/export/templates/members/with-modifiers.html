@@ -1,0 +1,30 @@
+{!-- ============================================================
+     Export: Members — CSV download with multiple column modifiers
+     ============================================================
+     Modifiers post-process column values before they are written.
+     Chain multiple modifiers with | — they run left to right.
+
+     Built-in modifiers:
+       ee_date[format]       → format a Unix timestamp (EE date format strings)
+       ee_decrypt            → decrypt a value encrypted by EE's encryption service
+       uc_first              → uppercase the first character
+       uc_words              → uppercase the first letter of each word
+       replace_with[value]   → replace the entire value with a static string
+
+     Customise before use:
+       modify:join_date      → column name for join date (may vary by EE version)
+       modify:last_visit     → column name for last visit timestamp
+       modify:display_name   → column you want title-cased
+       modify:bio            → column you want redacted (or remove this line)
+       output:filename       → desired download filename
+     ============================================================ --}
+
+{exp:export:members
+    format="csv"
+    output="download"
+    output:filename="members.csv"
+    modify:join_date="ee_date[%Y-%m-%d]"
+    modify:last_visit="ee_date[%Y-%m-%d]"
+    modify:display_name="uc_words"
+    modify:bio="replace_with[REDACTED]"
+}

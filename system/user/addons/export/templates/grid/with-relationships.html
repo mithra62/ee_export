@@ -1,0 +1,25 @@
+{!-- ============================================================
+     Export: Grid — CSV download with relationship column resolution
+     ============================================================
+     When a Grid field contains a Relationship column, Export resolves
+     each related entry and pulls the fields listed in
+     relationship_fields. The default is "title" only; pipe-separate
+     additional field short names to include more data.
+
+     Customise before use:
+       channel              → your channel short name or numeric ID
+       field                → Grid field short name or numeric field_id
+       relationship_fields  → pipe-separated fields to pull from related
+                              entries (title is always available; add
+                              custom field short names as needed)
+       output:filename      → desired download filename
+     ============================================================ --}
+
+{exp:export:grid
+    channel="orders"
+    field="line_items"
+    relationship_fields="title|field_sku|field_price"
+    format="csv"
+    output="download"
+    output:filename="line-items.csv"
+}

@@ -1,0 +1,22 @@
+{!-- ============================================================
+     Export: Entries — JSON download with date formatting and
+             relationship field resolution
+     ============================================================
+     Customise before use:
+       channel              → your channel short name or numeric ID
+       relationship_fields  → pipe-separated list of fields to pull
+                              from related entries (title is always
+                              included; add custom field short names)
+       output:filename      → desired download filename
+       modify:entry_date    → ee_date format string; remove this line
+                              to output the raw Unix timestamp instead
+     ============================================================ --}
+
+{exp:export:entries
+    channel="news"
+    relationship_fields="title|url_title|field_author_bio"
+    format="json"
+    output="download"
+    output:filename="news.json"
+    modify:entry_date="ee_date[%Y-%m-%d]"
+}

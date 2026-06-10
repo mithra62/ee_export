@@ -1,0 +1,16 @@
+{!-- ============================================================
+     Export: Entries — Basic CSV download
+     ============================================================
+     Customise before use:
+       channel        → your channel short name or numeric ID
+       status         → entry status to include (open, closed, or pipe-separated list)
+       output:filename → desired download filename
+     ============================================================ --}
+
+{exp:export:entries
+    channel="blog"
+    status="open"
+    format="csv"
+    output="download"
+    output:filename="blog-entries.csv"
+}

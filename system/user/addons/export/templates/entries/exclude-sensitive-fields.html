@@ -1,0 +1,20 @@
+{!-- ============================================================
+     Export: Entries — CSV download excluding specific columns
+     ============================================================
+     Use the exclude parameter to strip columns you don't want in
+     the output. All other columns are included automatically.
+
+     Customise before use:
+       channel        → your channel short name or numeric ID
+       exclude        → pipe-separated list of field short names
+                        (custom field names, not labels) to omit
+       output:filename → desired download filename
+     ============================================================ --}
+
+{exp:export:entries
+    channel="members_channel"
+    exclude="field_ssn|field_dob"
+    format="csv"
+    output="download"
+    output:filename="export.csv"
+}

@@ -39,7 +39,7 @@ class MemberService extends AbstractService
     public function getColumns(): array
     {
         if (!$this->columns) {
-            $query = ee()->db->query("SHOW COLUMNS FROM exp_members");
+            $query = ee()->db->query("SHOW COLUMNS FROM " . ee()->db->dbprefix . "members");
             if ($query instanceof CI_DB_result) {
                 foreach ($query->result_array() as $row) {
                     $this->columns[$row['Field']] = $row['Field'];

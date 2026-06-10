@@ -103,10 +103,10 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### H-4 — `MemberService::getColumns()` hardcodes `exp_` table prefix
+### H-4 — `MemberService::getColumns()` hardcodes `exp_` table prefix ✅
 
 - **File:** `Services/MemberService.php` line ~43
-- **Status:** Open
+- **Status:** Resolved — replaced `exp_members` with `ee()->db->dbprefix . 'members'`
 - **Description:** `ee()->db->query("SHOW COLUMNS FROM exp_members")` hardcodes the `exp_` prefix. EE installations configured with a non-default table prefix (common on shared hosting or multi-site setups) will get an empty result. The Members export then produces rows with all core columns silently missing — no error, no warning.
 - **Fix:** Use the configured prefix:
   ```php
@@ -345,7 +345,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | H-1 | High | Bug — XLSX bold header | Open |
 | H-2 | High | Security — Local output path traversal | ✅ Resolved |
 | H-3 | High | Security — SQL injection via relationship_fields | Open |
-| H-4 | High | Bug — MemberService hardcoded table prefix | Open |
+| H-4 | High | Bug — MemberService hardcoded table prefix | ✅ Resolved |
 | H-5 | High | Bug — Entries missing documented columns | Open |
 | M-1 | Medium | Security — CSRF verification on CP routes | Open |
 | M-2 | Medium | Bug — XML invalid element names for numeric keys | Open |

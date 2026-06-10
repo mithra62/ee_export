@@ -120,6 +120,13 @@ class Entries extends AbstractSource
             $query->where('author_id', (int)$this->getOption('author_id'));
         }
 
+        $entry_id_filter = array_filter(array_map('intval', explode('|', (string) $this->getOption('entry_id', ''))));
+        if (count($entry_id_filter) === 1) {
+            $query->where('entry_id', reset($entry_id_filter));
+        } elseif (count($entry_id_filter) > 1) {
+            $query->where_in('entry_id', $entry_id_filter);
+        }
+
         $result = $query->limit($limit, $this->stream_offset)->get();
 
         if (!($result instanceof CI_DB_result) || $result->num_rows() === 0) {

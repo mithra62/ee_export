@@ -208,10 +208,10 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ### M-7 — `Entries` `entry_id` field shows "Pipe-separated" hint but only accepts a single int
 
-- **File:** `Sources/Entries.php::nextChunk()`, `Services/CpService.php` (entry_id field hint)
-- **Status:** Open
-- **Description:** `nextChunk()` applies `where('entry_id', (int) $this->getOption('entry_id'))` — the cast to `int` means only a single ID is ever used. The CP form renders `src_entries_entry_id` with a "Pipe-separated" description hint, implying multi-ID support that doesn't exist. Users will enter `1|2|3` and silently export only entry `1`.
-- **Fix:** Either implement `where_in` for a parsed array of IDs to match the documented behaviour, or change the form field hint to "Single entry ID" and remove the pipe-separated description.
+- **File:** `Sources/Entries.php::nextChunk()`, `Sources/Grid.php::nextChunk()`, `Sources/Fluid.php::nextChunk()`
+- **Status:** ✅ Resolved
+- **Description:** `nextChunk()` applies `where('entry_id', (int) $this->getOption('entry_id'))` — the cast to `int` means only a single ID is ever used. The CP form renders `src_entries_entry_id` with a "Pipe-separated" description hint, implying multi-ID support that doesn't exist. Users will enter `1|2|3` and silently export only entry `1`. Entries source had no `entry_id` filter at all.
+- **Fix:** Implemented `where_in` across all three sources. Pipe-separated values are parsed to an int array; single ID uses `where`, multiple use `where_in`, absent skips the clause entirely. Entries source also gained the missing filter.
 - **Notes:**
 
 ---
@@ -353,7 +353,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | M-4 | Medium | Code quality — dead code with hardcoded field IDs | ✅ Resolved |
 | M-5 | Medium | PHP 8.2 — dynamic property access in toArray() | ✅ Resolved |
 | M-6 | Medium | Bug — Run route skips ExportService::validate() | ✅ Resolved |
-| M-7 | Medium | UX — Entries entry_id pipe hint vs int cast | Open |
+| M-7 | Medium | UX — Entries entry_id pipe hint vs int cast | ✅ Resolved |
 | M-8 | Medium | Feature gap — search: param ignored for non-Members | Open |
 | M-9 | Medium | Docs — Grid/Fluid limit applies to entries not rows | ✅ Resolved |
 | L-1 | Low | Upgrade — update() stub needs comment | Open |

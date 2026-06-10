@@ -55,7 +55,7 @@ class Index extends AbstractRoute
                 $config->getFormattedCreatedAt(),
                 [
                     'toolbar_items' => [
-                        'run' => [
+                        'download' => [
                             'href'  => $this->url('run/' . $config->id),
                             'title' => lang('export_run'),
                         ],
@@ -64,9 +64,8 @@ class Index extends AbstractRoute
                             'title' => lang('export_edit'),
                         ],
                         'remove' => [
-                            'href'    => $this->url('delete/' . $config->id),
-                            'title'   => lang('export_delete'),
-                            'confirm' => lang('export_delete_confirm'),
+                            'href'  => $this->url('delete/' . $config->id),
+                            'title' => lang('export_delete'),
                         ],
                     ],
                 ],

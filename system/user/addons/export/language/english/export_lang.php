@@ -128,10 +128,20 @@ $lang = [
     'export_modifier_chain'       => 'Modifier Chain',
     // 'export_add_modifier' removed — EE's MiniGrid renders its own Add A Row button
 
+    // ── Delete confirmation form ──────────────────────────────────────────────
+    'export_delete_form_heading'  => 'Remove Export',
+    'export_delete_confirm'       => 'Confirm Removal',
+    'export_delete_confirm_desc'  => 'Toggle on to confirm you want to permanently remove this export configuration. This action cannot be undone.',
+    'export_delete_btn'           => 'Delete Export',
+    'export_deleting'             => 'Deleting…',
+
     // ── Errors ────────────────────────────────────────────────────────────────
-    'export_err_heading'    => 'Your submission has errors',
-    'export_err_fix_below'  => 'Please correct the fields highlighted below.',
-    'export_err_not_found'  => 'Export configuration not found.',
+    'export_err_heading'             => 'Your submission has errors',
+    'export_err_fix_below'           => 'Please correct the fields highlighted below.',
+    'export_err_not_found'           => 'Export configuration not found.',
+    'export_err_sql_superadmin_only' => 'The SQL source is restricted to Super Admins.',
+    'export_err_numeric'             => 'Must be a positive whole number.',
+    'export_err_chunk_size'          => 'Chunk size must be at least 1.',
 
 
     '' => '',

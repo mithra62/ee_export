@@ -36,7 +36,7 @@ use Mithra62\Export\Sources\Grid as SourceGrid;
 use Mithra62\Export\Sources\Members;
 use Mithra62\Export\Sources\Sql;
 
-const EXPORT_VERSION = '0.1.0';
+const EXPORT_VERSION = '1.0.0-beta.1';
 
 require_once __DIR__ . "/vendor/autoload.php";
 
@@ -45,10 +45,10 @@ return [
     'models' => [
         'ExportConfiguration' => 'Models\ExportConfiguration',
     ],
-    'description' => 'Export description',
+    'description' => 'Export channel entries, members, Grid rows, Fluid instances, or SQL results to CSV, JSON, XLSX, or XML.',
     'version' => EXPORT_VERSION,
     'author' => 'mithra62',
-    'author_url' => 'fdsa',
+    'author_url' => 'https://mithra62.com',
     'namespace' => 'Mithra62\Export',
     'settings_exist' => true,
     'services' => [

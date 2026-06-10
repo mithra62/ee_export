@@ -27,39 +27,90 @@ abstract class AbstractRoute extends EeAbstractRoute
     }
 
     /**
-     * Validate Create/Edit form POST data using CI's form_validation library.
+     * Validate Create/Edit form POST data.
      *
-     * Errors are stored in CI's form_validation state, which EE's
-     * _shared/form/fieldset.php reads via form_error_class() to add the
-     * `fieldset-invalid` class, and _shared/form/field.php reads via
-     * form_error() to render the inline error message — both without any
-     * custom $errors object being passed to the view.
+     * Two-step process:
+     *   1. Register core CP-layer CI rules (name, source, output_filename, numeric
+     *      fields). These are simple constraints that don't require driver context.
+     *   2. Run CpValidationBridge, which instantiates the active source / format /
+     *      output driver, calls their built-in EE Validation rules (including custom
+     *      rules like validChannel, isSelect, dirExists), maps any errors back to CP
+     *      field names, and injects them into CI form_validation as always-fail
+     *      callable rules — all before run() fires.
+     *
+     * After both steps, a single ee()->form_validation->run() covers everything.
+     * Errors end up in CI's state, so EE's fieldset.php reads them via
+     * form_error($field) / form_error_class($field) and renders them inline.
      *
      * @param  array $post  Raw $_POST
      * @return bool         True when all rules pass; false when any fail
      */
     protected function validate(array $post): bool
     {
-        ee()->load->library('form_validation');
+        $source = trim($post['source'] ?? 'entries');
 
-        // Match EE's standard inline error markup used across all CP forms.
+        ee()->load->library('form_validation');
         ee()->form_validation->set_error_delimiters(
             '<em class="ee-form-error-message">',
             '</em>'
         );
 
+        // ── Step 1: Core CP-layer rules (always apply) ────────────────────────
         ee()->form_validation->set_rules('name',            lang('export_field_name'),     'required');
         ee()->form_validation->set_rules('source',          lang('export_field_source'),   'required');
         ee()->form_validation->set_rules('output_filename', lang('export_field_filename'), 'required');
 
-        // XML format requires root and branch element names.
-        // We check $_POST['format'] before running so we only add the
-        // required rules when they are actually relevant.
-        if (($post['format'] ?? '') === 'xml') {
-            ee()->form_validation->set_rules('fmt_root_name',   lang('export_format_root_name'),   'required');
-            ee()->form_validation->set_rules('fmt_branch_name', lang('export_format_branch_name'), 'required');
+        // Numeric source params — only validate when the field is non-empty so
+        // optional fields don't fail when left blank.
+        $prefix = 'src_' . $source . '_';
+        foreach (['limit', 'offset', 'author_id'] as $f) {
+            $key = $prefix . $f;
+            if (isset($post[$key]) && $post[$key] !== '') {
+                ee()->form_validation->set_rules($key, $f, 'is_natural');
+            }
+        }
+        $chunk_key = $prefix . 'chunk_size';
+        if (! empty($post[$chunk_key])) {
+            ee()->form_validation->set_rules($chunk_key, 'chunk_size', 'is_natural_no_zero');
         }
 
-        return ee()->form_validation->run();
+        // ── Step 2: CI run() for the core rules registered above ─────────────
+        $ci_valid = ee()->form_validation->run();
+
+        // ── Step 3: Driver rules via bridge ───────────────────────────────────
+        // EE's legacy form_validation only supports pipe-string rules and the
+        // callback_method format — PHP callable arrays are silently ignored.
+        // The bridge therefore returns errors as a plain array, which we inject
+        // directly into CI's public $_field_data so that form_error() and
+        // form_error_class() render them inline without any extra view variable.
+        //
+        // Note: error() applies $_error_prefix/_error_suffix when reading, so we
+        // store the raw message (no HTML wrapping needed here).
+        $bridge        = new \Mithra62\Export\Services\CpValidationBridge();
+        $driver_errors = $bridge->getErrors($post, $source);
+
+        foreach ($driver_errors as $cp_field => $message) {
+            ee()->form_validation->_field_data[$cp_field] = [
+                'field'    => $cp_field,
+                'label'    => $cp_field,
+                'rules'    => '',
+                'is_array' => false,
+                'postdata' => $post[$cp_field] ?? '',
+                'error'    => $message,
+            ];
+        }
+
+        return $ci_valid && empty($driver_errors);
+    }
+
+    /**
+     * Abort with a 403 unless the current member is a Super Admin.
+     * Used to gate delete and other privileged operations.
+     */
+    protected function requireSuperAdmin(): void
+    {
+        if (! ee('Permission')->isSuperAdmin()) {
+            show_error(lang('unauthorized_access'), 403);
+        }
     }
 }

@@ -39,8 +39,32 @@ class Sql extends AbstractSource
         $validator = parent::getValidator();
         $data = $this->data;
         $validator->defineRule('isSelect', function ($key, $value, $parameters, $rule) use ($data) {
-            return str_starts_with(strtolower($value), 'select') ? true : 'invalid query';
-            //return ($data['mode'] == $parameters[0]) ? true : $rule->skip();
+            // Strip line comments (-- ...) and block comments (/* ... */) before analysis
+            $clean = preg_replace('/--[^\n]*/', '', $value);
+            $clean = preg_replace('/\/\*.*?\*\//s', '', $clean);
+            $clean = trim($clean);
+
+            // Must begin with SELECT
+            if (! preg_match('/^select\s/i', $clean)) {
+                return 'query must be a SELECT statement';
+            }
+
+            // Block multi-statement injection — semicolons allow stacking arbitrary SQL
+            if (str_contains($clean, ';')) {
+                return 'query must not contain semicolons';
+            }
+
+            // Belt-and-suspenders: block destructive keywords as whole words so a
+            // comment-stripped payload like "SELECT 1 DROP TABLE foo" is rejected.
+            $blocked = ['insert', 'update', 'delete', 'drop', 'truncate', 'alter',
+                        'create', 'replace', 'call', 'exec'];
+            foreach ($blocked as $kw) {
+                if (preg_match('/\b' . $kw . '\b/i', $clean)) {
+                    return 'query contains disallowed keyword: ' . strtoupper($kw);
+                }
+            }
+
+            return true;
         });
 
         return $validator;

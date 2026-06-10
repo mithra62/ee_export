@@ -11,7 +11,7 @@
 
 <div class="tbl-ctrls">
     <fieldset class="tbl-search right">
-        <a class="button button--action" href="<?= $create_url ?>"><?= lang('export_create_new') ?></a>
+        <a class="button button--primary" href="<?= $create_url ?>"><?= lang('export_create_new') ?></a>
     </fieldset>
     <?php $this->embed('ee:_shared/table', $table) ?>
 </div>

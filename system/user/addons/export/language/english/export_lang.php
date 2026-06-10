@@ -146,5 +146,4 @@ $lang = [
     'export_err_chunk_size'          => 'Chunk size must be at least 1.',
 
 
-    '' => '',
 ];

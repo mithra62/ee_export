@@ -293,10 +293,10 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### L-6 — `ExportService` setters missing nullable type declaration
+### L-6 — `ExportService` setters missing nullable type declaration ✅
 
 - **File:** `Services/ExportService.php` lines ~68, ~92, ~116, ~140
-- **Status:** Open
+- **Status:** Resolved — all four setters updated from `Type $param = null` to `?Type $param = null`
 - **Description:** All four service setters are declared `function setOutput(OutputService $output = null)` — the parameter is not typed as `?OutputService`. This pattern is deprecated in PHP 8.x and will become a type error in strict mode. EE 7 targets PHP 8.0+.
 - **Fix:** Change all four signatures to use nullable types:
   ```php
@@ -306,20 +306,20 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### L-7 — `AbstractTag::compile()` catches `NoDataException` silently; no `{if no_results}` support
+### L-7 — `AbstractTag::compile()` catches `NoDataException` silently; no `{if no_results}` support ✅
 
 - **File:** `Tags/AbstractTag.php`
-- **Status:** Open
+- **Status:** Resolved — bare `return` replaced with `ee()->TMPL->no_results()` before return; DOCUMENTATION.md §3 updated with `{if no_results}` usage example
 - **Description:** When no data is found, `NoDataException` is caught and the tag returns empty. This is correct for download tags (no file = nothing to deliver). However, there is no way for a template to distinguish "export ran successfully and found nothing" from "export failed to configure correctly." EE's `no_results` pattern (`ee()->TMPL->no_results()`) is not hooked in.
 - **Fix:** For non-download outputs (`local`), consider calling `ee()->TMPL->no_results()` in the catch block. For download outputs, document explicitly that empty results produce no output.
 - **Notes:** Acceptable for 1.0.0 with documentation; full `no_results` support could be a 1.1 feature.
 
 ---
 
-### L-8 — Trailing empty string key in language file
+### L-8 — Trailing empty string key in language file ✅
 
 - **File:** `language/english/export_lang.php` line 147
-- **Status:** Open
+- **Status:** Resolved — `'' => ''` entry removed
 - **Description:** `'' => ''` at the end of the `$lang` array is a leftover from a copy-paste template. Harmless but untidy.
 - **Fix:** Remove the line.
 - **Notes:**
@@ -361,7 +361,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | L-3 | Low | Error handling — fopen() failure not checked | ✅ Resolved |
 | L-4 | Low | Docs — Grid phpdoc wrong for fields= param | ✅ Resolved |
 | L-5 | Low | Security — cache dir created 0777 | Open |
-| L-6 | Low | PHP 8 — nullable type declarations missing | Open |
-| L-7 | Low | UX — no {if no_results} support | Open |
-| L-8 | Low | Code quality — empty lang key | Open |
+| L-6 | Low | PHP 8 — nullable type declarations missing | ✅ Resolved |
+| L-7 | Low | UX — no {if no_results} support | ✅ Resolved |
+| L-8 | Low | Code quality — empty lang key | ✅ Resolved |
 | L-9 | Low | UX — Grid/Fluid shared storage key in Edit form | Open |

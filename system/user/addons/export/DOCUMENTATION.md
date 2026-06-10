@@ -78,6 +78,14 @@ Tag parameters are routed by prefix:
 
 ## 3. Template Tags
 
+> **Empty results.** When a source returns no data (e.g. a channel with no entries matching the filters), all export tags honour EE's standard `{if no_results}` conditional. If the block is present it is rendered; if absent the tag produces no output and no error. Download exports simply deliver nothing to the browser.
+>
+> ```ee
+> {exp:export:entries channel="blog" format="csv" output="download" output:filename="blog.csv"}
+> {if no_results}No entries matched your export criteria.{/if}
+> {/exp:export:entries}
+> ```
+
 ### 3.1 Entries
 
 Exports channel entry rows. Each row contains standard entry columns plus every custom field assigned to the channel. Streams in configurable chunks for memory efficiency.

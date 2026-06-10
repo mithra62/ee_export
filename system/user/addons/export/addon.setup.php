@@ -42,9 +42,6 @@ require_once __DIR__ . "/vendor/autoload.php";
 
 return [
     'name' => 'Export',
-    'models' => [
-        'ExportConfiguration' => 'Models\ExportConfiguration',
-    ],
     'description' => 'Export channel entries, members, Grid rows, Fluid instances, or SQL results to CSV, JSON, XLSX, or XML.',
     'version' => EXPORT_VERSION,
     'author' => 'mithra62',
@@ -102,6 +99,9 @@ return [
         'CpService' => function ($addon) {
             return new CpService();
         },
+    ],
+    'models' => [
+        'ExportConfiguration' => 'Models\ExportConfiguration',
     ],
 
     // ---------------------------------------------------------------------------

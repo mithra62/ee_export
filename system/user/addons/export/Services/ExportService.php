@@ -65,7 +65,7 @@ class ExportService extends AbstractService
      * @param OutputService|null $output
      * @return $this
      */
-    public function setOutput(OutputService $output = null): ExportService
+    public function setOutput(?OutputService $output = null): ExportService
     {
         if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
@@ -89,7 +89,7 @@ class ExportService extends AbstractService
      * @return $this
      * @throws ExportServiceException
      */
-    public function setSources(SourcesService $sources = null): ExportService
+    public function setSources(?SourcesService $sources = null): ExportService
     {
         if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
@@ -112,7 +112,7 @@ class ExportService extends AbstractService
      * @return $this
      * @throws ExportServiceException
      */
-    public function setModifiers(ModifiersService $post = null): ExportService
+    public function setModifiers(?ModifiersService $post = null): ExportService
     {
         if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");
@@ -135,7 +135,7 @@ class ExportService extends AbstractService
      * @return $this
      * @throws ExportServiceException
      */
-    public function setFormats(FormatsService $formats = null): ExportService
+    public function setFormats(?FormatsService $formats = null): ExportService
     {
         if (is_null($this->getParams())) {
             throw new ExportServiceException("Parameters is null");

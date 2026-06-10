@@ -313,6 +313,12 @@ abstract class AbstractTag extends AbstractRoute
                 try {
                     $export->build();
                 } catch (NoDataException $e) {
+                    // Nothing to export. Invoke EE's standard no_results mechanism
+                    // so template authors can handle the empty state with an
+                    // {if no_results}...{/if} block. Without that block EE
+                    // outputs nothing — identical to the previous behaviour but
+                    // now correctly routed through the standard tag contract.
+                    ee()->TMPL->no_results();
                     return;
                 } catch (Exception $e) {
                     show_error($e->getMessage());

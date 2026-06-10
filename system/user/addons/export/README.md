@@ -6,14 +6,13 @@ Every layer of the pipeline is independently extensible. Third-party addons can 
 
 ---
 
-## Requirements
+## System Requirements
 
-| Dependency | Minimum version | Notes |
-|---|---|---|
-| ExpressionEngine | 6.0 | Template tag features |
-| ExpressionEngine | 7.2 | Control Panel UI |
-| PHP | 8.0 | |
-| [openspout/openspout](https://github.com/openspout/openspout) | 4.0 | XLSX generation |
+| Dependency | Minimum version |
+|---|---|
+| ExpressionEngine | 7.2 |
+| PHP | 8.0 |
+| [openspout/openspout](https://github.com/openspout/openspout) | 4.0 |
 
 ---
 
@@ -265,9 +264,9 @@ Third-party field types (e.g. Bloqs, Coilpack fields) can be supported by regist
 
 ---
 
-## Control Panel (EE 7.2+)
+## Control Panel
 
-Export ships with a native Control Panel for EE 7.2 and later. Navigate to **Add-Ons → Export** to create, edit, run, and delete saved export configurations without writing template code.
+Export ships with a native Control Panel. Navigate to **Add-Ons → Export** to create, edit, run, and delete saved export configurations without writing template code.
 
 - All source, format, output, column selection, and modifier options are available through the form UI.
 - Source-specific and format-specific field groups appear and hide automatically as you change the Source and Format selects.

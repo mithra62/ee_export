@@ -26,7 +26,17 @@
 11. [Extending — Modifiers](#11-extending--modifiers)
 12. [Extending — Field Handlers](#12-extending--field-handlers)
 13. [Field Handler Context Reference](#13-field-handler-context-reference)
-14. [Control Panel (EE 7.2+)](#14-control-panel-ee-72)
+14. [Control Panel](#14-control-panel)
+
+---
+
+## System Requirements
+
+| Dependency | Minimum version |
+|---|---|
+| ExpressionEngine | 7.2 |
+| PHP | 8.0 |
+| [openspout/openspout](https://github.com/openspout/openspout) | 4.0 |
 
 ---
 
@@ -640,17 +650,29 @@ These parameters are available on all tags.
 
 ## 8. Extending — Sources
 
-A Source is responsible for fetching data and returning it as a 2D array of rows. Place your class in `Sources/` (or any autoloaded namespace) and extend `AbstractSource`.
+> **Extension requires a standalone EE add-on.** Source classes and their companion tag classes must live in your own separately-installed EE add-on — not inside Export. See `EXTENDING.md` for a complete quickstart walkthrough.
 
-**Base class:** `Mithra62\Export\Plugins\AbstractSource`  
-**Resolved by:** `source="your_name"` → `Sources\YourName` (StudlyCase)
+A Source is responsible for fetching data and returning it as a 2D array of rows. Extend `AbstractSource` and register your class in your add-on's `addon.setup.php` under `export.sources`.
+
+**Base class:** `Mithra62\Export\Plugins\AbstractSource`
+
+### Registration
+
+```php
+// system/user/addons/store_export/addon.setup.php
+'export' => [
+    'sources' => [
+        'orders' => \Acme\StoreExport\Sources\Orders::class,
+    ],
+],
+```
 
 ### Minimal (non-streaming) source
 
 ```php
 <?php
 
-namespace Mithra62\Export\Sources;
+namespace Acme\StoreExport\Sources;
 
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
@@ -662,24 +684,24 @@ class Orders extends AbstractSource
         'source' => 'required',
     ];
 
-    public function compile(): AbstractSource
+    public function compile(): static
     {
         $query = ee()->db
             ->select('order_id, customer_email, total, status, created_at')
-            ->from('exp_orders');
+            ->from(ee()->db->dbprefix . 'store_orders');
 
-        if ($this->getOption('status')) {
-            $query->where('status', $this->getOption('status'));
+        if ($status = $this->getOption('status')) {
+            $query->where('status', $status);
         }
 
-        if ($this->getOption('limit')) {
-            $query->limit((int) $this->getOption('limit'));
+        if ($limit = (int) $this->getOption('limit')) {
+            $query->limit($limit);
         }
 
         $result = $query->get();
 
         if ($result->num_rows() === 0) {
-            throw new NoDataException("No orders found");
+            throw new NoDataException('No orders found.');
         }
 
         $rows = [];
@@ -695,18 +717,17 @@ class Orders extends AbstractSource
 
 ### Streaming source
 
-Override `supportsStreaming()` and the three streaming methods instead of (or in addition to) `compile()`:
+Override `supportsStreaming()` and the three streaming methods for large datasets:
 
 ```php
 <?php
 
-namespace Mithra62\Export\Sources;
+namespace Acme\StoreExport\Sources;
 
-use CI_DB_result;
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
 
-class BigOrders extends AbstractSource
+class OrdersStream extends AbstractSource
 {
     protected array $rules = ['source' => 'required'];
 
@@ -715,7 +736,7 @@ class BigOrders extends AbstractSource
 
     public function supportsStreaming(): bool { return true; }
 
-    public function compile(): AbstractSource
+    public function compile(): static
     {
         $this->openStream();
         $rows = [];
@@ -726,7 +747,7 @@ class BigOrders extends AbstractSource
         }
         $this->closeStream();
 
-        if (empty($rows)) throw new NoDataException("No orders found");
+        if (empty($rows)) throw new NoDataException('No orders found.');
 
         $this->setExportData($rows);
         return $this;
@@ -741,11 +762,11 @@ class BigOrders extends AbstractSource
     public function nextChunk(): array
     {
         $result = ee()->db
-            ->from('exp_orders')
+            ->from(ee()->db->dbprefix . 'store_orders')
             ->limit($this->stream_chunk_size, $this->stream_offset)
             ->get();
 
-        if (!($result instanceof CI_DB_result) || $result->num_rows() === 0) {
+        if ($result->num_rows() === 0) {
             return [];
         }
 
@@ -786,34 +807,38 @@ protected array $rules = [
 
 ### Companion tag
 
-Every custom source needs a tag method to inject the `source:` params:
+**Custom sources require a companion tag class in your add-on.** The built-in Export tags (`{exp:export:entries}`, etc.) hardcode their own source key — there is no template-level `source=` override. Your add-on must supply a tag class that sets the source key and calls `$this->compile()`.
 
 ```php
 <?php
 
-namespace Mithra62\Export\Tags;
+namespace Acme\StoreExport\Tags;
+
+use Mithra62\Export\Tags\AbstractTag;
 
 class Orders extends AbstractTag
 {
-    public function process()
+    public function process(): void
     {
         $params = $this->params();
-        $params['source']          = 'orders';
-        $params['source:status']   = $this->param('status', 'pending');
+        $params['source']          = 'orders'; // matches key in addon.setup.php
+        $params['source:status']   = $this->param('status', 'complete');
         $params['source:limit']    = $this->param('limit');
         $this->compile($params);
     }
 }
 ```
 
-Usage:
+Usage (the tag is on **your add-on**, not on `export`):
+
 ```ee
-{exp:export:orders
+{exp:store_export:orders
     status="complete"
     limit="500"
     format="csv"
     output="download"
-    output:filename="orders.csv"
+    filename="orders.csv"
+    {if no_results}No orders to export.{/if}
 }
 ```
 
@@ -821,17 +846,31 @@ Usage:
 
 ## 9. Extending — Formats
 
-A Format receives the source data and writes it to a file, returning the absolute path. Place your class in `Formats/` and extend `AbstractFormat`.
+> **Extension requires a standalone EE add-on.** Format classes must live in your own separately-installed EE add-on. See `EXTENDING.md` for full details.
 
-**Base class:** `Mithra62\Export\Plugins\AbstractFormat`  
-**Resolved by:** `format="your_name"` → `Formats\YourName`
+A Format receives the source data and writes it to a file, returning the absolute path. Extend `AbstractFormat` and register your class in your add-on's `addon.setup.php` under `export.formats`.
+
+**Base class:** `Mithra62\Export\Plugins\AbstractFormat`
+
+Once registered, your format key is available as the `format=` param in **any** Export template tag — including the built-in first-party tags.
+
+### Registration
+
+```php
+// system/user/addons/store_export/addon.setup.php
+'export' => [
+    'formats' => [
+        'tsv' => \Acme\StoreExport\Formats\Tsv::class,
+    ],
+],
+```
 
 ### Non-streaming format
 
 ```php
 <?php
 
-namespace Mithra62\Export\Formats;
+namespace Acme\StoreExport\Formats;
 
 use Mithra62\Export\Plugins\AbstractFormat;
 use Mithra62\Export\Plugins\AbstractSource;
@@ -844,7 +883,6 @@ class Tsv extends AbstractFormat
         $path = $this->getCacheDirPath() . $this->getCacheFilename() . '.tsv';
 
         $fp = fopen($path, 'w');
-        // Header row
         fputcsv($fp, array_keys(reset($rows)), "\t");
         foreach ($rows as $row) {
             fputcsv($fp, array_values($row), "\t");
@@ -861,15 +899,15 @@ class Tsv extends AbstractFormat
 ```php
 <?php
 
-namespace Mithra62\Export\Formats;
+namespace Acme\StoreExport\Formats;
 
 use Mithra62\Export\Plugins\AbstractFormat;
 use Mithra62\Export\Plugins\AbstractSource;
 
 class Tsv extends AbstractFormat
 {
-    protected string $path = '';
-    protected mixed  $fp   = null;
+    protected string $path           = '';
+    protected mixed  $fp             = null;
     protected bool   $header_written = false;
 
     public function supportsStreaming(): bool { return true; }
@@ -914,19 +952,56 @@ class Tsv extends AbstractFormat
 }
 ```
 
+### Using a custom format with built-in tags
+
+Once registered, the `tsv` key is a drop-in replacement for any built-in format value:
+
+```ee
+{!-- Custom TSV format with the built-in Entries tag --}
+{exp:export:entries
+    channel="products"
+    format="tsv"
+    output="download"
+    filename="products.tsv"
+}
+
+{!-- Custom TSV format with the built-in Members tag --}
+{exp:export:members
+    format="tsv"
+    output="download"
+    filename="members.tsv"
+}
+```
+
 ---
 
 ## 10. Extending — Outputs
 
-An Output plugin receives the path to the finished export file and delivers it somewhere. Place your class in `Output/` and extend `AbstractDestination`.
+> **Extension requires a standalone EE add-on.** Output classes must live in your own separately-installed EE add-on. See `EXTENDING.md` for full details.
 
-**Base class:** `Mithra62\Export\Plugins\AbstractDestination`  
-**Resolved by:** `output="your_name"` → `Output\YourName`
+An Output plugin receives the path to the finished export file and delivers it somewhere. Extend `AbstractDestination` and register your class in your add-on's `addon.setup.php` under `export.outputs`.
+
+**Base class:** `Mithra62\Export\Plugins\AbstractDestination`
+
+Once registered, your output key is available as the `output=` param in **any** Export template tag — including the built-in first-party tags.
+
+### Registration
+
+```php
+// system/user/addons/store_export/addon.setup.php
+'export' => [
+    'outputs' => [
+        's3' => \Acme\StoreExport\Outputs\S3::class,
+    ],
+],
+```
+
+### Example — S3 destination
 
 ```php
 <?php
 
-namespace Mithra62\Export\Output;
+namespace Acme\StoreExport\Outputs;
 
 use ExpressionEngine\Service\Validation\Validator;
 use Mithra62\Export\Plugins\AbstractDestination;
@@ -944,7 +1019,7 @@ class S3 extends AbstractDestination
         $filename = $this->getOption('filename');
         $prefix   = rtrim($this->getOption('prefix', ''), '/') . '/';
 
-        $s3 = new \MyS3Client();
+        $s3 = new \YourS3Client();
         return $s3->upload($bucket, $prefix . $filename, fopen($finished_export, 'rb'));
     }
 
@@ -961,27 +1036,56 @@ class S3 extends AbstractDestination
 }
 ```
 
+Setting `protected bool $force_exit = true` causes PHP to exit immediately after `process()` returns — use this for browser downloads.
+
+### Using a custom output with built-in tags
+
+Once registered, the `s3` key is a drop-in replacement for any built-in output value:
+
 ```ee
+{!-- Upload a CSV export directly to S3 using the built-in Entries tag --}
 {exp:export:entries
     channel="blog"
     format="csv"
     output="s3"
     output:bucket="my-exports"
     output:prefix="daily/"
-    output:filename="entries.csv"
+    filename="entries.csv"
+}
+
+{!-- Combine a third-party output with a third-party source tag --}
+{exp:store_export:orders
+    status="complete"
+    format="csv"
+    output="s3"
+    output:bucket="order-exports"
+    filename="orders.csv"
 }
 ```
-
-Setting `protected bool $force_exit = true` causes PHP to exit immediately after `process()` returns — use this for browser downloads.
 
 ---
 
 ## 11. Extending — Modifiers
 
-A Modifier transforms a single column value. Modifiers chain, so the output of one is the input to the next. Place your class in `Modifiers/` and extend `AbstractModifier`.
+> **Extension requires a standalone EE add-on.** Modifier classes must live in your own separately-installed EE add-on. See `EXTENDING.md` for full details.
 
-**Base class:** `Mithra62\Export\Plugins\AbstractModifier`  
-**Resolved by:** `modify:col="your_name"` → `Modifiers\YourName`
+A Modifier transforms a single column value. Modifiers chain, so the output of one is the input to the next. Extend `AbstractModifier` and register your class in your add-on's `addon.setup.php` under `export.modifiers`.
+
+**Base class:** `Mithra62\Export\Plugins\AbstractModifier`
+
+Once registered, your modifier key is available in the `modify:col=` param in **any** Export template tag — including the built-in first-party tags — and can be chained with other modifiers using `|`.
+
+### Registration
+
+```php
+// system/user/addons/store_export/addon.setup.php
+'export' => [
+    'modifiers' => [
+        'truncate'   => \Acme\StoreExport\Modifiers\Truncate::class,
+        'strip_tags' => \Acme\StoreExport\Modifiers\StripTags::class,
+    ],
+],
+```
 
 ### Declaring parameters
 
@@ -999,7 +1103,7 @@ protected array $params = ['length', 'suffix'];
 ```php
 <?php
 
-namespace Mithra62\Export\Modifiers;
+namespace Acme\StoreExport\Modifiers;
 
 use Mithra62\Export\Plugins\AbstractModifier;
 
@@ -1021,16 +1125,12 @@ class Truncate extends AbstractModifier
 }
 ```
 
-```ee
-modify:body="truncate[200][…]"
-```
-
 ### Example — `StripTags`
 
 ```php
 <?php
 
-namespace Mithra62\Export\Modifiers;
+namespace Acme\StoreExport\Modifiers;
 
 use Mithra62\Export\Plugins\AbstractModifier;
 
@@ -1043,8 +1143,21 @@ class StripTags extends AbstractModifier
 }
 ```
 
+### Using custom modifiers with built-in tags
+
+Once registered, custom modifiers chain freely with built-in modifiers:
+
 ```ee
-modify:body="strip_tags"
+{!-- Third-party truncate + built-in ee_date, in the built-in Entries tag --}
+{exp:export:entries
+    channel="blog"
+    format="csv"
+    output="download"
+    filename="blog.csv"
+    modify:title="truncate[80][…]"
+    modify:body="strip_tags|truncate[200]"
+    modify:entry_date="ee_date[%Y-%m-%d]"
+}
 ```
 
 > **Naming:** The tag value is resolved with StudlyCase, so `strip_tags` resolves to `StripTags`, `uc_first` to `UcFirst`, etc.
@@ -1053,22 +1166,24 @@ modify:body="strip_tags"
 
 ## 12. Extending — Field Handlers
 
+> **Extension requires a standalone EE add-on.** Field handler classes must live in your own separately-installed EE add-on. See `EXTENDING.md` for full details.
+
 Field handlers process individual custom field values — date formatting, file URL resolution, relationship resolution, etc. The same handler is invoked for that field type regardless of which source (Entries, Grid, Members) produces the row.
 
 ### Registration
 
-Any installed EE addon (including Export itself) can register handlers in its own `addon.setup.php` under the `export.fields` key:
+Any installed EE add-on can register handlers in its own `addon.setup.php` under the `export.fields` key. The key is the EE field type slug.
 
 ```php
-// system/user/addons/my_addon/addon.setup.php
+// system/user/addons/store_export/addon.setup.php
 return [
-    'name'      => 'My Addon',
-    'namespace' => 'MyAddon',
+    'name'      => 'Store Export',
+    'namespace' => 'Acme\\StoreExport',
     // ...
     'export' => [
         'fields' => [
-            'bloqs'       => \MyAddon\Export\Fields\Bloqs::class,
-            'my_fieldtype' => \MyAddon\Export\Fields\MyFieldtype::class,
+            'rating'       => \Acme\StoreExport\Fields\Rating::class,
+            'product_link' => \Acme\StoreExport\Fields\ProductLink::class,
         ],
     ],
 ];
@@ -1115,7 +1230,7 @@ abstract class AbstractField
 ```php
 <?php
 
-namespace MyAddon\Export\Fields;
+namespace Acme\StoreExport\Fields;
 
 use Mithra62\Export\Plugins\AbstractField;
 
@@ -1134,7 +1249,7 @@ class Rating extends AbstractField
 ```php
 <?php
 
-namespace MyAddon\Export\Fields;
+namespace Acme\StoreExport\Fields;
 
 use Mithra62\Export\Plugins\AbstractField;
 
@@ -1150,7 +1265,7 @@ class ProductLink extends AbstractField
         $product_ids = explode('|', $raw_value);
         $result = ee()->db
             ->select('product_id, product_name, sku')
-            ->from('exp_my_products')
+            ->from(ee()->db->dbprefix . 'store_products')
             ->where_in('product_id', $product_ids)
             ->get();
 
@@ -1242,13 +1357,13 @@ The structure is identical — only the scope of the outer key differs. `Fields\
 
 ---
 
-## 14. Control Panel (EE 7.2+)
+## 14. Control Panel
 
-Export ships with a native ExpressionEngine Control Panel available in EE 7.2 and later. The CP provides full CRUD management and one-click execution of saved export configurations — every option available through template tags is accessible through the form UI without writing any template code.
+Export ships with a native ExpressionEngine Control Panel. The CP provides full CRUD management and one-click execution of saved export configurations — every option available through template tags is accessible through the form UI without writing any template code.
 
 ### Requirements
 
-- ExpressionEngine 7.2 or later (uses the `ExpressionEngine\Service\Addon\Controllers\Mcp\AbstractRoute` routing paradigm)
+- ExpressionEngine meeting the [System Requirements](#system-requirements); uses the `ExpressionEngine\Service\Addon\Controllers\Mcp\AbstractRoute` routing paradigm
 - The addon must be installed (or re-installed after upgrading from a version that lacked CP support) so the `exp_export_configurations` database table is created
 
 ### Accessing the CP
@@ -1423,7 +1538,7 @@ The `settings` column is a JSON object whose keys follow the same `source:*` / `
 
 ### CP Architecture (Developer Notes)
 
-The CP uses the EE 7.2+ addon routing paradigm:
+The CP uses the EE addon routing paradigm:
 
 - **Gateway:** `mcp.export.php` — minimal class extending `ExpressionEngine\Service\Addon\Mcp`
 - **Routes:** `ControlPanel/Routes/` — one class per URL segment, auto-discovered via `Str::studly()`; all extend a shared `AbstractRoute` that enforces `can_access_addons`

@@ -1,12 +1,24 @@
 # Extending Export
 
-This document explains how to add custom Sources, Formats, Modifiers, Output destinations, and Field Handlers to the Export addon.
+Export's plugin system lets any installed ExpressionEngine add-on register custom Sources, Formats, Modifiers, Output destinations, and Field Handlers — without modifying Export's own source code.
+
+> **Extension requires a standalone EE add-on.** You cannot extend Export by editing its files directly. All custom plugin code, companion template tags, and `addon.setup.php` declarations must live in your own separately-installed EE add-on.
+
+---
+
+## Prerequisites
+
+- ExpressionEngine with Export installed and enabled (see [System Requirements](README.md#system-requirements))
+- Basic EE add-on development: `addon.setup.php`, PSR-4 autoloading, PHP 8.0+
+- Your add-on's Composer/autoloading configured for its namespace
 
 ---
 
 ## Table of Contents
 
-- [How the Plugin System Works](#how-the-plugin-system-works)
+- [§1 Quickstart: Your First Extension Add-on](#1-quickstart-your-first-extension-add-on)
+- [§2 Registering Custom Plugins](#2-registering-custom-plugins)
+- [§3 How the Plugin System Works](#3-how-the-plugin-system-works)
   - [Non-streaming path](#non-streaming-path)
   - [Streaming path](#streaming-path)
   - [Param namespacing](#param-namespacing)
@@ -14,48 +26,251 @@ This document explains how to add custom Sources, Formats, Modifiers, Output des
   - [Reading options inside a plugin](#reading-options-inside-a-plugin)
   - [Validation](#validation)
   - [Column selection — `fields` and `exclude`](#column-selection--fields-and-exclude)
-- [1. Creating and Using Source Objects](#1-creating-and-using-source-objects)
+- [§4 Creating Sources](#4-creating-sources)
   - [Contract](#contract)
   - [Inherited helpers](#inherited-helpers)
   - [Example — simple non-streaming source](#example--simple-non-streaming-orders-source)
   - [Streaming sources](#streaming-sources)
   - [Wiring a companion tag class](#wiring-a-companion-tag-class)
-- [2. Creating and Using Format Objects](#2-creating-and-using-format-objects)
+- [§5 Creating Formats](#5-creating-formats)
   - [Contract](#contract-1)
   - [Streaming interface](#streaming-interface)
   - [Inherited helpers](#inherited-helpers-1)
   - [Built-in formats](#built-in-formats)
   - [Example — streaming Tsv format](#example--streaming-tsv-tab-separated-format)
-- [3. Creating and Using Modifier Objects](#3-creating-and-using-modifier-objects)
+- [§6 Creating Modifiers](#6-creating-modifiers)
   - [Contract](#contract-2)
   - [Parameter system](#parameter-system)
   - [Chaining](#chaining)
   - [Built-in modifiers](#built-in-modifiers)
   - [Example — Truncate modifier](#example--truncate-modifier)
-- [4. Creating and Using Output (Destination) Objects](#4-creating-and-using-output-destination-objects)
+- [§7 Creating Output Destinations](#7-creating-output-destinations)
   - [Contract](#contract-3)
   - [Inherited helpers](#inherited-helpers-2)
   - [Built-in destinations](#built-in-destinations)
   - [Example — S3 destination](#example--s3-destination)
-- [5. Creating Field Handlers](#5-creating-field-handlers)
+- [§8 Creating Field Handlers](#8-creating-field-handlers)
   - [Contract](#contract-4)
   - [Registering a handler](#registering-a-handler)
   - [Built-in field handlers](#built-in-field-handlers)
   - [Minimal example](#minimal-example--rating-field-type)
   - [Example with context](#example-with-context--field-that-resolves-related-data)
   - [Detecting source context](#detecting-source-context)
-- [6. Field Handler Context Reference](#6-field-handler-context-reference)
-- [7. Registering Custom Plugins](#7-registering-custom-plugins)
+- [§9 Field Handler Context Reference](#9-field-handler-context-reference)
+- [§10 Using Third-Party Plugins with Built-In Tags](#10-using-third-party-plugins-with-built-in-tags)
 
 ---
 
-## How the Plugin System Works
+## §1 Quickstart: Your First Extension Add-on
+
+This section walks through a complete, minimal add-on that registers a custom Orders source and exposes it via a companion template tag. All subsequent sections use the same `store_export` add-on as their example context.
+
+### What we'll build
+
+An add-on named `store_export` (PHP namespace `Acme\StoreExport`) that:
+- Registers an `orders` source that reads from a `exp_store_orders` table
+- Exposes it as the template tag `{exp:store_export:orders}`
+
+### Directory layout
+
+```
+system/user/addons/store_export/
+  addon.setup.php
+  Sources/
+    Orders.php
+  Tags/
+    Orders.php
+```
+
+### `addon.setup.php`
+
+```php
+<?php
+
+use Acme\StoreExport\Sources\Orders as OrdersSource;
+
+return [
+    'author'         => 'Acme',
+    'author_url'     => 'https://acme.example',
+    'name'           => 'Store Export',
+    'description'    => 'Adds an Orders source to the Export addon.',
+    'version'        => '1.0.0',
+    'namespace'      => 'Acme\\StoreExport',
+    'settings_exist' => 'n',
+    'has_tags'       => 'y',
+
+    // Tell Export about our custom plugins
+    'export' => [
+        'sources' => [
+            'orders' => OrdersSource::class,
+        ],
+    ],
+];
+```
+
+Only the layers you extend need to appear in the `export` key. Omit the others entirely.
+
+### `Sources/Orders.php`
+
+```php
+<?php
+
+namespace Acme\StoreExport\Sources;
+
+use Mithra62\Export\Exceptions\Sources\NoDataException;
+use Mithra62\Export\Plugins\AbstractSource;
+
+class Orders extends AbstractSource
+{
+    protected array $rules = [
+        'source' => 'required',
+    ];
+
+    public function compile(): static
+    {
+        $status = $this->getOption('status', 'complete');
+
+        $query = ee()->db
+            ->select('order_id, customer_email, total, status, order_date')
+            ->from(ee()->db->dbprefix . 'store_orders')
+            ->where('status', $status);
+
+        if ($limit = (int) $this->getOption('limit')) {
+            $query->limit($limit, (int) $this->getOption('offset', 0));
+        }
+
+        $result = $query->get();
+
+        if ($result->num_rows() === 0) {
+            throw new NoDataException('No orders found.');
+        }
+
+        $rows = [];
+        foreach ($result->result_array() as $row) {
+            $rows[] = $this->cleanFields($row);
+        }
+
+        $this->setExportData($rows);
+        return $this;
+    }
+}
+```
+
+### `Tags/Orders.php`
+
+Custom sources need a companion tag class because each built-in Export tag hardcodes its own source key. The companion tag sets `source = 'orders'` in PHP and delegates to Export's pipeline via `$this->compile()`.
+
+```php
+<?php
+
+namespace Acme\StoreExport\Tags;
+
+use Mithra62\Export\Tags\AbstractTag;
+
+class Orders extends AbstractTag
+{
+    public function process(): void
+    {
+        $params = $this->params();
+
+        $params['source']              = 'orders';
+        $params['source:status']       = $this->param('status', 'complete');
+        $params['source:limit']        = $this->param('limit');
+        $params['source:offset']       = $this->param('offset', 0);
+        $params['source:chunk_size']   = $this->param('chunk_size', 500);
+
+        $this->compile($params);
+    }
+}
+```
+
+> **`AbstractTag` is in Export.** Your companion tag extends `Mithra62\Export\Tags\AbstractTag` — this gives you `$this->compile()`, `$this->param()`, `$this->params()`, and the `{if no_results}` mechanism automatically.
+
+### Template usage
+
+```ee
+{exp:store_export:orders
+    status="complete"
+    format="csv"
+    output="download"
+    filename="orders.csv"
+    {if no_results}No orders to export.{/if}
+}
+```
+
+---
+
+## §2 Registering Custom Plugins
+
+All five extension layers use the same `addon.setup.php` declaration. Declare your classes under the `export` key and Export discovers them automatically — no changes to Export's source code are needed.
+
+### Full `addon.setup.php` `export` key
+
+```php
+// system/user/addons/store_export/addon.setup.php
+return [
+    'name'      => 'Store Export',
+    'namespace' => 'Acme\\StoreExport',
+    // ...
+    'export' => [
+        'sources' => [
+            'orders' => \Acme\StoreExport\Sources\Orders::class,
+        ],
+        'formats' => [
+            'tsv' => \Acme\StoreExport\Formats\Tsv::class,
+        ],
+        'outputs' => [
+            's3' => \Acme\StoreExport\Outputs\S3::class,
+        ],
+        'modifiers' => [
+            'truncate'   => \Acme\StoreExport\Modifiers\Truncate::class,
+            'strip_tags' => \Acme\StoreExport\Modifiers\StripTags::class,
+        ],
+        'fields' => [
+            'rating'       => \Acme\StoreExport\Fields\Rating::class,
+            'product_link' => \Acme\StoreExport\Fields\ProductLink::class,
+        ],
+    ],
+];
+```
+
+Any subset of layers may be declared — omit keys for layers your add-on does not extend.
+
+### How discovery works
+
+`AbstractService::getProviderMap(string $layer)` scans all installed add-ons via `ee('App')->getProviders()`, collects every `export.$layer` map, and merges them. Export's own built-in declarations form the baseline; third-party declarations are merged afterward and can override built-ins when needed. The result is cached statically so the scan runs at most once per PHP request per layer.
+
+### Override precedence
+
+```
+addon.setup.php declaration (third-party) → highest priority
+addon.setup.php declaration (Export built-in)
+Str::studly() namespace fallback          → lowest priority
+```
+
+A third-party add-on can replace a built-in source, format, output, modifier, or field handler entirely by declaring the same key with a different class.
+
+### Namespace fallback
+
+For Sources, Formats, Outputs, and Modifiers, classes placed directly in the `Mithra62\Export\` namespace subtrees are still discovered automatically via `Str::studly()` if no `addon.setup.php` entry exists for that key. The declaration approach is preferred for distributed add-ons.
+
+### Companion tag routing
+
+EE routes `{exp:your_addon:foo}` to `Tags\Foo::process()` in your add-on's namespace. Add a tag class to `Tags/` extending `Mithra62\Export\Tags\AbstractTag`, set up params in `process()`, and call `$this->compile($params)`. No additional registration is required — EE discovers the tag class automatically.
+
+**Custom sources always need a companion tag.** The built-in Export tags (`{exp:export:entries}`, `{exp:export:members}`, etc.) hardcode their own source key in PHP. There is no template-level `source=` override. To expose a custom source, your add-on must provide its own tag class that sets `$params['source'] = 'your_source_key'` before calling `$this->compile()`.
+
+**Custom formats, outputs, and modifiers do not need a companion tag.** Once registered, they can be used by name as param values in any first-party or third-party tag. See [§10](#10-using-third-party-plugins-with-built-in-tags) for examples.
+
+---
+
+## §3 How the Plugin System Works
 
 Every export runs through a five-stage pipeline. The pipeline has two execution paths depending on whether the active Source supports streaming.
 
 ### Non-streaming path
 
-Used by Sources that load all data into memory before writing (e.g. `Sql`).
+Used by Sources that load all data into memory before writing.
 
 ```
 Template tag params
@@ -70,7 +285,7 @@ Template tag params
 
 ### Streaming path
 
-Used by Sources that declare `supportsStreaming(): bool { return true; }` (e.g. `Entries`, `Grid`). Keeps memory constant regardless of dataset size.
+Used by Sources that declare `supportsStreaming(): bool { return true; }`. Keeps memory constant regardless of dataset size.
 
 ```
 Template tag params
@@ -90,33 +305,32 @@ Template tag params
 
 ### Param namespacing
 
-Each layer of the pipeline reads only its own params. In a template tag, prefix params with the layer name:
+Each layer reads only its own params. In a template tag, prefix params with the layer name:
 
 ```ee
-{exp:export:members
-    format="csv"                ← global
-    source:limit="50"           ← read by Source
-    format:separator=";"        ← read by Format
-    output:filename="out.csv"   ← read by Destination
-    modify:email="uc_first"     ← read by Modifiers
-    output="download"           ← global
+{exp:store_export:orders
+    format="csv"               ← global
+    source:limit="50"          ← read by Source
+    format:separator=";"       ← read by Format
+    output:filename="out.csv"  ← read by Destination
+    modify:email="uc_first"    ← read by Modifiers
+    output="download"          ← global
 }
 ```
 
-The prefix is stripped before options reach the plugin, so inside a `Format` class `getOption('separator')` returns `";"`.
+The prefix is stripped before options reach the plugin, so inside a Format class `getOption('separator')` returns `";"`.
 
 ### Class resolution
 
 Each service converts the plain name to a class via `Str::studly()`:
 
-| Param | Resolves to |
+| Param | Resolves to (built-in) |
 |---|---|
 | `format="csv"` | `Mithra62\Export\Formats\Csv` |
 | `output="local"` | `Mithra62\Export\Output\Local` |
-| `source="members"` | `Mithra62\Export\Sources\Members` |
 | `modify:field="uc_words"` | `Mithra62\Export\Modifiers\UcWords` |
 
-Names with underscores work too: `my_format` → `MyFormat`.
+When a key is declared in `addon.setup.php`, the declared class is used instead. Names with underscores work: `my_format` → `MyFormat`.
 
 ### Reading options inside a plugin
 
@@ -151,11 +365,11 @@ protected function getValidator(): Validator
 }
 ```
 
-> **CP inline validation.** Rules you declare in `$rules` and custom rules you register via `$validator->defineRule()` inside `getValidator()` are automatically run in the Control Panel Create/Edit form as well — no extra wiring needed. `Services/CpValidationBridge` instantiates the active source, format, and output drivers on every form POST, calls `validate()` on each, and injects any errors into CI form_validation so they surface as inline fieldset errors. The driver param names are mapped back to CP POST field names by the bridge (e.g. `channel` → `src_entries_channel`, `path` → `output_path`).
+> **CP inline validation.** Rules declared in `$rules` and custom rules registered via `$validator->defineRule()` inside `getValidator()` are automatically surfaced in the Export Control Panel Create/Edit form as inline fieldset errors — no extra wiring needed. `Services/CpValidationBridge` instantiates the active source, format, and output drivers on every form POST, calls `validate()` on each, and maps driver param names back to CP POST field names (e.g. `channel` → `src_entries_channel`, `path` → `output_path`).
 
 ### Column selection — `fields` and `exclude`
 
-Every source calls `$this->cleanFields($row)` before appending each row to the output. That method implements a two-param priority system:
+Every source calls `$this->cleanFields($row)` before appending each row to the output. Two params control column filtering:
 
 | Scenario | Behaviour |
 |---|---|
@@ -163,49 +377,24 @@ Every source calls `$this->cleanFields($row)` before appending each row to the o
 | `exclude` present, `fields` absent | Remove the listed columns; return everything else. |
 | Neither present | Return the full row unchanged. |
 
-**`fields` whitelist** — return only the named columns, in the order listed (also lets you reorder output columns):
-
-```ee
-{exp:export:entries
-    channel="blog"
-    fields="title|entry_date|field_summary|field_body"
-    format="csv"
-    output="download"
-    output:filename="blog.csv"
-}
-```
-
-**`exclude` blacklist** — remove named columns, return the rest:
-
-```ee
-{exp:export:entries
-    channel="blog"
-    exclude="field_internal_notes|field_raw_html"
-    format="csv"
-    output="download"
-    output:filename="blog.csv"
-}
-```
-
 Both params accept pipe-separated column names and work identically across all sources.
 
 ---
 
-## 1. Creating and Using Source Objects
+## §4 Creating Sources
 
 Sources fetch data and return it as a flat 2-D array (rows × columns) for the rest of the pipeline.
 
 **Base class:** `Mithra62\Export\Plugins\AbstractSource`  
-**Namespace:** `Mithra62\Export\Sources\`  
-**Tag param:** `source="your_name"` (usually set by the companion tag class, not the template author)
+**Tag param:** `source="your_key"` (set by your companion tag class — not by the template author directly)
 
 ### Contract
 
 ```php
-public function compile(): AbstractSource
+public function compile(): static
 ```
 
-Either populate the export data and return `$this`, or throw `NoDataException` when there is nothing to export (the tag will produce no output rather than an error page).
+Either populate the export data and return `$this`, or throw `NoDataException` when there is nothing to export (the tag produces no output rather than an error page).
 
 ### Inherited helpers
 
@@ -213,13 +402,14 @@ Either populate the export data and return `$this`, or throw `NoDataException` w
 |---|---|
 | `$this->getOption('key', $default)` | Read a source param |
 | `$this->setExportData(array $rows)` | Store the 2-D result array |
-| `$this->cleanFields(array $row)` | Filter columns via `fields` whitelist or `exclude` blacklist (see priority rules above) |
+| `$this->cleanFields(array $row)` | Filter columns via `fields` whitelist or `exclude` blacklist |
 
 ### Example — simple non-streaming `Orders` source
 
 ```php
 <?php
-namespace Mithra62\Export\Sources;
+
+namespace Acme\StoreExport\Sources;
 
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
@@ -230,24 +420,24 @@ class Orders extends AbstractSource
         'source' => 'required',
     ];
 
-    public function compile(): AbstractSource
+    public function compile(): static
     {
         $query = ee()->db
             ->select('order_id, customer_email, total, created_at')
-            ->from('exp_orders');
+            ->from(ee()->db->dbprefix . 'store_orders');
 
-        if ($this->getOption('status')) {
-            $query->where('status', $this->getOption('status'));
+        if ($status = $this->getOption('status')) {
+            $query->where('status', $status);
         }
 
-        if ($this->getOption('limit')) {
-            $query->limit((int) $this->getOption('limit'));
+        if ($limit = (int) $this->getOption('limit')) {
+            $query->limit($limit);
         }
 
         $result = $query->get();
 
         if ($result->num_rows() === 0) {
-            throw new NoDataException("No orders found");
+            throw new NoDataException('No orders found.');
         }
 
         $rows = [];
@@ -263,28 +453,27 @@ class Orders extends AbstractSource
 
 ### Streaming sources
 
-For large datasets, implement the streaming interface instead of loading all rows at once. Declare `supportsStreaming(): bool { return true; }` and implement `openStream()`, `nextChunk()`, and `closeStream()`. You still need a `compile()` method (it is called when the format does not support streaming, or as a fallback); the standard pattern is to drive the streaming methods from within it.
+For large datasets, implement the streaming interface instead of loading all rows at once. Declare `supportsStreaming(): bool { return true; }` and implement `openStream()`, `nextChunk()`, and `closeStream()`. A `compile()` method is still required as a non-streaming fallback; the standard pattern is to drive the streaming methods from within it.
 
 ```php
 <?php
-namespace Mithra62\Export\Sources;
 
-use CI_DB_result;
+namespace Acme\StoreExport\Sources;
+
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
 
-class BigOrders extends AbstractSource
+class OrdersStream extends AbstractSource
 {
     protected array $rules = ['source' => 'required'];
 
     protected int $stream_offset     = 0;
     protected int $stream_chunk_size = 500;
 
-    // Tell the pipeline to use the streaming path
     public function supportsStreaming(): bool { return true; }
 
-    // compile() is the non-streaming fallback; drive streaming methods from here
-    public function compile(): AbstractSource
+    // Non-streaming fallback — drives the streaming methods
+    public function compile(): static
     {
         $this->openStream();
         $rows = [];
@@ -295,7 +484,7 @@ class BigOrders extends AbstractSource
         }
         $this->closeStream();
 
-        if (empty($rows)) throw new NoDataException("No orders found");
+        if (empty($rows)) throw new NoDataException('No orders found.');
 
         $this->setExportData($rows);
         return $this;
@@ -305,17 +494,17 @@ class BigOrders extends AbstractSource
     {
         $this->stream_offset     = (int) $this->getOption('offset', 0);
         $this->stream_chunk_size = (int) $this->getOption('chunk_size', 500);
-        // Any one-time setup (resolve IDs, load column definitions, etc.) goes here
+        // One-time setup: resolve IDs, load column definitions, etc.
     }
 
     public function nextChunk(): array
     {
         $result = ee()->db
-            ->from('exp_orders')
+            ->from(ee()->db->dbprefix . 'store_orders')
             ->limit($this->stream_chunk_size, $this->stream_offset)
             ->get();
 
-        if (!($result instanceof CI_DB_result) || $result->num_rows() === 0) {
+        if ($result->num_rows() === 0) {
             return []; // empty return signals end-of-stream
         }
 
@@ -335,26 +524,31 @@ class BigOrders extends AbstractSource
 }
 ```
 
-**Batch-loading within a chunk.** One of the main benefits of streaming is that you can batch-fetch supporting data (relationships, taxonomy, etc.) for all rows in the chunk with a single `WHERE id IN (...)` query instead of one query per row. Load the chunk's primary row set, collect the IDs you need, run the batch query, then merge before returning.
+**Batch-loading within a chunk.** One main benefit of streaming is that you can batch-fetch supporting data (relationships, taxonomy, etc.) for all rows in a chunk with a single `WHERE id IN (...)` query instead of one query per row. Load the chunk's primary rows, collect the IDs you need, run the batch query, then merge before returning.
 
 ### Wiring a companion tag class
 
-Built-in tags (`Members`, `Query`, etc.) hard-code their source name. For a custom source, add a tag class in `Tags/`:
+Custom sources must be paired with a companion tag class in your add-on's `Tags/` directory. The companion tag sets the source key in PHP before calling Export's pipeline via `$this->compile()`.
 
 ```php
 <?php
-namespace Mithra62\Export\Tags;
+
+namespace Acme\StoreExport\Tags;
+
+use Mithra62\Export\Tags\AbstractTag;
 
 class Orders extends AbstractTag
 {
-    public function process()
+    public function process(): void
     {
         $params = $this->params();
-        $params['source']          = 'orders';
-        $params['source:status']   = $this->param('status');
-        $params['source:limit']    = $this->param('limit');
-        $params['source:offset']   = $this->param('offset', 0);
+
+        $params['source']            = 'orders'; // must match key in addon.setup.php
+        $params['source:status']     = $this->param('status', 'complete');
+        $params['source:limit']      = $this->param('limit');
+        $params['source:offset']     = $this->param('offset', 0);
         $params['source:chunk_size'] = $this->param('chunk_size', 500);
+
         $this->compile($params);
     }
 }
@@ -363,24 +557,26 @@ class Orders extends AbstractTag
 Template usage:
 
 ```ee
-{exp:export:orders
-    status="pending"
-    exclude="order_id|customer_email|total"
+{exp:store_export:orders
+    status="complete"
+    exclude="order_id|customer_email"
     format="csv"
     output="download"
-    output:filename="orders.csv"
+    filename="orders.csv"
+    {if no_results}No orders to export.{/if}
 }
 ```
 
 ---
 
-## 2. Creating and Using Format Objects
+## §5 Creating Formats
 
 Formats receive compiled source data, write a file, and return its absolute path.
 
 **Base class:** `Mithra62\Export\Plugins\AbstractFormat`  
-**Namespace:** `Mithra62\Export\Formats\`  
-**Tag param:** `format="your_name"`
+**Tag param:** `format="your_key"`
+
+Once registered in your `addon.setup.php`, a custom format can be used in any Export template tag — including the built-in first-party tags. See [§10](#10-using-third-party-plugins-with-built-in-tags).
 
 ### Contract
 
@@ -388,11 +584,11 @@ Formats receive compiled source data, write a file, and return its absolute path
 public function compile(AbstractSource $source): string
 ```
 
-Write the export to a file and return its absolute path. For non-streaming formats this is the only method required. For streaming formats, implement the three additional methods below.
+Write the export to a file and return its absolute path. For non-streaming formats this is the only method required.
 
 ### Streaming interface
 
-All built-in formats support streaming. When a streaming source is paired with a streaming format, `ExportService` calls `openFile()` / `writeChunk()` / `finalizeFile()` directly and never calls `compile()`. Implement `compile()` anyway as a non-streaming fallback (call the streaming methods internally):
+When a streaming source is paired with a streaming format, `ExportService` calls `openFile()` / `writeChunk()` / `finalizeFile()` directly and never calls `compile()`. Implement `compile()` anyway as a non-streaming fallback (call the streaming methods internally):
 
 ```php
 public function supportsStreaming(): bool { return true; }
@@ -400,7 +596,7 @@ public function supportsStreaming(): bool { return true; }
 // Called once before any chunk arrives; $first_row is available for header writing
 public function openFile(array $first_row = []): void {}
 
-// Called once per chunk with the rows for that chunk
+// Called once per chunk
 public function writeChunk(array $rows): void {}
 
 // Called after the last chunk; close handles and return the file path
@@ -424,7 +620,7 @@ public function finalizeFile(): string { return ''; }
 | `csv` | `Csv` | ✅ | — | Optional: `separator` (`,`), `enclosure` (`"`), `escape` (`\`), `newline` (`\n`) |
 | `json` | `Json` | ✅ | — | Writes a JSON array; nested arrays preserved natively |
 | `xlsx` | `Xlsx` | ✅ | — | Optional: `bold_cols="y"` for bold header row (powered by OpenSpout) |
-| `xml` | `Xml` | ✅ | `root_name`, `branch_name` | Both params are **required**; element names for root and each record |
+| `xml` | `Xml` | ✅ | `root_name`, `branch_name` | Both params required; element names for root and each record |
 
 > **Flat formats (CSV, XLSX):** Complex field values (arrays from Grid, Relationship, Fluid fields) are JSON-encoded into a single cell string via an internal `flattenValue()` helper.  
 > **Native formats (JSON, XML):** Complex values are output as nested structures.
@@ -433,7 +629,8 @@ public function finalizeFile(): string { return ''; }
 
 ```php
 <?php
-namespace Mithra62\Export\Formats;
+
+namespace Acme\StoreExport\Formats;
 
 use Mithra62\Export\Plugins\AbstractFormat;
 use Mithra62\Export\Plugins\AbstractSource;
@@ -460,6 +657,10 @@ class Tsv extends AbstractFormat
         $this->path   = $this->getCacheDirPath() . $this->getCacheFilename() . '.tsv';
         $this->fp     = fopen($this->path, 'w');
         $this->header = false;
+
+        if ($this->fp === false) {
+            throw new \RuntimeException('TSV: could not open cache file for writing: ' . $this->path);
+        }
 
         if (!empty($first_row)) {
             fputcsv($this->fp, array_keys($first_row), "\t");
@@ -492,25 +693,37 @@ class Tsv extends AbstractFormat
 }
 ```
 
-Template usage:
+Register in `addon.setup.php`:
+
+```php
+'export' => [
+    'formats' => [
+        'tsv' => \Acme\StoreExport\Formats\Tsv::class,
+    ],
+],
+```
+
+Once registered, the `tsv` key is available in any Export template tag:
 
 ```ee
-{exp:export:members
+{exp:export:entries
+    channel="products"
     format="tsv"
     output="download"
-    output:filename="members.tsv"
+    filename="products.tsv"
 }
 ```
 
 ---
 
-## 3. Creating and Using Modifier Objects
+## §6 Creating Modifiers
 
 Modifiers transform individual field values. They run after the source produces each chunk and before the format writes it. Multiple modifiers can be chained per field using `|`.
 
 **Base class:** `Mithra62\Export\Plugins\AbstractModifier`  
-**Namespace:** `Mithra62\Export\Modifiers\`  
-**Tag param:** `modify:field_name="modifier_name[param1][param2]"`
+**Tag param:** `modify:field_name="modifier_key[param1][param2]"`
+
+Once registered, a custom modifier is available in any Export template tag. See [§10](#10-using-third-party-plugins-with-built-in-tags).
 
 ### Contract
 
@@ -518,7 +731,7 @@ Modifiers transform individual field values. They run after the source produces 
 public function process(mixed $value): mixed
 ```
 
-Receive a value, return the transformed value. The type may change (e.g. int → string is fine).
+Receive a value, return the transformed value. The type may change (e.g. `int` → `string` is fine).
 
 ### Parameter system
 
@@ -552,7 +765,7 @@ Modifiers run left to right. The output of each becomes the input of the next.
 |---|---|---|---|
 | `ee_date[format]` | `EeDate` | `format` | Format Unix timestamp via `ee()->localize->format_date()` |
 | `ee_decrypt` | `EeDecrypt` | — | Decrypt via `ee('Encrypt')->decrypt()` |
-| `replace_with[value]` | `ReplaceWith` | `with` | Replace the entire value with a literal string (default replacement: `N/A`) |
+| `replace_with[value]` | `ReplaceWith` | `with` | Replace the entire value with a literal string (default: `N/A`) |
 | `uc_first` | `UcFirst` | — | `ucfirst()` on the value |
 | `uc_words` | `UcWords` | — | `ucwords()` on the value |
 
@@ -560,7 +773,8 @@ Modifiers run left to right. The output of each becomes the input of the next.
 
 ```php
 <?php
-namespace Mithra62\Export\Modifiers;
+
+namespace Acme\StoreExport\Modifiers;
 
 use Mithra62\Export\Plugins\AbstractModifier;
 
@@ -582,28 +796,40 @@ class Truncate extends AbstractModifier
 }
 ```
 
-Template usage:
+Register in `addon.setup.php`:
+
+```php
+'export' => [
+    'modifiers' => [
+        'truncate' => \Acme\StoreExport\Modifiers\Truncate::class,
+    ],
+],
+```
+
+Once registered, `truncate` is available in any Export template tag alongside built-in modifiers:
 
 ```ee
-{exp:export:members
-    modify:bio="truncate[120][…]"
-    modify:username="uc_first"
-    modify:join_date="ee_date[%Y-%m-%d]"
+{exp:export:entries
+    channel="blog"
+    modify:title="truncate[80][…]"
+    modify:author_id="replace_with[anonymous]"
+    modify:entry_date="ee_date[%Y-%m-%d]"
     format="csv"
     output="download"
-    output:filename="members.csv"
+    filename="blog.csv"
 }
 ```
 
 ---
 
-## 4. Creating and Using Output (Destination) Objects
+## §7 Creating Output Destinations
 
 Destinations receive the path to the generated export file and deliver it — to the browser, a directory, a remote service, etc.
 
 **Base class:** `Mithra62\Export\Plugins\AbstractDestination`  
-**Namespace:** `Mithra62\Export\Output\`  
-**Tag param:** `output="your_name"`
+**Tag param:** `output="your_key"`
+
+Once registered, a custom output is available in any Export template tag. See [§10](#10-using-third-party-plugins-with-built-in-tags).
 
 ### Contract
 
@@ -619,7 +845,7 @@ public function process(string $finished_export): bool|int
 |---|---|
 | `$this->getOption('key', $default)` | Read an `output:` param |
 | `protected bool $force_exit = false` | Set to `true` to call `exit` after delivery (required for browser downloads) |
-| `$this->shouldDie()` | Read by `ExportService`; triggers exit if `true` |
+| `$this->shouldDie()` | Read by `ExportService`; triggers `exit` if `true` |
 
 ### Built-in destinations
 
@@ -632,7 +858,8 @@ public function process(string $finished_export): bool|int
 
 ```php
 <?php
-namespace Mithra62\Export\Output;
+
+namespace Acme\StoreExport\Outputs;
 
 use ExpressionEngine\Service\Validation\Validator;
 use Mithra62\Export\Plugins\AbstractDestination;
@@ -665,7 +892,17 @@ class S3 extends AbstractDestination
 }
 ```
 
-Template usage:
+Register in `addon.setup.php`:
+
+```php
+'export' => [
+    'outputs' => [
+        's3' => \Acme\StoreExport\Outputs\S3::class,
+    ],
+],
+```
+
+Once registered, `s3` is available in any Export template tag:
 
 ```ee
 {exp:export:members
@@ -673,19 +910,18 @@ Template usage:
     output="s3"
     output:bucket="my-exports-bucket"
     output:prefix="members/"
-    output:filename="members-export.csv"
+    filename="members-export.csv"
 }
 ```
 
 ---
 
-## 5. Creating Field Handlers
+## §8 Creating Field Handlers
 
-Field handlers process individual custom field values — date formatting, file URL resolution, relationship lookups, etc. The same handler is invoked for a given field type regardless of which source (Entries, Grid, Members) produces the row, making it straightforward for third-party addons to teach Export how to handle their own field types.
+Field handlers process individual custom field values — date formatting, file URL resolution, relationship lookups, etc. The same handler is invoked for a given field type regardless of which source (Entries, Grid, Members) produces the row.
 
 **Base class:** `Mithra62\Export\Plugins\AbstractField`  
-**Namespace:** convention — place handlers in a `Fields/` directory within your addon  
-**Discovered via:** `addon.setup.php` `export.fields` declaration (see below)
+**Discovered via:** `addon.setup.php` `export.fields` declaration (no namespace fallback for field handlers)
 
 ### Contract
 
@@ -702,35 +938,35 @@ abstract public function process(
 |---|---|---|
 | `$raw_value` | `mixed` | Raw value from the storage column (e.g. `channel_data.field_id_X`) |
 | `$field_info` | `array` | Field definition: `field_id`, `field_name`, `field_type`, `field_label`, `field_settings` (decoded array) |
-| `$entry_id` | `int` | The entry ID — or `row_id` in Grid context, or `member_id` in Members context (see context table below) |
-| `$context` | `array` | Pre-fetched batch data passed by the source (see §6) |
+| `$entry_id` | `int` | The entry ID — or `row_id` in Grid context, or `member_id` in Members context |
+| `$context` | `array` | Pre-fetched batch data passed by the source (see §9) |
 
 **Return type convention:**
 - Return a **scalar** for simple values (string, int, float)
 - Return an **array** for complex values (relationships, grid rows, fluid instances)
-- Flat formats (CSV, XLSX) JSON-encode arrays into a single cell via their internal `flattenValue()` helper
+- Flat formats (CSV, XLSX) JSON-encode arrays into a single cell via `flattenValue()`
 - Native formats (JSON, XML) output arrays as nested structures
 
 ### Registering a handler
 
-Any installed EE addon can register field handlers in its own `addon.setup.php` under the `export.fields` key. No changes to Export's source code are required.
+Declare field handlers in your `addon.setup.php` under `export.fields`. The key is the EE field type slug.
 
 ```php
-// system/user/addons/my_addon/addon.setup.php
+// system/user/addons/store_export/addon.setup.php
 return [
-    'name'      => 'My Addon',
-    'namespace' => 'MyAddon',
+    'name'      => 'Store Export',
+    'namespace' => 'Acme\\StoreExport',
     // ...
     'export' => [
         'fields' => [
-            'bloqs'        => \MyAddon\Export\Fields\Bloqs::class,
-            'my_fieldtype' => \MyAddon\Export\Fields\MyFieldtype::class,
+            'rating'       => \Acme\StoreExport\Fields\Rating::class,
+            'product_link' => \Acme\StoreExport\Fields\ProductLink::class,
         ],
     ],
 ];
 ```
 
-`FieldsService` scans all installed addons via `ee('App')->getProviders()` on first use and merges all `export.fields` maps. Export's own built-in handlers form the baseline; third-party declarations are merged after and can override built-ins if needed.
+`FieldsService` scans all installed add-ons via `ee('App')->getProviders()` on first use and merges all `export.fields` maps. Export's own built-in handlers form the baseline; third-party declarations are merged after and can override built-ins if needed.
 
 ### Built-in field handlers
 
@@ -748,42 +984,42 @@ Field types with no registered handler (e.g. `text`, `textarea`, `select`) pass 
 
 ```php
 <?php
-namespace MyAddon\Export\Fields;
+
+namespace Acme\StoreExport\Fields;
 
 use Mithra62\Export\Plugins\AbstractField;
 
 class Rating extends AbstractField
 {
-    public function process(mixed $raw_value, array $field_info, int $entry_id, array $context = []): mixed
-    {
+    public function process(
+        mixed $raw_value,
+        array $field_info,
+        int   $entry_id,
+        array $context = []
+    ): mixed {
         // Stored as an integer string "1"–"5"; cast and default to 0
         return $raw_value !== null ? (int) $raw_value : 0;
     }
 }
 ```
 
-Register in `addon.setup.php`:
-
-```php
-'export' => [
-    'fields' => [
-        'rating' => \MyAddon\Export\Fields\Rating::class,
-    ],
-],
-```
-
 ### Example with context — field that resolves related data
 
 ```php
 <?php
-namespace MyAddon\Export\Fields;
+
+namespace Acme\StoreExport\Fields;
 
 use Mithra62\Export\Plugins\AbstractField;
 
 class ProductLink extends AbstractField
 {
-    public function process(mixed $raw_value, array $field_info, int $entry_id, array $context = []): mixed
-    {
+    public function process(
+        mixed $raw_value,
+        array $field_info,
+        int   $entry_id,
+        array $context = []
+    ): mixed {
         if (empty($raw_value)) {
             return [];
         }
@@ -793,7 +1029,7 @@ class ProductLink extends AbstractField
 
         $result = ee()->db
             ->select('product_id, product_name, sku')
-            ->from('exp_my_products')
+            ->from(ee()->db->dbprefix . 'store_products')
             ->where_in('product_id', $product_ids)
             ->get();
 
@@ -813,26 +1049,28 @@ class ProductLink extends AbstractField
 
 ### Detecting source context
 
-Handlers can branch based on which source invoked them using `$context['source_type']`. This is important when a handler would otherwise use `$field_info['field_id']` or the `$entry_id` argument to make a DB query — those values mean different things depending on context.
+Handlers can branch based on which source invoked them using `$context['source_type']`. This is important when a handler would otherwise use `$field_info['field_id']` or the `$entry_id` argument — those values mean different things depending on the source context.
 
 ```php
-public function process(mixed $raw_value, array $field_info, int $entry_id, array $context = []): mixed
-{
+public function process(
+    mixed $raw_value,
+    array $field_info,
+    int   $entry_id,
+    array $context = []
+): mixed {
     $source = $context['source_type'] ?? 'entries';
 
     if ($source === 'grid') {
         // $entry_id here is the grid row_id, NOT the channel entry_id
-        // $field_info['field_id'] is the col_id, NOT a channel_fields.field_id
         $real_entry_id = $context['entry_id']; // actual channel_titles.entry_id
         $row_id        = $context['row_id'];   // actual channel_grid_field_X.row_id
         $col_id        = $context['col_id'];   // actual grid_columns.col_id
 
     } elseif ($source === 'fluid') {
-        // $entry_id here is the fluid instance_id (fluid_field_data.id), NOT the channel entry_id
-        // $field_info['field_id'] is the sub-field's channel_fields.field_id
+        // $entry_id here is the fluid instance_id, NOT the channel entry_id
         $real_entry_id  = $context['entry_id'];          // actual channel_titles.entry_id
         $instance_id    = $context['fluid_instance_id']; // fluid_field_data.id
-        $fluid_field_id = $context['fluid_field_id'];    // parent fluid field's channel_fields.field_id
+        $fluid_field_id = $context['fluid_field_id'];    // parent fluid channel_fields.field_id
 
     } elseif ($source === 'member') {
         // $entry_id is the member_id
@@ -841,7 +1079,6 @@ public function process(mixed $raw_value, array $field_info, int $entry_id, arra
     } else {
         // Entries source (source_type absent means entries)
         // $entry_id is the genuine channel_titles.entry_id
-        // $field_info['field_id'] is the genuine channel_fields.field_id
     }
 
     return $raw_value ?? '';
@@ -850,9 +1087,9 @@ public function process(mixed $raw_value, array $field_info, int $entry_id, arra
 
 ---
 
-## 6. Field Handler Context Reference
+## §9 Field Handler Context Reference
 
-The `$context` array passed to `AbstractField::process()` varies by source. ✅ = present and populated; — = not present (treat as empty).
+The `$context` array passed to `AbstractField::process()` varies by source. ✅ = present and populated; — = not present.
 
 | Context key | Type | Entries | Grid | Fluid | Members | Description |
 |---|---|---|---|---|---|---|
@@ -868,80 +1105,116 @@ The `$context` array passed to `AbstractField::process()` varies by source. ✅ 
 | `entry_id` | `int` | — | ✅ | ✅ | — | Actual `channel_titles.entry_id` (use when `$entry_id` arg = row_id / instance_id) |
 | `row_id` | `int` | — | ✅ | — | — | Actual `channel_grid_field_X.row_id` |
 | `col_id` | `int` | — | ✅ | — | — | Actual `grid_columns.col_id` |
-| `fluid_instance_id` | `int` | — | — | ✅ | — | `fluid_field_data.id` (PK of the instance; same value as `$entry_id` arg in Fluid context) |
+| `fluid_instance_id` | `int` | — | — | ✅ | — | `fluid_field_data.id` (same value as `$entry_id` arg in Fluid context) |
 | `fluid_field_id` | `int` | — | — | ✅ | — | Parent fluid field's `channel_fields.field_id` |
 | `member_id` | `int` | — | — | — | ✅ | Actual `exp_members.member_id` (same as `$entry_id` arg in Members context) |
 
 ### `rel_data` key detail
 
-The outer key is always passed as the `$entry_id` argument to `AbstractField::process()` — and each source uses the most locally-scoped ID available so relationship lookups stay row-safe:
+The outer key is always the `$entry_id` argument — each source passes the most locally-scoped ID so relationship lookups stay row-safe:
 
 ```
-Entries:  $context['rel_data'][$entry_id][$field_id][]   = $child_entry_id
-Grid:     $context['rel_data'][$row_id][$col_id][]       = $child_entry_id
+Entries:  $context['rel_data'][$entry_id][$field_id][]    = $child_entry_id
+Grid:     $context['rel_data'][$row_id][$col_id][]        = $child_entry_id
 Fluid:    $context['rel_data'][$instance_id][$field_id][] = $child_entry_id
 ```
 
-`Fields\Relationship` uses the `$entry_id` argument as the outer key in all three cases. The disambiguation works because each source passes the correct scope key as `$entry_id` (`row_id` for Grid, `fluid_instance_id` for Fluid).
+`Fields\Relationship` uses the `$entry_id` argument as the outer key in all three cases. The disambiguation works because each source passes the correct scope key as `$entry_id`.
 
 ---
 
-## 7. Registering Custom Plugins
+## §10 Using Third-Party Plugins with Built-In Tags
 
-All five extension layers — Sources, Formats, Outputs, Modifiers, and Field Handlers — use the same `addon.setup.php` declaration pattern. Declare your classes in your own addon's `addon.setup.php` under the `export` key and they are discovered automatically on the next page load with no changes to Export's source code.
+Once a third-party add-on registers custom formats, outputs, or modifiers, those keys are immediately available as param values in **any** Export template tag — including the built-in first-party tags. No additional wiring is needed.
 
-### The `addon.setup.php` declaration
+### Custom format with a built-in tag
 
-```php
-// system/user/addons/my_addon/addon.setup.php
-return [
-    'name'      => 'My Addon',
-    'namespace' => 'MyAddon',
-    // ...
-    'export' => [
-        'sources' => [
-            'orders' => \MyAddon\Export\Sources\Orders::class,
-        ],
-        'formats' => [
-            'tsv' => \MyAddon\Export\Formats\Tsv::class,
-        ],
-        'outputs' => [
-            's3' => \MyAddon\Export\Output\S3::class,
-        ],
-        'modifiers' => [
-            'truncate'   => \MyAddon\Export\Modifiers\Truncate::class,
-            'strip_tags' => \MyAddon\Export\Modifiers\StripTags::class,
-        ],
-        'fields' => [
-            'bloqs'      => \MyAddon\Export\Fields\Bloqs::class,
-            'my_fieldtype' => \MyAddon\Export\Fields\MyFieldtype::class,
-        ],
-    ],
-];
+```ee
+{!-- Use the TSV format registered by store_export with the built-in Entries tag --}
+{exp:export:entries
+    channel="products"
+    format="tsv"
+    output="download"
+    filename="products.tsv"
+}
 ```
 
-Any subset of layers can be declared — omit the keys for layers your addon doesn't extend.
-
-### How discovery works
-
-`AbstractService::getProviderMap(string $layer)` scans all installed addons via `ee('App')->getProviders()`, collects every `export.$layer` map, and merges them: Export's own built-in declarations form the baseline, third-party declarations are merged after and can override built-ins when needed. The result is cached statically so the scan runs at most once per PHP request per layer.
-
-Each factory service checks the provider map first, then falls back to namespace-based resolution (`Str::studly()` → `Mithra62\Export\{Layer}\{Name}`) for backward compatibility with classes placed directly in the Export namespace.
-
-### Override precedence
-
-```
-addon.setup.php declaration (third-party) → highest priority
-addon.setup.php declaration (Export built-in)
-Str::studly() namespace fallback          → lowest priority
+```ee
+{!-- Use the TSV format with the built-in Members tag --}
+{exp:export:members
+    format="tsv"
+    output="download"
+    filename="members.tsv"
+}
 ```
 
-This means a third-party addon can replace a built-in source, format, output, modifier, or field handler entirely by declaring the same key with a different class.
+### Custom output with a built-in tag
 
-### Namespace fallback
+```ee
+{!-- Upload a CSV export directly to S3 --}
+{exp:export:entries
+    channel="blog"
+    format="csv"
+    output="s3"
+    output:bucket="my-exports"
+    output:prefix="blog/"
+    filename="blog-{current_time format='%Y%m%d'}.csv"
+}
+```
 
-For Sources, Formats, Outputs, and Modifiers, classes placed directly in the `Mithra62\Export\` namespace subtrees (`Sources\`, `Formats\`, `Output\`, `Modifiers\`) are still discovered automatically via `Str::studly()` if no `addon.setup.php` entry exists for that name. This preserves backward compatibility but the declaration approach is preferred for distributed addons.
+### Custom modifier with a built-in tag
 
-### Custom tag routing
+```ee
+{!-- Use the third-party truncate modifier alongside built-in modifiers --}
+{exp:export:entries
+    channel="blog"
+    format="csv"
+    output="download"
+    filename="blog.csv"
+    modify:title="truncate[80][…]"
+    modify:entry_date="ee_date[%Y-%m-%d]"
+    modify:author_id="replace_with[anonymous]"
+}
+```
 
-EE routes `{exp:export:foo}` to a tag class at `Tags\Foo`. Add your tag class to `Tags/` following the same pattern as the built-in ones (`Tags\Entries`, `Tags\Members`, etc.) and EE routes it automatically. No registration is required for tags.
+### Custom sources require a companion tag
+
+Built-in Export tags hardcode their source key in PHP — there is no `source=` param you can pass from a template to override it. A custom source can only be invoked through a companion tag class in your add-on.
+
+```ee
+{!-- CORRECT: custom source invoked through its companion tag --}
+{exp:store_export:orders
+    status="complete"
+    format="csv"
+    output="download"
+    filename="orders.csv"
+}
+```
+
+```ee
+{!-- CORRECT: combine your custom source tag with a third-party format and output --}
+{exp:store_export:orders
+    status="complete"
+    format="tsv"
+    output="s3"
+    output:bucket="my-exports"
+    output:prefix="orders/"
+    filename="orders-{current_time format='%Y%m%d'}.tsv"
+}
+```
+
+```ee
+{!-- WRONG: built-in tags do not accept a source= param override --}
+{exp:export:entries source="orders" ...}  ← this does not work
+```
+
+### Mixing and matching
+
+Any registered source, format, output, and modifier can be freely combined, regardless of which add-on registered them:
+
+| Tag | Source | Format | Output |
+|---|---|---|---|
+| `{exp:export:entries ...}` | Built-in | Third-party | Third-party |
+| `{exp:export:members ...}` | Built-in | Built-in | Third-party |
+| `{exp:store_export:orders ...}` | Third-party | Third-party | Third-party |
+| `{exp:store_export:orders ...}` | Third-party | Built-in | Built-in |

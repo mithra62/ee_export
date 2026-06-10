@@ -84,7 +84,7 @@ abstract class AbstractSource extends AbstractPlugin
      */
     public function cleanFields(array $data): array
     {
-        $whitelist = $this->getOption('fields', []);
+        $whitelist = $this->normalizeList($this->getOption('fields', []));
         if (!empty($whitelist)) {
             $filtered = [];
             foreach ($whitelist as $key) {
@@ -95,7 +95,7 @@ abstract class AbstractSource extends AbstractPlugin
             return $filtered;
         }
 
-        $exclude = $this->getOption('exclude', []);
+        $exclude = $this->normalizeList($this->getOption('exclude', []));
         if (!empty($exclude)) {
             foreach ($exclude as $key) {
                 unset($data[$key]);
@@ -103,5 +103,28 @@ abstract class AbstractSource extends AbstractPlugin
         }
 
         return $data;
+    }
+
+    /**
+     * Normalise a fields/exclude option value to a plain array of trimmed strings.
+     *
+     * Options can arrive in two shapes depending on call-site:
+     *   - Template tag params  → pipe-separated string  ("password|salt")
+     *   - Stored CP settings   → JSON-decoded array      (["password", "salt"])
+     *
+     * Both forms are reduced to the same array so cleanFields() can iterate
+     * safely without caring where the value originated.
+     */
+    private function normalizeList(mixed $value): array
+    {
+        if (is_array($value)) {
+            return array_values(array_filter(array_map('trim', $value)));
+        }
+
+        if (is_string($value) && $value !== '') {
+            return array_values(array_filter(array_map('trim', explode('|', $value))));
+        }
+
+        return [];
     }
 }

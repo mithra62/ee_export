@@ -99,20 +99,33 @@ class Members extends AbstractSource
         // Lazy-load: only pay for the MemberField query when custom fields exist
         $raw_fields = ee('export:MemberService')->getFields();
         if (!empty($raw_fields)) {
+            // Validate column existence before building the SELECT list.
+            // exp_member_fields records and the exp_member_data schema can fall
+            // out of sync (backup restore, manual field creation, failed upgrade)
+            // and selecting a column that doesn't exist produces a fatal SQL error.
+            $actual_columns = ee('export:MemberService')->getMemberDataColumns();
+
             foreach ($raw_fields as $field) {
                 $settings = $field->m_field_settings ?? [];
                 if (is_string($settings)) {
                     $settings = @unserialize($settings) ?: [];
                 }
 
-                $fid = (int) $field->m_field_id;
+                $fid        = (int) $field->m_field_id;
+                $column_key = 'm_field_id_' . $fid;
+
+                // Skip fields whose column doesn't actually exist in exp_member_data
+                if (!isset($actual_columns[$column_key])) {
+                    continue;
+                }
+
                 $this->custom_fields[$fid] = [
                     'field_id'       => $fid,
                     'field_name'     => $field->m_field_name,
                     'field_type'     => $field->m_field_type,
                     'field_label'    => $field->m_field_label,
                     'field_settings' => is_array($settings) ? $settings : [],
-                    'column_key'     => 'm_field_id_' . $fid,
+                    'column_key'     => $column_key,
                 ];
             }
 

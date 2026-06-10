@@ -114,6 +114,10 @@ return [
     // their own addon.setup.php. Export's declarations form the baseline; any
     // third-party entry with the same key overrides the built-in.
     // ---------------------------------------------------------------------------
+    'tests' => [
+        'path' => 'tests',
+    ],
+
     'export' => [
         'sources' => [
             'entries' => Entries::class,

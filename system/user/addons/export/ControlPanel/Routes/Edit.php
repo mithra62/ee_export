@@ -2,6 +2,8 @@
 
 namespace Mithra62\Export\ControlPanel\Routes;
 
+use Mithra62\Export\Forms\CreateEditExport;
+
 /**
  * Edit — edit an existing saved Export configuration.
  *
@@ -76,13 +78,13 @@ class Edit extends AbstractRoute
             $settings['name'] = $config->name;
         }
 
-        $form = ee('export:CpService')->buildForm($settings, $source);
-        $form->setCpPageTitle(lang('export_edit_heading') . ': ' . $config->name)
-             ->setBaseUrl($this->url('edit/' . $config->id))
-             ->setSaveBtnText(lang('export_save'))
-             ->setSaveBtnTextWorking(lang('export_saving'));
+        $vars = (new CreateEditExport($settings, $source))->generate();
+        $vars['cp_page_title']         = lang('export_edit_heading') . ': ' . $config->name;
+        $vars['base_url']              = $this->url('edit/' . $config->id);
+        $vars['save_btn_text']         = lang('export_save');
+        $vars['save_btn_text_working'] = lang('export_saving');
 
-        $this->setView('form', $form->toArray());
+        $this->setView('form', $vars);
 
         return $this;
     }

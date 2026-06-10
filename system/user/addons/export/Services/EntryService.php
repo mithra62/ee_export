@@ -197,30 +197,6 @@ class EntryService extends AbstractService
         return $return;
     }
 
-
-    /**
-     * @param string $url_title
-     * @return array
-     */
-    public function getNotifications(string $url_title, int $channel_id): array
-    {
-        $return = [];
-        $entry_id = $this->getEntryId($url_title, $channel_id);
-        if ($entry_id) {
-            $return = $this->getGridData(215, $entry_id, ['copy' => 'col_id_116', 'type' => 'col_id_115']);
-        }
-
-        if ($return) {
-            foreach ($return as $key => $value) {
-                $return[$key]['type'] = strtolower($value['type']);
-                $return[$key]['gid'] = $channel_id . '_' . $value['row_id'] . '-' . $url_title;
-            }
-        }
-
-        return $return;
-    }
-
-
     /**
      * @param string $url_title
      * @param int $group_id

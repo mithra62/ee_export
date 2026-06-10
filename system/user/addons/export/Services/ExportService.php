@@ -213,29 +213,58 @@ class ExportService extends AbstractService
         $format    = $this->getFormats()->getFormat();
         $modifiers = $this->getModifiers();
 
-        $source->openStream();
-        $header_written = false;
+        // $path is set only after finalizeFile() returns successfully.
+        // The catch block uses it to decide whether to call finalizeFile()
+        // (to close the file handle) before attempting cleanup.
+        $path = null;
 
-        while (true) {
-            $chunk = $source->nextChunk();
-            if (empty($chunk)) {
-                break;
+        try {
+            $source->openStream();
+            $header_written = false;
+
+            while (true) {
+                $chunk = $source->nextChunk();
+                if (empty($chunk)) {
+                    break;
+                }
+
+                $chunk = $modifiers->processChunk($chunk);
+
+                if (!$header_written) {
+                    $format->openFile($chunk[0]);
+                    $header_written = true;
+                }
+
+                $format->writeChunk($chunk);
             }
 
-            $chunk = $modifiers->processChunk($chunk);
+            $source->closeStream();
+            $path = $format->finalizeFile();
+            $this->deliver($path);
 
-            if (!$header_written) {
-                $format->openFile($chunk[0]);
-                $header_written = true;
+        } catch (\Throwable $e) {
+            // Ensure the temp export file is removed on any failure so that
+            // partial files do not accumulate in PATH_CACHE/export/.
+            //
+            // If finalizeFile() was never called ($path === null) the file handle
+            // is still open; call finalizeFile() first to close it before unlinking.
+            // If finalizeFile() itself throws (e.g. format was never opened because
+            // NoDataException fired before the first chunk), we swallow that inner
+            // error and leave $path null — there is nothing to remove.
+            if ($path === null) {
+                try {
+                    $path = $format->finalizeFile();
+                } catch (\Throwable) {
+                    // Format was never opened; no file to clean up.
+                }
             }
 
-            $format->writeChunk($chunk);
+            if ($path !== null && file_exists($path)) {
+                @unlink($path);
+            }
+
+            throw $e;
         }
-
-        $source->closeStream();
-        $path = $format->finalizeFile();
-
-        $this->deliver($path);
     }
 
     protected function deliver(string $path): void

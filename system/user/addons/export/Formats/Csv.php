@@ -24,6 +24,12 @@ class Csv extends AbstractFormat
         $this->stream_path    = $this->getCacheDirPath() . $this->getCacheFilename() . '.csv';
         $this->fp             = fopen($this->stream_path, 'w');
         $this->header_written = false;
+
+        if ($this->fp === false) {
+            throw new \RuntimeException(
+                'Export (CSV): could not open cache file for writing: ' . $this->stream_path
+            );
+        }
     }
 
     public function writeChunk(array $rows): void

@@ -258,10 +258,10 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### L-3 — `openFile()` does not check for `fopen()` failure
+### L-3 — `openFile()` does not check for `fopen()` failure ✅
 
 - **File:** `Formats/Csv.php` line ~25, `Formats/Json.php` line ~25`, `Formats/Xlsx.php` line ~30`
-- **Status:** Open
+- **Status:** Resolved — `\RuntimeException` thrown on `false` return from `fopen()` in Csv and Json; Xlsx uses OpenSpout's `openToFile()` which already throws `IOException` on failure so no change needed there
 - **Description:** `fopen($this->stream_path, 'w')` returns `false` when the cache directory is unwritable or the path is invalid. No check is made — subsequent `fputcsv()`/`fwrite()` calls on a `false` handle produce PHP warnings and corrupted output with no meaningful error message.
 - **Fix:** Check the return value and throw a descriptive exception:
   ```php
@@ -358,7 +358,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | M-9 | Medium | Docs — Grid/Fluid limit applies to entries not rows | ✅ Resolved |
 | L-1 | Low | Upgrade — update() stub needs comment | Open |
 | L-2 | Low | Dead code — getCacheContent() reads directory | ✅ Resolved |
-| L-3 | Low | Error handling — fopen() failure not checked | Open |
+| L-3 | Low | Error handling — fopen() failure not checked | ✅ Resolved |
 | L-4 | Low | Docs — Grid phpdoc wrong for fields= param | ✅ Resolved |
 | L-5 | Low | Security — cache dir created 0777 | Open |
 | L-6 | Low | PHP 8 — nullable type declarations missing | Open |

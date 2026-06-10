@@ -24,6 +24,13 @@ class Json extends AbstractFormat
         $this->stream_path = $this->getCacheDirPath() . $this->getCacheFilename() . '.json';
         $this->fp          = fopen($this->stream_path, 'w');
         $this->first_row   = true;
+
+        if ($this->fp === false) {
+            throw new \RuntimeException(
+                'Export (JSON): could not open cache file for writing: ' . $this->stream_path
+            );
+        }
+
         fwrite($this->fp, '[');
     }
 

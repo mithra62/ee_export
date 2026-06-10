@@ -132,9 +132,9 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 ### M-1 — CSRF verification on CP POST routes not confirmed
 
 - **File:** `ControlPanel/Routes/Create.php::handlePost()`, `Edit.php::handlePost()`, `Delete.php::process()`
-- **Status:** Open — needs verification
+- **Status:** ✅ Resolved
 - **Description:** The routes rely on EE's base `Mcp` class routing. It is not confirmed whether `Mcp` automatically verifies CSRF tokens on POST or whether that is delegated to the form rendering layer. If CSRF is not automatically enforced, Create/Edit/Delete are all vulnerable to cross-site request forgery — an attacker can cause an authenticated admin to create, modify, or delete export configurations.
-- **Fix:** Verify in EE source (`system/ee/ExpressionEngine/Service/Addon/Mcp.php`) whether CSRF is enforced automatically. If not, add an explicit check at the top of each POST handler.
+- **Fix:** Verified — EE's `Core::process_secure_forms()` runs on every CP request before any route handler fires, enforcing CSRF token validation globally. No per-route code is needed.
 - **Notes:**
 
 ---
@@ -142,7 +142,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 ### M-2 — `XmlService::addXmlNodes()` produces invalid XML for numeric array keys
 
 - **File:** `Services/XmlService.php` lines ~220–229
-- **Status:** Open
+- **Status:** ✅ Resolved
 - **Description:** When a field value is an array with numeric keys (Grid rows, Fluid instances, Relationship arrays all return numeric-keyed arrays), the code iterates and calls `$this->addNode($_key, $sub)` where `$_key` is an integer. `XMLWriter::startElement()` given a numeric string produces invalid element names (`<0>`, `<1>`, etc.) or throws. This will corrupt or crash XML exports for any entry with complex field types.
 - **Fix:** When the key is numeric, use a generic element name with an index attribute:
   ```php
@@ -173,9 +173,9 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 ### M-4 — Dead code with hardcoded project-specific field/column IDs
 
 - **File:** `Services/EntryService.php` lines ~205–221
-- **Status:** Open
+- **Status:** ✅ Resolved
 - **Description:** `getNotifications()` calls `getGridData(215, $entry_id, ['copy' => 'col_id_116', 'type' => 'col_id_115'])` — hardcoded grid field ID `215` and column IDs `116`/`115` from a specific development site. Several other methods appear unused in the export pipeline: `filterCategories()`, `filterString()`, `getEntryCats()`, `getEntriesCatIds()`, `getCatId()`, `createGridData()`, `updateGridData()`, `getGridFluidFieldId()`. Dead code with site-specific IDs will cause immediate confusion or errors for any user on a different installation.
-- **Fix:** Audit and remove all methods not called from the export pipeline. At minimum remove `getNotifications()` and its callee chain.
+- **Fix:** Removed all nine dead methods from `Services/EntryService.php`. Grep confirmed zero call sites outside the definitions themselves.
 - **Notes:**
 
 ---
@@ -183,7 +183,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 ### M-5 — `AbstractPlugin::toArray()` dynamic property access breaks on PHP 8.2+
 
 - **File:** `Plugins/AbstractPlugin.php` lines ~67–74
-- **Status:** Open
+- **Status:** ✅ Resolved
 - **Description:**
   ```php
   foreach ($this->options as $key => $value) {
@@ -199,7 +199,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 ### M-6 — CP `Run` route skips `ExportService::validate()`
 
 - **File:** `ControlPanel/Routes/Run.php` lines ~43–55
-- **Status:** Open
+- **Status:** ✅ Resolved
 - **Description:** The template tag path calls `$export->validate()` before `$export->build()`. The CP Run route calls `$export->setParameters($params)->build()` directly, skipping validation entirely. A corrupted or manually-edited settings JSON blob will throw an unhandled exception with a raw PHP stack trace instead of a clean CP error message.
 - **Fix:** Call `validate()` before `build()` in `Run::process()`, matching the tag execution path. Catch the resulting validation errors and show them as a CP alert.
 - **Notes:**
@@ -347,12 +347,12 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | H-3 | High | Security — SQL injection via relationship_fields | Open |
 | H-4 | High | Bug — MemberService hardcoded table prefix | ✅ Resolved |
 | H-5 | High | Bug — Entries missing documented columns | ✅ Resolved |
-| M-1 | Medium | Security — CSRF verification on CP routes | Open |
-| M-2 | Medium | Bug — XML invalid element names for numeric keys | Open |
+| M-1 | Medium | Security — CSRF verification on CP routes | ✅ Resolved |
+| M-2 | Medium | Bug — XML invalid element names for numeric keys | ✅ Resolved |
 | M-3 | Medium | Bug — last_login filters pass string to int column | ✅ Resolved |
-| M-4 | Medium | Code quality — dead code with hardcoded field IDs | Open |
-| M-5 | Medium | PHP 8.2 — dynamic property access in toArray() | Open |
-| M-6 | Medium | Bug — Run route skips ExportService::validate() | Open |
+| M-4 | Medium | Code quality — dead code with hardcoded field IDs | ✅ Resolved |
+| M-5 | Medium | PHP 8.2 — dynamic property access in toArray() | ✅ Resolved |
+| M-6 | Medium | Bug — Run route skips ExportService::validate() | ✅ Resolved |
 | M-7 | Medium | UX — Entries entry_id pipe hint vs int cast | Open |
 | M-8 | Medium | Feature gap — search: param ignored for non-Members | Open |
 | M-9 | Medium | Docs — Grid/Fluid limit applies to entries not rows | ✅ Resolved |

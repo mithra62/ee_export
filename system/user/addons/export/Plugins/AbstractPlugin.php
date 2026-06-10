@@ -66,13 +66,7 @@ abstract class AbstractPlugin implements ValidationAware
      */
     public function toArray(): array
     {
-        $data = [];
-
-        foreach ($this->options as $key => $value) {
-            $data[$key] = $this->{$key};
-        }
-
-        return $data;
+        return $this->options;
     }
 
     /**

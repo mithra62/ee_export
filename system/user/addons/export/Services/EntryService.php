@@ -54,34 +54,6 @@ class EntryService extends AbstractService
     }
 
     /**
-     * This may not tbe the best way to do this but it does work
-     * @param int $field_id
-     * @param int $entry_id
-     * @return int
-     */
-    protected function getGridFluidFieldId(int $field_id, int $entry_id): int
-    {
-        $return = 0;
-        $table = 'channel_grid_field_' . $field_id;
-        if (ee()->db->table_exists($table)) {
-            $where = [
-                'entry_id' => $entry_id,
-            ];
-
-            $query = ee()->db->select('fluid_field_data_id')->from($table)
-                ->where($where)
-                ->limit(1)
-                ->get();
-
-            if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
-                $return = $query->row('fluid_field_data_id');
-            }
-        }
-
-        return $return;
-    }
-
-    /**
      * @param int $entry_id
      * @param int|null $field_id
      * @return array
@@ -195,132 +167,6 @@ class EntryService extends AbstractService
         }
 
         return $return;
-    }
-
-    /**
-     * @param string $url_title
-     * @param int $group_id
-     * @return int
-     */
-    public function getCatId(string $url_title, int $group_id): int
-    {
-        $return = 0;
-        $query = ee()->db->select('cat_id')
-            ->from('categories')
-            ->where(['group_id' => $group_id, 'cat_url_title' => $url_title])
-            ->get();
-
-        if ($query instanceof CI_DB_result) {
-            $return = ($query->row('cat_id') ? $query->row('cat_id') : 0);
-        }
-
-        return $return;
-    }
-
-    /**
-     * @param $entry_ids
-     * @param array $types
-     * @return array
-     */
-    public function filterCategories($entry_ids, array $cats): array
-    {
-        $query = ee()->db->select()->from('category_posts')
-            ->where_in('entry_id', $entry_ids)
-            ->where_in('cat_id', $cats)
-            ->get();
-
-        $return = [];
-        if ($query instanceof CI_DB_result) {
-            foreach ($query->result_array() as $row) {
-                $return[] = $row['entry_id'];
-            }
-        }
-
-        return $return;
-    }
-
-    /**
-     * @param string $string
-     * @param array $entries
-     * @return array
-     */
-    public function filterString(string $string, array $entries): array
-    {
-        $return = [];
-        foreach ($entries as $index => $entry) {
-            foreach ($entry as $key => $value) {
-                if (is_string($value)) {
-                    if (strpos($value, $string) !== false) {
-                        $return[] = $entry;
-                    }
-                } elseif (is_array($value)) {
-                    foreach ($value as $k => $v) {
-                        if (is_string($v)) {
-                            if (strpos($v, $string) !== false) {
-                                $return[] = $entry;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return $return;
-    }
-
-    /**
-     * @param int $entry_id
-     * @param int $group_id
-     * @return array
-     */
-    public function getEntryCats(int $entry_id, int $group_id): array
-    {
-        $query = ee()->db->select()->from('categories')
-            ->where(['group_id' => $group_id, 'category_posts.entry_id' => $entry_id, 'status' => 'open'])
-            ->join('category_posts', 'category_posts.cat_id = categories.cat_id')
-            ->join('channel_titles', 'category_posts.entry_id = channel_titles.entry_id')
-            ->order_by('cat_order', 'ASC')
-            ->get();
-
-        $return = [];
-        if ($query instanceof CI_DB_result) {
-            $return = $query->result_array();
-        }
-
-        return $return;
-    }
-
-    /**
-     * @param int $entry_id
-     * @param int $field_id
-     * @param array $row
-     * @return bool
-     */
-    public function createGridData(int $field_id, int $entry_id, array $row): bool
-    {
-        $table = 'channel_grid_field_' . $field_id;
-        $row['entry_id'] = $entry_id;
-        $row['row_order'] = 0;
-        if (ee()->db->insert($table, $row)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param int $entry_id
-     * @param int $field_id
-     * @param array $row
-     * @return bool
-     */
-    public function updateGridData(int $row_id, int $field_id, array $row): bool
-    {
-        $table = 'channel_grid_field_' . $field_id;
-        if (ee()->db->update($table, $row, ['row_id' => $row_id])) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -570,7 +416,7 @@ class EntryService extends AbstractService
         }
 
         $select = 'ct.entry_id, ct.title';
-        $extra  = array_diff($rel_fields, ['title']);
+        $extra  = array_filter(array_diff($rel_fields, ['title']), fn($f) => preg_match('/^[a-z0-9_]+$/i', $f));
         if ($extra) {
             $select .= ', cd.' . implode(', cd.', $extra);
         }
@@ -870,23 +716,4 @@ class EntryService extends AbstractService
         return array_values($ids);
     }
 
-    /**
-     * @param array $entry_ids
-     * @return array
-     */
-    public function getEntriesCatIds(array $entry_ids): array
-    {
-        $query = ee()->db->select()->from('category_posts')
-            ->where_in('entry_id', $entry_ids)
-            ->get();
-
-        $return = [];
-        if ($query instanceof CI_DB_result) {
-            foreach ($query->result_array() as $row) {
-                $return[$row['entry_id']][] = $row['cat_id'];
-            }
-        }
-
-        return $return;
-    }
 }

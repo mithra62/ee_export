@@ -204,34 +204,31 @@ class XmlService extends XMLWriter
      */
     public function addXmlNodes($key, $value): XmlService
     {
-        if (!is_array($value) && !is_numeric($key)) {
-            $wrap = true;
-            if (is_numeric($value)) {
-                $wrap = false;
-            }
+        $numeric_key = is_int($key) || ctype_digit((string) $key);
 
-            $this->addNode($key, $value, [], $wrap);
+        if (!is_array($value)) {
+            $wrap  = !is_numeric($value);
+            $attrs = $numeric_key ? ['index' => (string) $key] : [];
+            $name  = $numeric_key ? 'item' : $key;
+            $this->addNode($name, $value, $attrs, $wrap);
             return $this;
         }
 
-        if (is_array($value) && !is_numeric($key)) {
+        // Open the branch element, using <item index="N"> for numeric keys
+        if ($numeric_key) {
+            $this->startElement('item');
+            $this->writeAttribute('index', (string) $key);
+        } else {
             $this->startBranch($key);
         }
 
         foreach ($value as $_key => $sub) {
-            if (!is_array($sub)) {
-                $wrap = true;
-                if (is_numeric($value)) {
-                    $wrap = false;
-                }
-                $this->addNode($_key, $sub, [], $wrap);
-            } else {
-                $this->addXmlNodes($_key, $sub);
-
-            }
+            $this->addXmlNodes($_key, $sub);
         }
 
-        if (is_array($value) && !is_numeric($key)) {
+        if ($numeric_key) {
+            $this->endElement();
+        } else {
             $this->endBranch();
         }
 

@@ -40,10 +40,23 @@ class Run extends AbstractRoute
             $config->getSettings()
         );
 
+        $export = ee('export:ExportService')->setParameters($params);
+
+        if (! $export->validate()) {
+            ee('CP/Alert')->makeInline('shared-form')
+                ->asIssue()
+                ->withTitle(lang('export_err_heading'))
+                ->addToBody(lang('export_err_fix_below'))
+                ->defer();
+
+            ee()->functions->redirect($this->url('index'));
+            return;
+        }
+
         try {
             // For 'download' output this triggers headers + exit.
             // For 'local' output execution continues past this line.
-            ee('export:ExportService')->setParameters($params)->build();
+            $export->build();
         } catch (\Throwable $e) {
             ee('CP/Alert')->makeInline('shared-form')
                 ->asIssue()

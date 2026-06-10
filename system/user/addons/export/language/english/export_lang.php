@@ -141,9 +141,14 @@ $lang = [
     'export_err_heading'             => 'Your submission has errors',
     'export_err_fix_below'           => 'Please correct the fields highlighted below.',
     'export_err_not_found'           => 'Export configuration not found.',
-    'export_err_sql_superadmin_only' => 'The SQL source is restricted to Super Admins.',
-    'export_err_numeric'             => 'Must be a positive whole number.',
-    'export_err_chunk_size'          => 'Chunk size must be at least 1.',
+    'export_err_sql_superadmin_only'  => 'The SQL source is restricted to Super Admins.',
+    'export_err_role_denied'          => 'You do not have permission to run this export.',
+    'export_err_numeric'              => 'Must be a positive whole number.',
+    'export_err_chunk_size'           => 'Chunk size must be at least 1.',
+
+    // ── Role-based access control ─────────────────────────────────────────────
+    'export_field_allowed_roles'      => 'Template Tag Access',
+    'export_field_allowed_roles_desc' => 'Roles permitted to invoke this export via template tags. Leave empty to allow all members. The SQL source requires Super Admin when left empty.',
 
 
 ];

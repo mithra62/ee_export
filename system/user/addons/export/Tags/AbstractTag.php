@@ -307,6 +307,18 @@ abstract class AbstractTag extends AbstractRoute
      */
     public function compile(array $params = []): void
     {
+        $allowed = $params['allowed_roles'] ?? [];
+        if (is_string($allowed) && $allowed !== '') {
+            $allowed = array_values(array_filter(array_map('intval', explode('|', $allowed))));
+        }
+        if (! empty($allowed)) {
+            $user_roles = $this->getRoles();
+            if (empty(array_intersect(array_map('intval', (array) $user_roles), $allowed))) {
+                show_error(lang('export_err_role_denied'), 403);
+                return;
+            }
+        }
+
         $fmt = $params['format'] ?? $this->param('format');
         $out = $params['output'] ?? $this->param('output');
         if ($fmt && $out) {

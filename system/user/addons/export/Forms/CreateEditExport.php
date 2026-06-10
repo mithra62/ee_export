@@ -65,6 +65,11 @@ class CreateEditExport extends AbstractExportForm
             $selected_roles = array_values(array_filter(explode('|', $selected_roles)));
         }
 
+        $selected_allowed_roles = $settings['allowed_roles'] ?? [];
+        if (is_string($selected_allowed_roles) && $selected_allowed_roles !== '') {
+            $selected_allowed_roles = array_values(array_filter(array_map('intval', explode('|', $selected_allowed_roles))));
+        }
+
         $norm_date = function (string $key) use ($settings): string {
             $raw = $settings[$key] ?? '';
             if ($raw === '') { return ''; }
@@ -143,6 +148,12 @@ class CreateEditExport extends AbstractExportForm
                     'fluid'   => 'source_fluid',
                     'sql'     => 'source_sql',
                 ]);
+
+        $identity->getFieldSet('export_field_allowed_roles')
+            ->setDesc('export_field_allowed_roles_desc')
+            ->getField('allowed_roles', 'checkbox')
+                ->setChoices($roles)
+                ->setValue($selected_allowed_roles);
 
         // ── Section 2 — Source options ────────────────────────────────────────
 

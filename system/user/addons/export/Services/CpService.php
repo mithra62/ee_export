@@ -264,6 +264,12 @@ class CpService
         // Edit both call postToSettings() then pass the result to renderForm()).
         $settings['name'] = trim($post['name'] ?? '');
 
+        // Template tag access roles — top-level setting, not source-prefixed
+        $raw_roles = $post['allowed_roles'] ?? [];
+        $settings['allowed_roles'] = array_values(array_filter(
+            array_map('intval', is_array($raw_roles) ? $raw_roles : explode('|', (string) $raw_roles))
+        ));
+
         // Source-specific params — strip the `src_{source}_` prefix
         $prefix = 'src_' . $source . '_';
         foreach ($post as $key => $value) {

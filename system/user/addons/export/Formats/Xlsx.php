@@ -30,9 +30,8 @@ class Xlsx extends AbstractFormat
         $this->writer->openToFile($this->stream_path);
 
         if (!empty($first_row)) {
-            $style = $this->getOption('bold_cols') === true
-                ? (new Style())->setFontBold()
-                : new Style();
+            $bold  = in_array($this->getOption('bold_cols'), [true, 'y', '1', 1], true);
+            $style = $bold ? (new Style())->setFontBold() : new Style();
 
             $this->writer->addRow(Row::fromValues(array_keys($first_row), $style));
         }

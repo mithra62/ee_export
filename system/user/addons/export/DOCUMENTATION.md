@@ -1,6 +1,6 @@
 # Export — Complete Reference
 
-**Version:** 0.1.0  
+**Version:** 1.0.0-beta.1  
 **Author:** mithra62  
 **Namespace:** `Mithra62\Export`
 
@@ -446,7 +446,9 @@ Exports the result of a raw SQL query. Column names in the query result become t
 | `fields` | | — | Pipe-separated column **whitelist** — return only these columns, in this order |
 | `exclude` | | — | Pipe-separated column **blacklist** — exclude these columns, return the rest |
 
-> **Note:** The SQL query runs with the database user configured for your EE installation. Validate and sanitise any user-supplied values before interpolating them into the query string.
+> **Security:** Only `SELECT` statements are accepted. Queries containing semicolons, SQL comment sequences (`--`, `/* */`), or destructive keywords (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `TRUNCATE`, `ALTER`, `CREATE`, `REPLACE`, `CALL`, `EXEC`) are rejected at validation time. The query runs with the database credentials configured for your EE installation, so avoid interpolating user-supplied values directly into the query string.
+>
+> **Control Panel:** In the CP, the SQL source is restricted to Super Admins.
 
 ---
 
@@ -475,8 +477,8 @@ All format params are prefixed with `format:`.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `format:root_element` | `export` | XML root element name |
-| `format:row_element` | `row` | Wrapping element for each data row |
+| `format:root_name` | — | XML root element name (**required**) |
+| `format:branch_name` | — | Wrapping element for each data row (**required**) |
 
 ---
 
@@ -1265,7 +1267,7 @@ The index table lists all saved configurations for the current site. Each row sh
 |--------|-----------|
 | **Run** | Executes the configuration immediately. `download` output streams the file to the browser; `local` output saves to the configured path and shows a success alert. |
 | **Edit** | Opens the edit form with all fields pre-populated from the stored settings. |
-| **Delete** | Deletes the configuration after confirmation; redirects to the index with an alert. |
+| **Delete** | Opens a confirmation form with a toggle to confirm removal. Submitting without toggling the confirmation does nothing. **Restricted to Super Admins.** |
 
 ### Create / Edit Form
 
@@ -1333,6 +1335,8 @@ Same fields as Entries plus:
 | Field | Input type | Maps to |
 |-------|-----------|---------|
 | SQL Query | Textarea | `source:sql` |
+
+> **Super Admin only.** The SQL source is restricted to Super Admins in the CP. Attempting to save a configuration with `source=sql` as a non-Super-Admin returns an inline validation error. The restriction applies only to the CP form; template tags are not affected.
 
 #### Section 3 — Column Selection
 
@@ -1418,4 +1422,6 @@ The CP uses the EE 7.2+ addon routing paradigm:
 - **Views:** `views/index.php` and `views/form.php` — use `ee:_shared/table` and `ee:_shared/form` respectively; no custom HTML renderers
 - **Model:** `Models/ExportConfiguration` — standard EE Model with typed columns and JSON encode/decode helpers
 - **Service:** `Services/CpService` — registered as a singleton (`ee('export:CpService')`); provides channel lists, role lists, column introspection, settings ↔ POST conversion, and form section building
+- **Validation bridge:** `Services/CpValidationBridge` — bridges driver-level EE Validation rules into CI form_validation so they surface as inline fieldset errors in the shared form. On every Create/Edit POST, the bridge instantiates the active source, format, and output drivers, calls each driver's `validate()` (running all `$rules` and custom `getValidator()` closures), maps errors from unprefixed driver param names back to CP field names, and injects them directly into CI's `$_field_data`. EE's `form_error()` / `form_error_class()` then render them inline without any separate `$errors` view variable. **Third-party plugin developers:** any custom rule you register via `$validator->defineRule()` inside your plugin's `getValidator()` is automatically run in the CP form — no extra wiring required.
 - **AJAX endpoint:** `ControlPanel/Routes/Ajax.php` — handles `action=columns` (available export columns for a source config) and `action=fields` (Grid/Fluid field selects populated when a channel is chosen)
+- **Permission gates:** `AbstractRoute` exposes a `requireSuperAdmin()` helper. The Delete route calls it unconditionally; the Create/Edit routes gate SQL source access via inline form validation.

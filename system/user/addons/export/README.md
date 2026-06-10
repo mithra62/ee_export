@@ -8,11 +8,12 @@ Every layer of the pipeline is independently extensible. Third-party addons can 
 
 ## Requirements
 
-| Dependency | Minimum version |
-|---|---|
-| ExpressionEngine | 6.0 |
-| PHP | 8.0 |
-| [openspout/openspout](https://github.com/openspout/openspout) | 4.0 |
+| Dependency | Minimum version | Notes |
+|---|---|---|
+| ExpressionEngine | 6.0 | Template tag features |
+| ExpressionEngine | 7.2 | Control Panel UI |
+| PHP | 8.0 | |
+| [openspout/openspout](https://github.com/openspout/openspout) | 4.0 | XLSX generation |
 
 ---
 
@@ -261,6 +262,20 @@ Export ships with handlers for EE's first-party complex field types:
 | `fluid_field` | Array of typed instances |
 
 Third-party field types (e.g. Bloqs, Coilpack fields) can be supported by registering a handler in your addon's `addon.setup.php` as shown above. Handlers extend `AbstractField` and receive the raw stored value, field metadata, and a pre-fetched context bag of batch-loaded relationship and grid data.
+
+---
+
+## Control Panel (EE 7.2+)
+
+Export ships with a native Control Panel for EE 7.2 and later. Navigate to **Add-Ons → Export** to create, edit, run, and delete saved export configurations without writing template code.
+
+- All source, format, output, column selection, and modifier options are available through the form UI.
+- Source-specific and format-specific field groups appear and hide automatically as you change the Source and Format selects.
+- **Inline validation.** Driver-level validation rules (channel exists, XML element names required, local path writable, etc.) surface as inline fieldset errors — not hard error pages.
+- **Delete requires confirmation.** The Delete action shows a confirmation toggle before removing anything. Delete is restricted to Super Admins.
+- **SQL source restricted to Super Admins.** Template tags are unaffected.
+
+See §14 of [DOCUMENTATION.md](DOCUMENTATION.md) for a complete field reference and database schema.
 
 ---
 

@@ -151,6 +151,8 @@ protected function getValidator(): Validator
 }
 ```
 
+> **CP inline validation.** Rules you declare in `$rules` and custom rules you register via `$validator->defineRule()` inside `getValidator()` are automatically run in the Control Panel Create/Edit form as well — no extra wiring needed. `Services/CpValidationBridge` instantiates the active source, format, and output drivers on every form POST, calls `validate()` on each, and injects any errors into CI form_validation so they surface as inline fieldset errors. The driver param names are mapped back to CP POST field names by the bridge (e.g. `channel` → `src_entries_channel`, `path` → `output_path`).
+
 ### Column selection — `fields` and `exclude`
 
 Every source calls `$this->cleanFields($row)` before appending each row to the output. That method implements a two-param priority system:

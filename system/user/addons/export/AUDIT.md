@@ -329,7 +329,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 ### L-9 — Shared `source:channel` / `source:field` storage key collides across Grid and Fluid configs
 
 - **File:** `Services/CpService.php` lines ~272, ~321–322
-- **Status:** Open
+- **Status:** ✅ Resolved
 - **Description:** Both `src_grid_channel` and `src_fluid_channel` POST keys map to the same stored key `source:channel`. When the Edit form renders, it uses `$channel_id` from `source:channel` to pre-fill both the Grid and Fluid channel selects. This means if a user edits a Grid config that uses channel 3 and then switches the Source select to Fluid, the Fluid channel select will already show channel 3 — which may or may not be correct, and could cause confusing pre-filled states.
 - **Fix:** Store with source-specific keys (`grid:channel`, `fluid:channel`) and adjust `buildParamsFromSettings()` to re-map them to `source:channel` when building params for the export pipeline.
 - **Notes:** Low impact in practice; users saving from the correct source see correct pre-fill.
@@ -364,4 +364,4 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | L-6 | Low | PHP 8 — nullable type declarations missing | ✅ Resolved |
 | L-7 | Low | UX — no {if no_results} support | ✅ Resolved |
 | L-8 | Low | Code quality — empty lang key | ✅ Resolved |
-| L-9 | Low | UX — Grid/Fluid shared storage key in Edit form | Open |
+| L-9 | Low | UX — Grid/Fluid shared storage key in Edit form | ✅ Resolved |

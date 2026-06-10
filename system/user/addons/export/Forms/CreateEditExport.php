@@ -55,10 +55,16 @@ class CreateEditExport extends AbstractExportForm
 
         $channels   = $cp->getChannelList();
         $roles      = $cp->getMemberRoles();
-        $channel_id = (int) ($settings['source:channel'] ?? 0);
+        // Entries/Grid/Fluid each read their channel from different settings keys.
+        // Grid/Fluid use source-specific keys so switching source in the editor
+        // never cross-populates the wrong channel. Fall back to source:channel for
+        // configs saved before L-9 was resolved.
+        $channel_id       = (int) ($settings['source:channel'] ?? 0); // entries
+        $grid_channel_id  = (int) ($settings['grid:channel']   ?? $settings['source:channel'] ?? 0);
+        $fluid_channel_id = (int) ($settings['fluid:channel']  ?? $settings['source:channel'] ?? 0);
 
-        $grid_fields  = $channel_id ? $cp->getChannelFields($channel_id, 'grid')        : [];
-        $fluid_fields = $channel_id ? $cp->getChannelFields($channel_id, 'fluid_field') : [];
+        $grid_fields  = $grid_channel_id  ? $cp->getChannelFields($grid_channel_id,  'grid')        : [];
+        $fluid_fields = $fluid_channel_id ? $cp->getChannelFields($fluid_channel_id, 'fluid_field') : [];
 
         $selected_roles = $settings['source:roles'] ?? [];
         if (is_string($selected_roles)) {
@@ -109,8 +115,8 @@ class CreateEditExport extends AbstractExportForm
             '\r'   => 'CR (\r — Classic Mac)',
         ];
 
-        $grid_field_id  = (int) ($settings['source:field'] ?? 0);
-        $fluid_field_id = (int) ($settings['source:field'] ?? 0);
+        $grid_field_id  = (int) ($settings['grid:field']  ?? $settings['source:field'] ?? 0);
+        $fluid_field_id = (int) ($settings['fluid:field'] ?? $settings['source:field'] ?? 0);
 
         $format = $settings['format'] ?? 'csv';
         $output = $settings['output'] ?? 'download';
@@ -259,7 +265,7 @@ class CreateEditExport extends AbstractExportForm
             ->set('group', 'source_grid')
             ->setTitle('export_field_channel')
             ->getField('src_grid_channel', 'select')
-                ->setChoices($channels)->setValue($channel_id);
+                ->setChoices($channels)->setValue($grid_channel_id);
 
         $src->getFieldSet('export_field_field_grid')
             ->set('group', 'source_grid')
@@ -317,7 +323,7 @@ class CreateEditExport extends AbstractExportForm
             ->set('group', 'source_fluid')
             ->setTitle('export_field_channel')
             ->getField('src_fluid_channel', 'select')
-                ->setChoices($channels)->setValue($channel_id);
+                ->setChoices($channels)->setValue($fluid_channel_id);
 
         $src->getFieldSet('export_field_field_fluid')
             ->set('group', 'source_fluid')

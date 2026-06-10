@@ -241,6 +241,17 @@ class CpService
             $params['exclude'] = implode('|', array_filter($params['exclude']));
         }
 
+        // Grid and Fluid store channel/field under source-specific keys to avoid
+        // cross-contamination in the editor. Remap them back to source:channel /
+        // source:field so the pipeline receives the keys it expects.
+        if (in_array($source, ['grid', 'fluid'], true)) {
+            foreach (['channel', 'field'] as $k) {
+                if (isset($params[$source . ':' . $k])) {
+                    $params['source:' . $k] = $params[$source . ':' . $k];
+                }
+            }
+        }
+
         return $params;
     }
 
@@ -270,12 +281,19 @@ class CpService
             array_map('intval', is_array($raw_roles) ? $raw_roles : explode('|', (string) $raw_roles))
         ));
 
-        // Source-specific params — strip the `src_{source}_` prefix
-        $prefix = 'src_' . $source . '_';
+        // Source-specific params — strip the `src_{source}_` prefix.
+        // Grid and Fluid channel/field are stored under source-specific keys
+        // (grid:channel, fluid:field, etc.) so switching source type in the
+        // editor never pre-fills the wrong channel or field on the other source.
+        $prefix          = 'src_' . $source . '_';
+        $scoped_params   = in_array($source, ['grid', 'fluid'], true) ? ['channel', 'field'] : [];
         foreach ($post as $key => $value) {
             if (str_starts_with($key, $prefix)) {
-                $param_key = 'source:' . substr($key, strlen($prefix));
-                $settings[$param_key] = is_array($value) ? implode('|', $value) : $value;
+                $param_name = substr($key, strlen($prefix));
+                $storage_key = in_array($param_name, $scoped_params, true)
+                    ? $source . ':' . $param_name
+                    : 'source:' . $param_name;
+                $settings[$storage_key] = is_array($value) ? implode('|', $value) : $value;
             }
         }
 

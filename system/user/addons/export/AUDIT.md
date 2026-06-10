@@ -248,10 +248,10 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### L-2 — `AbstractPlugin::getCacheContent()` reads a directory path, not a file path
+### L-2 — `AbstractPlugin::getCacheContent()` reads a directory path, not a file path ✅
 
 - **File:** `Plugins/AbstractPlugin.php` lines ~170–177
-- **Status:** Open
+- **Status:** Resolved — method confirmed unused (grep found zero call sites) and removed
 - **Description:** `getCacheContent()` calls `file_get_contents($this->getCachePath())` where `getCachePath()` returns the cache *directory* path. Reading a directory returns `false`; the guard silently returns an empty array. The method appears unused in the current streaming pipeline.
 - **Fix:** Remove the method if unused, or fix to `$this->getCacheDirPath() . $this->getCacheFilename()`.
 - **Notes:**
@@ -357,7 +357,7 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | M-8 | Medium | Feature gap — search: param ignored for non-Members | Open |
 | M-9 | Medium | Docs — Grid/Fluid limit applies to entries not rows | ✅ Resolved |
 | L-1 | Low | Upgrade — update() stub needs comment | Open |
-| L-2 | Low | Dead code — getCacheContent() reads directory | Open |
+| L-2 | Low | Dead code — getCacheContent() reads directory | ✅ Resolved |
 | L-3 | Low | Error handling — fopen() failure not checked | Open |
 | L-4 | Low | Docs — Grid phpdoc wrong for fields= param | ✅ Resolved |
 | L-5 | Low | Security — cache dir created 0777 | Open |

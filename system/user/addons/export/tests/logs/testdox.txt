@@ -217,6 +217,14 @@ Provider Map (Mithra62\Export\Tests\ProviderMap)
  [x] Modifiers map contains uc first
  [x] Fields map contains date
 
+Search Filter Trait (Mithra62\Export\Tests\SearchFilterTrait)
+ [x] Get channel titles columns returns real columns
+ [x] Apply search filters matches core column
+ [x] Apply search filters skips empty values
+ [x] Apply search filters ignores unknown field name
+ [x] Apply search filters matches custom field and joins channel data
+ [x] Apply search filters combines multiple filters with and
+
 Service Resolution (Mithra62\Export\Tests\ServiceResolution)
  [x] Params service resolves
  [x] Sources service resolves

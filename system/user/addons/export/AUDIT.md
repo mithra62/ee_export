@@ -1,8 +1,8 @@
 # Export Addon — Pre-1.0.0 Release Audit
 
-**Audit date:** 2026-06-09  
+**Audit date:** 2026-06-09 (statuses refreshed 2026-06-25)  
 **Audited version:** 1.0.0-beta.1  
-**Status:** Open — items below are unresolved unless marked ✅
+**Status:** All items resolved
 
 ---
 
@@ -19,18 +19,13 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ## Critical
 
-### C-1 — SQL template tag has no Super Admin gate
+### C-1 — SQL template tag has no Super Admin gate ✅
 
 - **File:** `Tags/Query.php::process()`
-- **Status:** Open
+- **Status:** Resolved
 - **Description:** The `{exp:export:query sql="..."}` template tag has no permission check. Any EE member with template-editing access can execute arbitrary SELECT queries against the database — including queries that enumerate PII, password hashes, or session tokens from any table. The Super Admin restriction added in beta.1 only covers the CP form save path; the tag itself is completely open.
-- **Fix:** Add `isSuperAdmin()` check at the top of `Tags/Query.php::process()` before calling `compile()`. Mirror the pattern used in the CP:
-  ```php
-  if (! ee('Permission')->isSuperAdmin()) {
-      show_error(lang('export_err_sql_superadmin_only'), 403);
-  }
-  ```
-- **Notes:**
+- **Fix:** `Tags/Query.php::process()` (line 18) now checks `isSuperAdmin()` and calls `show_error(..., 403)` before compiling, unless `allowed_roles` is explicitly set in params/CP config to deliberately broaden access.
+- **Notes:** The `allowed_roles` escape hatch is intentional, but it fully reopens the tag to non-admins whenever set — anyone configuring `allowed_roles` should treat it as equivalent to granting raw SELECT access.
 
 ---
 
@@ -58,16 +53,12 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ## High
 
-### H-1 — XLSX bold header never applied despite the CP toggle
+### H-1 — XLSX bold header never applied despite the CP toggle ✅
 
-- **File:** `Formats/Xlsx.php` line 33
-- **Status:** Open
-- **Description:** The bold-header style check is `$this->getOption('bold_cols') === true`. The value stored by `postToSettings()` is the string `'y'` (from the EE toggle field), not the boolean `true`. The strict comparison always fails — the header row is never bolded regardless of the CP setting. This is a silent data formatting bug; users will toggle the option and see no effect.
-- **Fix:**
-  ```php
-  $bold = in_array($this->getOption('bold_cols'), [true, 'y', '1', 1], true);
-  $style = $bold ? (new Style())->setFontBold() : new Style();
-  ```
+- **File:** `Formats/Xlsx.php` line 56
+- **Status:** Resolved
+- **Description:** The bold-header style check was `$this->getOption('bold_cols') === true`. The value stored by `postToSettings()` is the string `'y'` (from the EE toggle field), not the boolean `true`. The strict comparison always failed — the header row was never bolded regardless of the CP setting.
+- **Fix:** Now `$bold = in_array($this->getOption('bold_cols'), [true, 'y', '1', 1], true);` — matches the fix as originally proposed.
 - **Notes:**
 
 ---
@@ -86,19 +77,12 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### H-3 — `relationship_fields` param injected raw into SELECT clause
+### H-3 — `relationship_fields` param injected raw into SELECT clause ✅
 
-- **File:** `Services/EntryService.php` lines 597–599
-- **Status:** Open
-- **Description:** Column names from the `relationship_fields` tag param (or stored CP setting) are interpolated directly into the SQL SELECT clause:
-  ```php
-  $select .= ', cd.' . implode(', cd.', $extra);
-  ```
-  A value like `password FROM exp_members --` injects arbitrary SQL into the query. The param is user-supplied (template author or CP user) and receives no sanitisation.
-- **Fix:** Allowlist each field name to alphanumeric + underscore before use:
-  ```php
-  $extra = array_filter($extra, fn($f) => preg_match('/^[a-z0-9_]+$/i', $f));
-  ```
+- **File:** `Services/EntryService.php` line 419
+- **Status:** Resolved
+- **Description:** Column names from the `relationship_fields` tag param (or stored CP setting) were interpolated directly into the SQL SELECT clause without sanitisation. A value like `password FROM exp_members --` could inject arbitrary SQL.
+- **Fix:** Now allowlisted before use: `$extra = array_filter(array_diff($rel_fields, ['title']), fn($f) => preg_match('/^[a-z0-9_]+$/i', $f));` — matches the fix as originally proposed.
 - **Notes:**
 
 ---
@@ -216,13 +200,13 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ---
 
-### M-8 — `search:` params silently ignored for Entries, Grid, and Fluid sources
+### M-8 — `search:` params silently ignored for Entries, Grid, and Fluid sources ✅
 
-- **File:** `Tags/AbstractTag.php` line ~139`, `Sources/Members.php` line ~175`
-- **Status:** Open
-- **Description:** `AbstractTag::params()` parses `search:field_name` params for all tags and stores them. Only `Sources/Members.php` implements `applySearchFilters()`. For Entries, Grid, and Fluid sources the search params are parsed, stored, and then silently discarded. Template authors expecting `search:field_name="value"` to filter entries will get an unfiltered export with no indication that the param was ignored.
-- **Fix:** Either implement search filtering for the remaining sources, or restrict `search:` parsing to `Tags/Members.php` only, and add a note to docs that `search:` is Members-only.
-- **Notes:**
+- **File:** `Traits/SearchFilterTrait.php` (new), `Sources/Entries.php`, `Sources/Grid.php`, `Sources/Fluid.php`
+- **Status:** Resolved
+- **Description:** `AbstractTag::params()` parses `search:field_name` params for all tags and stores them. Only `Sources/Members.php` implemented `applySearchFilters()`. For Entries, Grid, and Fluid sources the search params were parsed, stored, and then silently discarded. Template authors expecting `search:field_name="value"` to filter entries got an unfiltered export with no indication that the param was ignored.
+- **Fix:** Added `Traits/SearchFilterTrait::applySearchFilters()`, used by all three sources in `nextChunk()` (mirrors `Members::applySearchFilters()` — exact `=` match, not `LIKE`). Core `channel_titles` columns are validated against a new `EntryService::getChannelTitlesColumns()` (mirrors `MemberService::getMemberDataColumns()`); custom channel field names resolve against `$this->channel_fields` and join `channel_data` only when a search key actually targets a custom field. Grid and Fluid now also load `$this->channel_fields` in `openStream()` (previously only Entries did) so the trait has consistent data across all three sources. Example templates added at `templates/entries/search-filters.html`, `templates/grid/search-filters.html`, `templates/fluid/search-filters.html`.
+- **Notes:** A separate full-text search integration (e.g. Pro Search) was considered during this work but is out of scope — not installed in this environment and no source/docs available to verify a real integration against. This fix is exact-match only, consistent with what Members already did.
 
 ---
 
@@ -238,13 +222,13 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 ## Low
 
-### L-1 — `upd.export.php::update()` is a stub with no upgrade migration path
+### L-1 — `upd.export.php::update()` is a stub with no upgrade migration path ✅
 
 - **File:** `upd.export.php`
-- **Status:** Open
-- **Description:** `update()` calls `parent::update()` only. There is currently nothing to upgrade from (1.0.0 is the first public release), so this is acceptable. However, future schema changes will have nowhere to go unless the migration pattern is established now.
-- **Fix:** Add a comment documenting how future migrations should be added. Confirm that EE's `Installer::update()` auto-discovers versioned migration files.
-- **Notes:** Acceptable for 1.0.0 release as long as migration pattern is documented.
+- **Status:** Resolved — not a gap
+- **Description:** `update()` calls `parent::update()` only and does nothing else.
+- **Fix:** None needed. EE no longer routes upgrades through `upd.*.php::update()` — that file is a legacy wrapper the system still expects to exist, but actual upgrades run through EE's migration system. The stub is correctly inert by design.
+- **Notes:**
 
 ---
 
@@ -340,11 +324,11 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 
 | ID | Severity | Area | Status |
 |----|----------|------|--------|
-| C-1 | Critical | Security — SQL tag permission gate | Open |
+| C-1 | Critical | Security — SQL tag permission gate | ✅ Resolved |
 | C-2 | Critical | Resource leak — streaming temp files | ✅ Resolved |
-| H-1 | High | Bug — XLSX bold header | Open |
+| H-1 | High | Bug — XLSX bold header | ✅ Resolved |
 | H-2 | High | Security — Local output path traversal | ✅ Resolved |
-| H-3 | High | Security — SQL injection via relationship_fields | Open |
+| H-3 | High | Security — SQL injection via relationship_fields | ✅ Resolved |
 | H-4 | High | Bug — MemberService hardcoded table prefix | ✅ Resolved |
 | H-5 | High | Bug — Entries missing documented columns | ✅ Resolved |
 | M-1 | Medium | Security — CSRF verification on CP routes | ✅ Resolved |
@@ -354,9 +338,9 @@ Each issue has an ID (`C-1`, `H-2`, `M-5`, etc.). When an issue is resolved, mar
 | M-5 | Medium | PHP 8.2 — dynamic property access in toArray() | ✅ Resolved |
 | M-6 | Medium | Bug — Run route skips ExportService::validate() | ✅ Resolved |
 | M-7 | Medium | UX — Entries entry_id pipe hint vs int cast | ✅ Resolved |
-| M-8 | Medium | Feature gap — search: param ignored for non-Members | Open |
+| M-8 | Medium | Feature gap — search: param ignored for non-Members | ✅ Resolved |
 | M-9 | Medium | Docs — Grid/Fluid limit applies to entries not rows | ✅ Resolved |
-| L-1 | Low | Upgrade — update() stub needs comment | Open |
+| L-1 | Low | Upgrade — update() stub is a legacy no-op by design | ✅ Resolved |
 | L-2 | Low | Dead code — getCacheContent() reads directory | ✅ Resolved |
 | L-3 | Low | Error handling — fopen() failure not checked | ✅ Resolved |
 | L-4 | Low | Docs — Grid phpdoc wrong for fields= param | ✅ Resolved |

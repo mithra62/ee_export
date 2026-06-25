@@ -1,0 +1,23 @@
+{!-- ============================================================
+     Export: Entries — Filter by entry_date range
+     ============================================================
+     Limits the export to entries published within a date range.
+     Either bound can be omitted for an open-ended range — set only
+     entry_date_start for "everything since," or only entry_date_end
+     for "everything up to."
+
+     Customise before use:
+       channel           → your channel short name or numeric ID
+       entry_date_start  → earliest entry_date to include (YYYY-MM-DD)
+       entry_date_end    → latest entry_date to include (YYYY-MM-DD)
+       output:filename   → desired download filename
+     ============================================================ --}
+
+{exp:export:entries
+    channel="blog"
+    entry_date_start="2025-01-01"
+    entry_date_end="2025-03-31"
+    format="csv"
+    output="download"
+    output:filename="blog-entries-q1.csv"
+}

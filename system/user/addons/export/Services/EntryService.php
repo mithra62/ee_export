@@ -19,6 +19,41 @@ class EntryService extends AbstractService
     protected array $fluid_data = [];
 
     /**
+     * Actual columns present in exp_channel_titles, keyed by column name.
+     * Populated lazily by getChannelTitlesColumns().
+     *
+     * @var array|null  null = not yet fetched; [] = table empty or missing
+     */
+    protected ?array $channel_titles_columns = null;
+
+    /**
+     * Return the actual columns present in exp_channel_titles, keyed by column name.
+     *
+     * Used by SearchFilterTrait to guard against searching a column name that
+     * doesn't actually exist on channel_titles, the same defense
+     * MemberService::getMemberDataColumns() provides for Members. Result is
+     * cached for the lifetime of the service instance.
+     *
+     * @return array<string, string>  [column_name => column_name]
+     */
+    public function getChannelTitlesColumns(): array
+    {
+        if ($this->channel_titles_columns === null) {
+            $this->channel_titles_columns = [];
+            $query = ee()->db->query(
+                'SHOW COLUMNS FROM ' . ee()->db->dbprefix . 'channel_titles'
+            );
+            if ($query instanceof CI_DB_result) {
+                foreach ($query->result_array() as $row) {
+                    $this->channel_titles_columns[$row['Field']] = $row['Field'];
+                }
+            }
+        }
+
+        return $this->channel_titles_columns;
+    }
+
+    /**
      * @param int $field_id
      * @param int $entry_id
      * @param array $fields

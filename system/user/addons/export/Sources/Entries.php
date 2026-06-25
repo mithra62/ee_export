@@ -6,9 +6,13 @@ use CI_DB_result;
 use ExpressionEngine\Service\Validation\Validator;
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
+use Mithra62\Export\Traits\SearchFilterTrait;
 
 class Entries extends AbstractSource
 {
+    use SearchFilterTrait;
+
+
     protected array $rules = [
         'source' => 'required',
         'channel' => 'required|validChannel',
@@ -43,6 +47,8 @@ class Entries extends AbstractSource
                 'name' => 'entry_id', 'type' => 'text', 'label' => 'export_field_entry_id',
                 'desc' => 'export_hint_pipe_sep',
             ],
+            static::dateFieldDescriptor('entry_date_start', 'export_field_entry_date_start'),
+            static::dateFieldDescriptor('entry_date_end', 'export_field_entry_date_end'),
             ['name' => 'limit', 'type' => 'text', 'label' => 'export_field_limit'],
             ['name' => 'offset', 'type' => 'text', 'label' => 'export_field_offset', 'default' => '0'],
             ['name' => 'chunk_size', 'type' => 'text', 'label' => 'export_field_chunk_size', 'default' => '500'],
@@ -156,6 +162,21 @@ class Entries extends AbstractSource
             $query->where('entry_id', reset($entry_id_filter));
         } elseif (count($entry_id_filter) > 1) {
             $query->where_in('entry_id', $entry_id_filter);
+        }
+
+        // entry_date is stored as a Unix timestamp, same as exp_members.join_date.
+        // Each bound applies independently — setting only one filters an
+        // open-ended range rather than requiring both to activate.
+        if ($start = $this->getOption('entry_date_start')) {
+            $query->where('entry_date >=', strtotime($start));
+        }
+        if ($end = $this->getOption('entry_date_end')) {
+            $query->where('entry_date <=', strtotime($end));
+        }
+
+        $search = $this->getOption('search', []);
+        if (!empty($search)) {
+            $this->applySearchFilters($query, $search);
         }
 
         $result = $query->limit($limit, $this->stream_offset)->get();

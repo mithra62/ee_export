@@ -24,6 +24,37 @@ class Entries extends AbstractSource
     protected array $fluid_field_ids = [];   // field_ids that are fluid_field type
 
     // -------------------------------------------------------------------------
+    // CP form fields
+    // -------------------------------------------------------------------------
+
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            [
+                'name' => 'channel', 'type' => 'select', 'label' => 'export_field_channel',
+                'choices_callback' => fn($c) => $c['cp']->getChannelList(),
+            ],
+            [
+                'name' => 'status', 'type' => 'select', 'label' => 'export_field_status',
+                'choices' => static::statusChoices(), 'default' => 'open',
+            ],
+            ['name' => 'author_id', 'type' => 'text', 'label' => 'export_field_author_id'],
+            [
+                'name' => 'entry_id', 'type' => 'text', 'label' => 'export_field_entry_id',
+                'desc' => 'export_hint_pipe_sep',
+            ],
+            ['name' => 'limit', 'type' => 'text', 'label' => 'export_field_limit'],
+            ['name' => 'offset', 'type' => 'text', 'label' => 'export_field_offset', 'default' => '0'],
+            ['name' => 'chunk_size', 'type' => 'text', 'label' => 'export_field_chunk_size', 'default' => '500'],
+            [
+                'name' => 'relationship_fields', 'type' => 'text',
+                'label' => 'export_field_relationship_fields', 'desc' => 'export_hint_pipe_sep',
+                'default' => 'title',
+            ],
+        ];
+    }
+
+    // -------------------------------------------------------------------------
     // AbstractSource contract
     // -------------------------------------------------------------------------
 

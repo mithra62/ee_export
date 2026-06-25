@@ -56,6 +56,44 @@ class Fluid extends AbstractSource
     protected int $stream_channel_id = 0;
     protected int $stream_field_id = 0;
 
+    // ── CP form fields ────────────────────────────────────────────────────────
+
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            [
+                'name' => 'channel', 'type' => 'select', 'label' => 'export_field_channel',
+                'scoped' => true,
+                'choices_callback' => fn($c) => $c['cp']->getChannelList(),
+            ],
+            [
+                'name' => 'field', 'type' => 'select', 'label' => 'export_field_field',
+                'scoped' => true,
+                'choices_callback' => fn($c) => $c['cp']->getChannelFields((int) ($c['settings']['channel'] ?? 0), 'fluid_field'),
+            ],
+            [
+                'name' => 'status', 'type' => 'select', 'label' => 'export_field_status',
+                'choices' => static::statusChoices(), 'default' => 'open',
+            ],
+            ['name' => 'author_id', 'type' => 'text', 'label' => 'export_field_author_id'],
+            [
+                'name' => 'entry_id', 'type' => 'text', 'label' => 'export_field_entry_id',
+                'desc' => 'export_hint_pipe_sep',
+            ],
+            [
+                'name' => 'limit', 'type' => 'text', 'label' => 'export_field_limit',
+                'desc' => 'export_field_limit_fluid_desc',
+            ],
+            ['name' => 'offset', 'type' => 'text', 'label' => 'export_field_offset', 'default' => '0'],
+            ['name' => 'chunk_size', 'type' => 'text', 'label' => 'export_field_chunk_size', 'default' => '500'],
+            [
+                'name' => 'relationship_fields', 'type' => 'text',
+                'label' => 'export_field_relationship_fields', 'desc' => 'export_hint_pipe_sep',
+                'default' => 'title',
+            ],
+        ];
+    }
+
     // ── AbstractSource contract ───────────────────────────────────────────────
 
     public function compile(): AbstractSource

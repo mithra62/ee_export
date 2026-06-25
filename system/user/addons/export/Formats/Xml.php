@@ -16,6 +16,25 @@ class Xml extends AbstractFormat
     protected string $stream_path = '';
     protected ?XmlService $xml = null;
 
+    public function getCpLabel(): ?string
+    {
+        return 'XML';
+    }
+
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            [
+                'name' => 'root_name', 'type' => 'text', 'label' => 'export_format_root_name',
+                'desc' => 'export_format_root_name_desc', 'default' => 'export',
+            ],
+            [
+                'name' => 'branch_name', 'type' => 'text', 'label' => 'export_format_branch_name',
+                'desc' => 'export_format_branch_name_desc', 'default' => 'row',
+            ],
+        ];
+    }
+
     public function compile(AbstractSource $source): string
     {
         $this->openFile($source->getExportData()[0] ?? []);

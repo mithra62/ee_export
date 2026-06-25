@@ -14,6 +14,25 @@ class Xlsx extends AbstractFormat
     protected string $stream_path = '';
     protected ?Writer $writer = null;
 
+    public function getCpLabel(): ?string
+    {
+        return 'Excel (XLSX)';
+    }
+
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            [
+                'name' => 'bold_cols', 'type' => 'toggle', 'label' => 'export_format_bold_cols',
+                'desc' => 'export_format_bold_cols_desc', 'default' => 'y',
+            ],
+            [
+                'name' => 'sheet_name', 'type' => 'text', 'label' => 'export_format_sheet_name',
+                'desc' => 'export_format_sheet_name_desc',
+            ],
+        ];
+    }
+
     public function compile(AbstractSource $source): string
     {
         $rows = $source->getExportData();

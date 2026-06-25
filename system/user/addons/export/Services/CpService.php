@@ -241,18 +241,71 @@ class CpService
             $params['exclude'] = implode('|', array_filter($params['exclude']));
         }
 
-        // Grid and Fluid store channel/field under source-specific keys to avoid
-        // cross-contamination in the editor. Remap them back to source:channel /
-        // source:field so the pipeline receives the keys it expects.
-        if (in_array($source, ['grid', 'fluid'], true)) {
-            foreach (['channel', 'field'] as $k) {
-                if (isset($params[$source . ':' . $k])) {
-                    $params['source:' . $k] = $params[$source . ':' . $k];
+        // Any field a source/format/output marks 'scoped' => true stores under
+        // its own key ({key}:{name}) to avoid cross-contamination in the editor.
+        // Remap each back to the plain domain key (source:/format:/output:) so
+        // the pipeline receives the keys it expects, regardless of which plugin
+        // declared the field — built-in or third-party.
+        $active = [
+            'sources' => $source,
+            'formats' => $params['format'] ?? null,
+            'outputs' => $params['output'] ?? null,
+        ];
+        $domains = ['sources' => 'source', 'formats' => 'format', 'outputs' => 'output'];
+        foreach ($active as $layer => $key) {
+            if (!$key) {
+                continue;
+            }
+            foreach ($this->getScopedFieldNames($layer, $key) as $field_name) {
+                $scoped_key = $key . ':' . $field_name;
+                if (isset($params[$scoped_key])) {
+                    $params[$domains[$layer] . ':' . $field_name] = $params[$scoped_key];
                 }
             }
         }
 
         return $params;
+    }
+
+    /**
+     * Return the field names a source/format/output's getCpFields() marks
+     * 'scoped' => true.
+     *
+     * Scoped fields store under '{key}:{name}' instead of '{domain}:{name}' so
+     * switching source/format/output in the editor never cross-populates the
+     * wrong value for that field (e.g. Grid and Fluid both have a 'channel'
+     * field but each needs its own stored channel).
+     *
+     * @param string $layer 'sources'|'formats'|'outputs'
+     * @param string $key   The registered key (e.g. 'grid')
+     * @return string[]
+     */
+    private function getScopedFieldNames(string $layer, string $key): array
+    {
+        $map = match ($layer) {
+            'sources' => ee('export:SourcesService')->getAvailable(),
+            'formats' => ee('export:FormatsService')->getAvailable(),
+            'outputs' => ee('export:OutputService')->getAvailable(),
+            default => [],
+        };
+
+        $class = $map[$key] ?? null;
+        if (!$class || !class_exists($class)) {
+            return [];
+        }
+
+        $plugin = new $class();
+        if (!($plugin instanceof \Mithra62\Export\Plugins\AbstractPlugin)) {
+            return [];
+        }
+
+        $scoped = [];
+        foreach ($plugin->getCpFields() as $descriptor) {
+            if (!empty($descriptor['scoped'])) {
+                $scoped[] = $descriptor['name'];
+            }
+        }
+        return $scoped;
     }
 
     // ── POST → settings conversion ────────────────────────────────────────────
@@ -281,12 +334,12 @@ class CpService
             array_map('intval', is_array($raw_roles) ? $raw_roles : explode('|', (string)$raw_roles))
         ));
 
-        // Source-specific params — strip the `src_{source}_` prefix.
-        // Grid and Fluid channel/field are stored under source-specific keys
-        // (grid:channel, fluid:field, etc.) so switching source type in the
-        // editor never pre-fills the wrong channel or field on the other source.
+        // Source-specific params — strip the `src_{source}_` prefix. Any field
+        // whose getCpFields() descriptor sets 'scoped' => true (e.g. Grid/Fluid's
+        // channel/field) is stored under its own key so switching source type in
+        // the editor never cross-populates the wrong value on another source.
         $prefix = 'src_' . $source . '_';
-        $scoped_params = in_array($source, ['grid', 'fluid'], true) ? ['channel', 'field'] : [];
+        $scoped_params = $this->getScopedFieldNames('sources', $source);
         foreach ($post as $key => $value) {
             if (str_starts_with($key, $prefix)) {
                 $param_name = substr($key, strlen($prefix));
@@ -312,33 +365,47 @@ class CpService
             $settings['exclude'] = [];
         }
 
-        // Format
-        $settings['format'] = $post['format'] ?? 'csv';
-
-        // Single-char fields stored verbatim; all others trimmed
-        $char_fields = ['separator', 'enclosure', 'escape'];
-        $format_keys = ['separator', 'enclosure', 'escape', 'newline', 'bold_cols', 'sheet_name', 'root_name', 'branch_name'];
-        foreach ($format_keys as $fk) {
-            $field_name = 'fmt_' . $fk;
-            if (!isset($post[$field_name])) {
-                continue;
-            }
-            $val = in_array($fk, $char_fields, true) ? $post[$field_name] : trim($post[$field_name]);
-            if ($val !== '') {
-                $settings['format:' . $fk] = $val;
+        // Format-specific params — strip the `fmt_` prefix, same generic pattern
+        // as source params above. Any field a format's getCpFields() declares
+        // (built-in or third-party) is captured automatically.
+        $format = $settings['format'] = $post['format'] ?? 'csv';
+        $fmt_prefix = 'fmt_';
+        $scoped_fmt = $this->getScopedFieldNames('formats', $format);
+        foreach ($post as $key => $value) {
+            if (str_starts_with($key, $fmt_prefix)) {
+                $param_name = substr($key, strlen($fmt_prefix));
+                $storage_key = in_array($param_name, $scoped_fmt, true)
+                    ? $format . ':' . $param_name
+                    : 'format:' . $param_name;
+                $settings[$storage_key] = is_array($value) ? implode('|', $value) : $value;
             }
         }
 
-        // bold_cols is a checkbox — absent from POST means unchecked
-        if ($settings['format'] === 'xlsx' && !isset($post['fmt_bold_cols'])) {
+        // bold_cols is a checkbox/toggle — absent from POST means unchecked.
+        // This is a known limitation: only XLSX's bold_cols is handled this way
+        // today. A third-party format's own toggle fields don't get this same
+        // absent-means-unchecked treatment (see EXTENDING.md "CP Form Fields").
+        if ($format === 'xlsx' && !isset($post['fmt_bold_cols'])) {
             $settings['format:bold_cols'] = 'n';
         }
 
-        // Output
-        $settings['output'] = $post['output'] ?? 'download';
+        // Output-specific params — same generic pattern. output_filename is a
+        // cross-cutting field rendered outside any output's own getCpFields()
+        // (every destination needs a delivered filename), so it's set explicitly
+        // first; the generic loop below also captures it from POST, redundantly
+        // but harmlessly, alongside any output-specific field like `path`.
+        $output = $settings['output'] = $post['output'] ?? 'download';
         $settings['output:filename'] = $post['output_filename'] ?? '';
-        if (!empty($post['output_path'])) {
-            $settings['output:path'] = $post['output_path'];
+        $output_prefix = 'output_';
+        $scoped_out = $this->getScopedFieldNames('outputs', $output);
+        foreach ($post as $key => $value) {
+            if (str_starts_with($key, $output_prefix)) {
+                $param_name = substr($key, strlen($output_prefix));
+                $storage_key = in_array($param_name, $scoped_out, true)
+                    ? $output . ':' . $param_name
+                    : 'output:' . $param_name;
+                $settings[$storage_key] = is_array($value) ? implode('|', $value) : $value;
+            }
         }
 
         // Modifiers — MiniGridInput posts as modify[rows][row_id_N | new_row_N][col]

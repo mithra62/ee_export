@@ -12,6 +12,16 @@ class OutputService extends AbstractService
     use ParamsTrait;
 
     /**
+     * Every registered output key, built-in and third-party, keyed by class name.
+     *
+     * @return array<string, class-string>
+     */
+    public function getAvailable(): array
+    {
+        return $this->getProviderMap('outputs');
+    }
+
+    /**
      * @return AbstractDestination
      * @throws OutputServiceException
      */

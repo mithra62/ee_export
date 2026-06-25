@@ -12,6 +12,16 @@ class FormatsService extends AbstractService
     use ParamsTrait;
 
     /**
+     * Every registered format key, built-in and third-party, keyed by class name.
+     *
+     * @return array<string, class-string>
+     */
+    public function getAvailable(): array
+    {
+        return $this->getProviderMap('formats');
+    }
+
+    /**
      * @return AbstractFormat
      * @throws FormatsServiceException
      */

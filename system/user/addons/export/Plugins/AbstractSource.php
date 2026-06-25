@@ -116,6 +116,22 @@ abstract class AbstractSource extends AbstractPlugin
     }
 
     /**
+     * Shared status choices for any source that filters on entry status
+     * (Entries, Grid, Fluid). Centralised so getCpFields() overrides don't
+     * each repeat the same literal array.
+     *
+     * @return array<string, string>
+     */
+    protected static function statusChoices(): array
+    {
+        return [
+            'open'   => lang('export_status_open'),
+            'closed' => lang('export_status_closed'),
+            'all'    => lang('export_status_all'),
+        ];
+    }
+
+    /**
      * Normalise a fields/exclude option value to a plain array of trimmed strings.
      *
      * Options can arrive in two shapes depending on call-site:

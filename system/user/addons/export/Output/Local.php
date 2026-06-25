@@ -15,6 +15,13 @@ class Local extends AbstractDestination
         'path' => 'required|dirExists|dirWritable',
     ];
 
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            ['name' => 'path', 'type' => 'text', 'label' => 'export_field_path', 'desc' => 'export_field_path_desc'],
+        ];
+    }
+
     /**
      * @param string $finished_export
      * @return bool|int

@@ -11,6 +11,11 @@ class Json extends AbstractFormat
     protected string $stream_path = '';
     protected bool $first_row = true;
 
+    public function getCpLabel(): ?string
+    {
+        return 'JSON';
+    }
+
     public function compile(AbstractSource $source): string
     {
         $this->openFile();

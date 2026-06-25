@@ -385,6 +385,39 @@ class EntryService extends AbstractService
     }
 
     /**
+     * Batch-load field values from EE 7 split-storage tables (channel_data_field_X).
+     *
+     * EE 7 can store each custom field in its own table instead of the shared
+     * channel_data table. This queries each split table that exists and merges
+     * the results into the same [entry_id => [field_id_X => value]] shape so
+     * callers can treat the output identically to batchFieldData().
+     *
+     * Returns [entry_id => [field_id_X => value, ...]]
+     */
+    public function batchSplitFieldData(array $entry_ids, array $field_ids): array
+    {
+        $return = [];
+        foreach ($field_ids as $field_id) {
+            $table = 'channel_data_field_' . $field_id;
+            if (!ee()->db->table_exists($table)) {
+                continue;
+            }
+            $col   = 'field_id_' . $field_id;
+            $query = ee()->db
+                ->select('entry_id, ' . $col)
+                ->from($table)
+                ->where_in('entry_id', $entry_ids)
+                ->get();
+            if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+                foreach ($query->result_array() as $row) {
+                    $return[(int)$row['entry_id']][$col] = $row[$col] ?? null;
+                }
+            }
+        }
+        return $return;
+    }
+
+    /**
      * Batch-load all grid rows for a field and a set of entry IDs.
      * Returns [entry_id => [row, row, ...]] ordered by row_order.
      * Only loads top-level grid rows (fluid_field_data_id = 0).

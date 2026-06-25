@@ -222,8 +222,9 @@ Search Filter Trait (Mithra62\Export\Tests\SearchFilterTrait)
  [x] Apply search filters matches core column
  [x] Apply search filters skips empty values
  [x] Apply search filters ignores unknown field name
- [x] Apply search filters matches custom field and joins channel data
- [x] Apply search filters combines multiple filters with and
+ [x] Apply search filters combines core filters with and
+ [x] Apply search filters resolves custom field via channel entry model
+ [x] Apply search filters does not join channel data directly
 
 Service Resolution (Mithra62\Export\Tests\ServiceResolution)
  [x] Params service resolves

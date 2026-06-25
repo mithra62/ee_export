@@ -183,7 +183,7 @@ class Grid extends AbstractSource
 
         $search = $this->getOption('search', []);
         if (!empty($search)) {
-            $this->applySearchFilters($query, $search);
+            $this->applySearchFilters($query, $search, $channel_id);
         }
 
         $result = $query->limit($limit, $this->stream_offset)->get();

@@ -177,7 +177,7 @@ class Entries extends AbstractSource
 
         $search = $this->getOption('search', []);
         if (!empty($search)) {
-            $this->applySearchFilters($query, $search);
+            $this->applySearchFilters($query, $search, $channel_id);
         }
 
         $result = $query->limit($limit, $this->stream_offset)->get();
@@ -191,7 +191,15 @@ class Entries extends AbstractSource
         $entry_ids = array_map('intval', $entry_ids);
 
         // Batch-load supporting data
-        $field_data = ee('export:EntryService')->batchFieldData($entry_ids);
+        $field_data  = ee('export:EntryService')->batchFieldData($entry_ids);
+        $split_data  = ee('export:EntryService')->batchSplitFieldData($entry_ids, array_keys($this->channel_fields));
+        foreach ($split_data as $entry_id => $fields) {
+            if (!isset($field_data[$entry_id])) {
+                $field_data[$entry_id] = [];
+            }
+            // += preserves channel_data values; only fills in what's missing
+            $field_data[$entry_id] += $fields;
+        }
         $cat_data = ee('export:EntryService')->batchCategoryNames($entry_ids);
 
         $rel_data = [];

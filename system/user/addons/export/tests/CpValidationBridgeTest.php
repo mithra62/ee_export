@@ -20,7 +20,7 @@ class CpValidationBridgeTest extends TestCase
             'format'           => 'csv',
             'output'           => 'download',
             'src_sql_query'    => 'SELECT 1',
-            'output_filename'  => 'export.csv',
+            'output_download_filename'  => 'export.csv',
         ];
         $this->assertEquals([], $this->bridge->getErrors($post, 'sql'));
     }
@@ -31,7 +31,7 @@ class CpValidationBridgeTest extends TestCase
             'format'          => 'csv',
             'output'          => 'download',
             'src_sql_query'   => '',
-            'output_filename' => 'export.csv',
+            'output_download_filename' => 'export.csv',
         ];
         $errors = $this->bridge->getErrors($post, 'sql');
         $this->assertArrayHasKey('src_sql_query', $errors);
@@ -43,10 +43,10 @@ class CpValidationBridgeTest extends TestCase
             'format'          => 'csv',
             'output'          => 'download',
             'src_sql_query'   => 'SELECT 1',
-            'output_filename' => '',
+            'output_download_filename' => '',
         ];
         $errors = $this->bridge->getErrors($post, 'sql');
-        $this->assertArrayHasKey('output_filename', $errors);
+        $this->assertArrayHasKey('output_download_filename', $errors);
     }
 
     public function testGetErrorsXmlMissingRootName(): void
@@ -55,11 +55,11 @@ class CpValidationBridgeTest extends TestCase
             'format'          => 'xml',
             'output'          => 'download',
             'src_sql_query'   => 'SELECT 1',
-            'output_filename' => 'test.xml',
-            'fmt_branch_name' => 'row',
+            'output_download_filename' => 'test.xml',
+            'fmt_xml_branch_name' => 'row',
         ];
         $errors = $this->bridge->getErrors($post, 'sql');
-        $this->assertArrayHasKey('fmt_root_name', $errors);
+        $this->assertArrayHasKey('fmt_xml_root_name', $errors);
     }
 
     public function testGetErrorsReturnsEmptyForUnknownSource(): void
@@ -67,7 +67,7 @@ class CpValidationBridgeTest extends TestCase
         $post = [
             'format'          => 'csv',
             'output'          => 'download',
-            'output_filename' => 'test.csv',
+            'output_download_filename' => 'test.csv',
         ];
         $this->assertEquals([], $this->bridge->getErrors($post, 'completely_unknown_source_xyz'));
     }

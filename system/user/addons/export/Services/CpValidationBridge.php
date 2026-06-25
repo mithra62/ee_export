@@ -12,7 +12,7 @@ use Mithra62\Export\Plugins\AbstractPlugin;
  * Each driver (source, format, output) holds its own authoritative validation rules
  * via ValidateTrait + getValidator(). Those rules use unprefixed param names
  * (e.g. 'channel', 'root_name', 'filename') while the CP form POST uses prefixed
- * names ('src_entries_channel', 'fmt_root_name', 'output_filename').
+ * names ('src_entries_channel', 'fmt_xml_root_name', 'output_download_filename').
  *
  * This bridge:
  *   1. Strips POST prefixes to produce driver option arrays
@@ -72,9 +72,10 @@ class CpValidationBridge extends AbstractService
             return [];
         }
 
-        $driver->setOptions(['format' => $format] + $this->extractPrefixed($post, 'fmt_'));
+        $prefix = 'fmt_' . $format . '_';
+        $driver->setOptions(['format' => $format] + $this->extractPrefixed($post, $prefix));
 
-        return $this->mapErrors($driver->validate(), 'fmt_');
+        return $this->mapErrors($driver->validate(), $prefix);
     }
 
     // ── Output ─────────────────────────────────────────────────────────────────
@@ -86,9 +87,10 @@ class CpValidationBridge extends AbstractService
             return [];
         }
 
-        $driver->setOptions(['output' => $output] + $this->extractPrefixed($post, 'output_'));
+        $prefix = 'output_' . $output . '_';
+        $driver->setOptions(['output' => $output] + $this->extractPrefixed($post, $prefix));
 
-        return $this->mapErrors($driver->validate(), 'output_');
+        return $this->mapErrors($driver->validate(), $prefix);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────

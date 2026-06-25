@@ -151,7 +151,8 @@ class Entries extends AbstractSource
             )
             ->from('channel_titles')
             ->where('channel_id', $channel_id)
-            ->where('status', $this->getOption('status', 'open'));
+            ->where('status', $this->getOption('status', 'open'))
+            ->order_by('entry_id', 'asc');
 
         if ($this->getOption('author_id')) {
             $query->where('author_id', (int)$this->getOption('author_id'));

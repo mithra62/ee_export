@@ -365,11 +365,11 @@ class CpService
             $settings['exclude'] = [];
         }
 
-        // Format-specific params — strip the `fmt_` prefix, same generic pattern
-        // as source params above. Any field a format's getCpFields() declares
+        // Format-specific params — strip the `fmt_{format}_` prefix, matching
+        // the sources pattern above. Any field a format's getCpFields() declares
         // (built-in or third-party) is captured automatically.
         $format = $settings['format'] = $post['format'] ?? 'csv';
-        $fmt_prefix = 'fmt_';
+        $fmt_prefix = 'fmt_' . $format . '_';
         $scoped_fmt = $this->getScopedFieldNames('formats', $format);
         foreach ($post as $key => $value) {
             if (str_starts_with($key, $fmt_prefix)) {
@@ -385,18 +385,17 @@ class CpService
         // This is a known limitation: only XLSX's bold_cols is handled this way
         // today. A third-party format's own toggle fields don't get this same
         // absent-means-unchecked treatment (see EXTENDING.md "CP Form Fields").
-        if ($format === 'xlsx' && !isset($post['fmt_bold_cols'])) {
+        if ($format === 'xlsx' && !isset($post['fmt_xlsx_bold_cols'])) {
             $settings['format:bold_cols'] = 'n';
         }
 
         // Output-specific params — same generic pattern. output_filename is a
         // cross-cutting field rendered outside any output's own getCpFields()
         // (every destination needs a delivered filename), so it's set explicitly
-        // first; the generic loop below also captures it from POST, redundantly
-        // but harmlessly, alongside any output-specific field like `path`.
+        // first; the generic loop below captures output-specific fields like `path`.
         $output = $settings['output'] = $post['output'] ?? 'download';
         $settings['output:filename'] = $post['output_filename'] ?? '';
-        $output_prefix = 'output_';
+        $output_prefix = 'output_' . $output . '_';
         $scoped_out = $this->getScopedFieldNames('outputs', $output);
         foreach ($post as $key => $value) {
             if (str_starts_with($key, $output_prefix)) {

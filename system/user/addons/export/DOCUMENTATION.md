@@ -82,7 +82,7 @@ Tag parameters are routed by prefix:
 | `format:` | The active Format plugin |
 | `output:` | The active Output/Destination plugin |
 | `modify:` | Modifier declarations |
-| `search:` | Field-level search filters (Members, SQL) |
+| `search:` | Field-level search filters (Entries, Members, Grid, Fluid) |
 
 ---
 
@@ -121,12 +121,30 @@ Exports channel entry rows: standard columns plus every custom field assigned to
 | `output` | ✅ | — | Destination: `download`, `local` |
 | `status` | | `open` | Entry status filter |
 | `author_id` | | — | Filter by member ID |
+| `entry_date_start` | | — | Only entries with `entry_date` on or after this date (`YYYY-MM-DD`) |
+| `entry_date_end` | | — | Only entries with `entry_date` on or before this date (`YYYY-MM-DD`) |
 | `limit` | | — | Maximum number of entries to export |
 | `offset` | | `0` | Entry-level pagination offset |
 | `chunk_size` | | `500` | Entries processed per streaming chunk |
 | `relationship_fields` | | `title` | Pipe-separated fields to pull from related entries |
+| `search:field_name` | | — | Filter by a core column or custom field value (see below) |
 | `fields` | | — | Pipe-separated column **whitelist** — return only these columns, in this order |
 | `exclude` | | — | Pipe-separated column **blacklist** — exclude these columns, return the rest |
+
+#### Field-level search filters
+
+Prefix any `channel_titles` core column (`title`, `url_title`, `status`, `author_id`, etc.) or custom channel field short name with `search:` to filter. Matching is exact (`=`), not partial/`LIKE`. Multiple `search:` params are combined with AND logic.
+
+```ee
+{exp:export:entries
+    channel="blog"
+    search:status="open"
+    search:my_custom_field="featured"
+    format="csv"
+    output="download"
+    output:filename="filtered.csv"
+}
+```
 
 #### Standard columns in every row
 
@@ -309,8 +327,24 @@ Exports EE Grid field rows as a flat tabular dataset. Each output row carries en
 | `offset` | | `0` | Entry-level pagination offset |
 | `chunk_size` | | `500` | Entries per streaming chunk |
 | `relationship_fields` | | `title` | Fields to pull from relationship-column targets |
+| `search:field_name` | | — | Filter which entries' grid rows are included, by core column or custom channel field on the parent entry (see below) |
 | `fields` | | — | Pipe-separated column **whitelist** — return only these columns, in this order |
 | `exclude` | | — | Pipe-separated column **blacklist** — exclude these columns, return the rest |
+
+#### Field-level search filters
+
+Prefix any `channel_titles` core column or custom channel field short name (on the parent entry, not a Grid column) with `search:` to filter which entries' rows are included. Matching is exact (`=`), not partial/`LIKE`.
+
+```ee
+{exp:export:grid
+    channel="products"
+    field="variants"
+    search:my_custom_field="featured"
+    format="csv"
+    output="download"
+    output:filename="filtered.csv"
+}
+```
 
 #### Output shape
 
@@ -393,8 +427,24 @@ All sub-field types are routed through the FieldsService handler pipeline:
 | `offset` | | `0` | Entry-level pagination offset |
 | `chunk_size` | | `500` | Entries per streaming chunk |
 | `relationship_fields` | | `title` | Pipe-separated fields to pull from related entries |
+| `search:field_name` | | — | Filter which entries' fluid blocks are included, by core column or custom channel field on the parent entry (see below) |
 | `fields` | | — | Pipe-separated column **whitelist** — return only these columns, in this order |
 | `exclude` | | — | Pipe-separated column **blacklist** — exclude these columns, return the rest |
+
+#### Field-level search filters
+
+Prefix any `channel_titles` core column or custom channel field short name (on the parent entry, not a Fluid sub-field) with `search:` to filter which entries' blocks are included. Matching is exact (`=`), not partial/`LIKE`.
+
+```ee
+{exp:export:fluid
+    channel="blog"
+    field="page_builder"
+    search:my_custom_field="featured"
+    format="csv"
+    output="download"
+    output:filename="filtered.csv"
+}
+```
 
 #### Output shape
 

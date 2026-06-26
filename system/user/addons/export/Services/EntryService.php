@@ -19,6 +19,41 @@ class EntryService extends AbstractService
     protected array $fluid_data = [];
 
     /**
+     * Actual columns present in exp_channel_titles, keyed by column name.
+     * Populated lazily by getChannelTitlesColumns().
+     *
+     * @var array|null  null = not yet fetched; [] = table empty or missing
+     */
+    protected ?array $channel_titles_columns = null;
+
+    /**
+     * Return the actual columns present in exp_channel_titles, keyed by column name.
+     *
+     * Used by SearchFilterTrait to guard against searching a column name that
+     * doesn't actually exist on channel_titles, the same defense
+     * MemberService::getMemberDataColumns() provides for Members. Result is
+     * cached for the lifetime of the service instance.
+     *
+     * @return array<string, string>  [column_name => column_name]
+     */
+    public function getChannelTitlesColumns(): array
+    {
+        if ($this->channel_titles_columns === null) {
+            $this->channel_titles_columns = [];
+            $query = ee()->db->query(
+                'SHOW COLUMNS FROM ' . ee()->db->dbprefix . 'channel_titles'
+            );
+            if ($query instanceof CI_DB_result) {
+                foreach ($query->result_array() as $row) {
+                    $this->channel_titles_columns[$row['Field']] = $row['Field'];
+                }
+            }
+        }
+
+        return $this->channel_titles_columns;
+    }
+
+    /**
      * @param int $field_id
      * @param int $entry_id
      * @param array $fields
@@ -346,6 +381,39 @@ class EntryService extends AbstractService
             }
         }
 
+        return $return;
+    }
+
+    /**
+     * Batch-load field values from EE 7 split-storage tables (channel_data_field_X).
+     *
+     * EE 7 can store each custom field in its own table instead of the shared
+     * channel_data table. This queries each split table that exists and merges
+     * the results into the same [entry_id => [field_id_X => value]] shape so
+     * callers can treat the output identically to batchFieldData().
+     *
+     * Returns [entry_id => [field_id_X => value, ...]]
+     */
+    public function batchSplitFieldData(array $entry_ids, array $field_ids): array
+    {
+        $return = [];
+        foreach ($field_ids as $field_id) {
+            $table = 'channel_data_field_' . $field_id;
+            if (!ee()->db->table_exists($table)) {
+                continue;
+            }
+            $col   = 'field_id_' . $field_id;
+            $query = ee()->db
+                ->select('entry_id, ' . $col)
+                ->from($table)
+                ->where_in('entry_id', $entry_ids)
+                ->get();
+            if ($query instanceof CI_DB_result && $query->num_rows() > 0) {
+                foreach ($query->result_array() as $row) {
+                    $return[(int)$row['entry_id']][$col] = $row[$col] ?? null;
+                }
+            }
+        }
         return $return;
     }
 

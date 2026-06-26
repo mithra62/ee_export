@@ -52,6 +52,46 @@ class Members extends AbstractSource
     /** True only when at least one custom member field exists. */
     protected bool $has_custom_fields = false;
 
+    // ── CP form fields ────────────────────────────────────────────────────────
+
+    public function getCpFields(array $context = []): array
+    {
+        $norm_date = function (array $c, string $key): string {
+            $raw = $c['settings'][$key] ?? '';
+            if ($raw === '') {
+                return '';
+            }
+            $ts = is_numeric($raw) ? (int) $raw : @strtotime($raw);
+            return ($ts && $ts !== -1) ? date('Y-m-d', $ts) : $raw;
+        };
+
+        $date_field = function (string $name, string $label) use ($norm_date): array {
+            return [
+                'name' => $name, 'type' => 'html', 'label' => $label,
+                'content_callback' => fn($c) => '<input type="date" name="' . $c['field_name']
+                    . '" value="' . htmlspecialchars($norm_date($c, $name)) . '" class="form-control">',
+            ];
+        };
+
+        return [
+            [
+                'name' => 'roles', 'type' => 'checkbox', 'label' => 'export_field_roles',
+                'choices_callback' => fn($c) => $c['cp']->getMemberRoles(),
+                'value_callback' => function ($c) {
+                    $raw = $c['settings']['roles'] ?? [];
+                    return is_string($raw) ? array_values(array_filter(explode('|', $raw))) : $raw;
+                },
+            ],
+            $date_field('join_start', 'export_field_join_start'),
+            $date_field('join_end', 'export_field_join_end'),
+            $date_field('last_login_start', 'export_field_last_login_start'),
+            $date_field('last_login_end', 'export_field_last_login_end'),
+            ['name' => 'limit', 'type' => 'text', 'label' => 'export_field_limit'],
+            ['name' => 'offset', 'type' => 'text', 'label' => 'export_field_offset', 'default' => '0'],
+            ['name' => 'chunk_size', 'type' => 'text', 'label' => 'export_field_chunk_size', 'default' => '500'],
+        ];
+    }
+
     // ── AbstractSource contract ───────────────────────────────────────────────
 
     public function compile(): AbstractSource

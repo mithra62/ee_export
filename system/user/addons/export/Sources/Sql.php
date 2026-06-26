@@ -17,6 +17,13 @@ class Sql extends AbstractSource
         'query' => 'required|isSelect',
     ];
 
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            ['name' => 'query', 'type' => 'textarea', 'label' => 'export_field_sql'],
+        ];
+    }
+
     /**
      * @return AbstractSource
      * @throws NoDataException

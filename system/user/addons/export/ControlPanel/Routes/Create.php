@@ -2,6 +2,7 @@
 
 namespace Mithra62\Export\ControlPanel\Routes;
 
+use ExpressionEngine\Service\Validation\Result as ValidationResult;
 use Mithra62\Export\Forms\CreateEditExport;
 
 /**
@@ -33,10 +34,11 @@ class Create extends AbstractRoute
 
     protected function handlePost()
     {
-        $post = $_POST;
+        $post   = $_POST;
         $source = trim(ee('Request')->post('source', ''));
+        $errors = $this->validate($post);
 
-        if (!$this->validate($post)) {
+        if ($errors->failed()) {
             ee('CP/Alert')->makeInline('shared-form')
                 ->asIssue()
                 ->withTitle(lang('export_err_heading'))
@@ -44,7 +46,7 @@ class Create extends AbstractRoute
                 ->now();
 
             $settings = ee('export:CpService')->postToSettings($post, $source);
-            return $this->renderForm($settings, $source);
+            return $this->renderForm($settings, $source, $errors);
         }
 
         // ── Persist ───────────────────────────────────────────────────────────
@@ -69,13 +71,17 @@ class Create extends AbstractRoute
 
     // ── Form renderer ─────────────────────────────────────────────────────────
 
-    protected function renderForm(array $settings = [], string $source = 'entries')
+    protected function renderForm(array $settings = [], string $source = 'entries', ValidationResult $errors = null)
     {
         $vars = (new CreateEditExport($settings, $source))->generate();
-        $vars['cp_page_title'] = lang('export_create_heading');
-        $vars['base_url'] = $this->url('create');
-        $vars['save_btn_text'] = lang('export_save');
+        $vars['cp_page_title']         = lang('export_create_heading');
+        $vars['base_url']              = $this->url('create');
+        $vars['save_btn_text']         = lang('export_save');
         $vars['save_btn_text_working'] = lang('export_saving');
+
+        if ($errors !== null) {
+            $vars['errors'] = $errors;
+        }
 
         $this->setView('form', $vars);
 

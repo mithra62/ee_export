@@ -116,6 +116,53 @@ abstract class AbstractSource extends AbstractPlugin
     }
 
     /**
+     * Shared status choices for any source that filters on entry status
+     * (Entries, Grid, Fluid). Centralised so getCpFields() overrides don't
+     * each repeat the same literal array.
+     *
+     * @return array<string, string>
+     */
+    protected static function statusChoices(): array
+    {
+        return [
+            'open'   => lang('export_status_open'),
+            'closed' => lang('export_status_closed'),
+            'all'    => lang('export_status_all'),
+        ];
+    }
+
+    /**
+     * Shared CP field descriptor for a date-range bound, rendered as a native
+     * HTML5 date picker. Used by any source filtering on a Unix-timestamp
+     * column (Members' join/last_login bounds, Entries' entry_date bounds).
+     *
+     * The stored value is normalised to Y-m-d for the input's value attribute
+     * regardless of whether it arrived as a Unix timestamp or a date string —
+     * both shapes occur depending on whether the value came from a freshly
+     * submitted form or from previously stored settings.
+     *
+     * @param string $name  Bare param name (e.g. 'entry_date_start')
+     * @param string $label Lang key for the field's displayed title
+     * @return array
+     */
+    protected static function dateFieldDescriptor(string $name, string $label): array
+    {
+        return [
+            'name' => $name, 'type' => 'html', 'label' => $label,
+            'content_callback' => function ($c) use ($name) {
+                $raw = $c['settings'][$name] ?? '';
+                $value = '';
+                if ($raw !== '') {
+                    $ts = is_numeric($raw) ? (int) $raw : @strtotime($raw);
+                    $value = ($ts && $ts !== -1) ? date('Y-m-d', $ts) : $raw;
+                }
+                return '<input type="date" name="' . $c['field_name']
+                    . '" value="' . htmlspecialchars($value) . '" class="form-control">';
+            },
+        ];
+    }
+
+    /**
      * Normalise a fields/exclude option value to a plain array of trimmed strings.
      *
      * Options can arrive in two shapes depending on call-site:

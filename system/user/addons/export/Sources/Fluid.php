@@ -6,6 +6,7 @@ use CI_DB_result;
 use ExpressionEngine\Service\Validation\Validator;
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
+use Mithra62\Export\Traits\SearchFilterTrait;
 
 /**
  * Fluid source — exports EE Fluid field instances as a flat tabular dataset.
@@ -43,6 +44,8 @@ use Mithra62\Export\Plugins\AbstractSource;
  */
 class Fluid extends AbstractSource
 {
+    use SearchFilterTrait;
+
     protected array $rules = [
         'source' => 'required',
         'channel' => 'required|validChannel',
@@ -55,6 +58,47 @@ class Fluid extends AbstractSource
     protected int $stream_chunk_size = 500;
     protected int $stream_channel_id = 0;
     protected int $stream_field_id = 0;
+
+    /** @var array<int, array>  channel field definitions keyed by field_id, used by SearchFilterTrait */
+    protected array $channel_fields = [];
+
+    // ── CP form fields ────────────────────────────────────────────────────────
+
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            [
+                'name' => 'channel', 'type' => 'select', 'label' => 'export_field_channel',
+                'scoped' => true,
+                'choices_callback' => fn($c) => $c['cp']->getChannelList(),
+            ],
+            [
+                'name' => 'field', 'type' => 'select', 'label' => 'export_field_field',
+                'scoped' => true,
+                'choices_callback' => fn($c) => $c['cp']->getChannelFields((int) ($c['settings']['channel'] ?? 0), 'fluid_field'),
+            ],
+            [
+                'name' => 'status', 'type' => 'select', 'label' => 'export_field_status',
+                'choices' => static::statusChoices(), 'default' => 'open',
+            ],
+            ['name' => 'author_id', 'type' => 'text', 'label' => 'export_field_author_id'],
+            [
+                'name' => 'entry_id', 'type' => 'text', 'label' => 'export_field_entry_id',
+                'desc' => 'export_hint_pipe_sep',
+            ],
+            [
+                'name' => 'limit', 'type' => 'text', 'label' => 'export_field_limit',
+                'desc' => 'export_field_limit_fluid_desc',
+            ],
+            ['name' => 'offset', 'type' => 'text', 'label' => 'export_field_offset', 'default' => '0'],
+            ['name' => 'chunk_size', 'type' => 'text', 'label' => 'export_field_chunk_size', 'default' => '500'],
+            [
+                'name' => 'relationship_fields', 'type' => 'text',
+                'label' => 'export_field_relationship_fields', 'desc' => 'export_hint_pipe_sep',
+                'default' => 'title',
+            ],
+        ];
+    }
 
     // ── AbstractSource contract ───────────────────────────────────────────────
 
@@ -98,6 +142,10 @@ class Fluid extends AbstractSource
 
         $this->stream_field_id = ee('export:EntryService')
             ->getFluidFieldId((string)$this->getOption('field', ''), $this->stream_channel_id);
+
+        // Loaded so SearchFilterTrait can resolve search:field_name to a channel
+        // custom field on the parent entry (distinct from the fluid sub-fields).
+        $this->channel_fields = ee('export:EntryService')->getChannelFields($this->stream_channel_id);
     }
 
     public function nextChunk(): array
@@ -131,6 +179,11 @@ class Fluid extends AbstractSource
             $query->where('entry_id', reset($entry_id_filter));
         } elseif (count($entry_id_filter) > 1) {
             $query->where_in('entry_id', $entry_id_filter);
+        }
+
+        $search = $this->getOption('search', []);
+        if (!empty($search)) {
+            $this->applySearchFilters($query, $search, $channel_id);
         }
 
         $result = $query->limit($limit, $this->stream_offset)->get();

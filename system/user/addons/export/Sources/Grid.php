@@ -6,6 +6,7 @@ use CI_DB_result;
 use ExpressionEngine\Service\Validation\Validator;
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
+use Mithra62\Export\Traits\SearchFilterTrait;
 
 /**
  * Grid source — exports EE Grid field rows as a flat tabular dataset.
@@ -26,6 +27,8 @@ use Mithra62\Export\Plugins\AbstractSource;
  */
 class Grid extends AbstractSource
 {
+    use SearchFilterTrait;
+
     protected array $rules = [
         'source' => 'required',
         'channel' => 'required|validChannel',
@@ -44,6 +47,47 @@ class Grid extends AbstractSource
 
     /** @var int[]  col_ids whose col_type is 'relationship' */
     protected array $rel_col_ids = [];
+
+    /** @var array<int, array>  channel field definitions keyed by field_id, used by SearchFilterTrait */
+    protected array $channel_fields = [];
+
+    // ── CP form fields ────────────────────────────────────────────────────────
+
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            [
+                'name' => 'channel', 'type' => 'select', 'label' => 'export_field_channel',
+                'scoped' => true,
+                'choices_callback' => fn($c) => $c['cp']->getChannelList(),
+            ],
+            [
+                'name' => 'field', 'type' => 'select', 'label' => 'export_field_field',
+                'scoped' => true,
+                'choices_callback' => fn($c) => $c['cp']->getChannelFields((int) ($c['settings']['channel'] ?? 0), 'grid'),
+            ],
+            [
+                'name' => 'status', 'type' => 'select', 'label' => 'export_field_status',
+                'choices' => static::statusChoices(), 'default' => 'open',
+            ],
+            ['name' => 'author_id', 'type' => 'text', 'label' => 'export_field_author_id'],
+            [
+                'name' => 'entry_id', 'type' => 'text', 'label' => 'export_field_entry_id',
+                'desc' => 'export_hint_pipe_sep',
+            ],
+            [
+                'name' => 'limit', 'type' => 'text', 'label' => 'export_field_limit',
+                'desc' => 'export_field_limit_grid_desc',
+            ],
+            ['name' => 'offset', 'type' => 'text', 'label' => 'export_field_offset', 'default' => '0'],
+            ['name' => 'chunk_size', 'type' => 'text', 'label' => 'export_field_chunk_size', 'default' => '500'],
+            [
+                'name' => 'relationship_fields', 'type' => 'text',
+                'label' => 'export_field_relationship_fields', 'desc' => 'export_hint_pipe_sep',
+                'default' => 'title',
+            ],
+        ];
+    }
 
     // ── AbstractSource contract ───────────────────────────────────────────────
 
@@ -98,6 +142,10 @@ class Grid extends AbstractSource
                 $this->rel_col_ids[] = $col_id;
             }
         }
+
+        // Loaded so SearchFilterTrait can resolve search:field_name to a channel
+        // custom field on the parent entry (distinct from the grid's own columns).
+        $this->channel_fields = ee('export:EntryService')->getChannelFields($channel_id);
     }
 
     public function nextChunk(): array
@@ -131,6 +179,11 @@ class Grid extends AbstractSource
             $query->where('entry_id', reset($entry_id_filter));
         } elseif (count($entry_id_filter) > 1) {
             $query->where_in('entry_id', $entry_id_filter);
+        }
+
+        $search = $this->getOption('search', []);
+        if (!empty($search)) {
+            $this->applySearchFilters($query, $search, $channel_id);
         }
 
         $result = $query->limit($limit, $this->stream_offset)->get();

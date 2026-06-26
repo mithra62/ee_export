@@ -12,6 +12,16 @@ class SourcesService extends AbstractService
     use ParamsTrait;
 
     /**
+     * Every registered source key, built-in and third-party, keyed by class name.
+     *
+     * @return array<string, class-string>
+     */
+    public function getAvailable(): array
+    {
+        return $this->getProviderMap('sources');
+    }
+
+    /**
      * @return AbstractSource
      * @throws SourcesServiceException
      */

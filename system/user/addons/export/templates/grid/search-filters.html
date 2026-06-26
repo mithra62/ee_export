@@ -1,0 +1,30 @@
+{!-- ============================================================
+     Export: Grid — CSV download with field-level search filters
+     ============================================================
+     Prefix any channel_titles core column or custom channel field
+     name (on the parent entry, not a Grid column) with search: to
+     filter which entries' Grid rows are included. Multiple search:
+     params are combined with AND logic. Matching is exact (=), not
+     partial/LIKE.
+
+     Standard columns you can search on:
+       title, url_title, status, author_id
+
+     Custom channel fields use their field short name.
+
+     Customise before use:
+       channel               → your channel short name or numeric ID
+       field                 → Grid field short name or numeric field_id
+       search:my_custom_field → replace with your actual field short name
+                                and the value you want to match
+       output:filename        → desired download filename
+     ============================================================ --}
+
+{exp:export:grid
+    channel="products"
+    field="variants"
+    search:my_custom_field="featured"
+    format="csv"
+    output="download"
+    output:filename="filtered-variants.csv"
+}

@@ -30,6 +30,12 @@ jQuery(function ($) {
      * Wires a channel <select> so that changing it fires an AJAX request and
      * repopulates the associated field <select> with matching fields.
      *
+     * Exposed as window.Export.wireChannelToField so third-party sources with
+     * their own channel→field cascading select pair can reuse this exact wiring
+     * against the same `action=fields` AJAX endpoint (source-key agnostic —
+     * it only needs channel_id + field_type) instead of reimplementing AJAX
+     * from scratch. See EXTENDING.md "CP Form Fields" for a worked example.
+     *
      * @param {string} channelSel  jQuery selector for the channel select
      * @param {string} fieldSel    jQuery selector for the field select to repopulate
      * @param {string} fieldType   EE field type slug ('grid' or 'fluid_field')
@@ -61,6 +67,9 @@ jQuery(function ($) {
             });
         });
     }
+
+    window.Export = window.Export || {};
+    window.Export.wireChannelToField = wireChannelToField;
 
     wireChannelToField('[name="src_grid_channel"]',  '[name="src_grid_field"]',  'grid');
     wireChannelToField('[name="src_fluid_channel"]', '[name="src_fluid_field"]', 'fluid_field');

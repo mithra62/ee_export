@@ -34,12 +34,14 @@ Extension means writing a separate EE add-on, not dropping a file into Export's 
   - [Example — simple non-streaming source](#example--simple-non-streaming-orders-source)
   - [Streaming sources](#streaming-sources)
   - [Wiring a companion tag class](#wiring-a-companion-tag-class)
+  - [CP Form Fields](#cp-form-fields)
 - [§5 Creating Formats](#5-creating-formats)
   - [Contract](#contract-1)
   - [Streaming interface](#streaming-interface)
   - [Inherited helpers](#inherited-helpers-1)
   - [Built-in formats](#built-in-formats)
   - [Example — streaming Tsv format](#example--streaming-tsv-tab-separated-format)
+  - [CP Form Fields](#cp-form-fields-1)
 - [§6 Creating Modifiers](#6-creating-modifiers)
   - [Contract](#contract-2)
   - [Parameter system](#parameter-system)
@@ -51,6 +53,7 @@ Extension means writing a separate EE add-on, not dropping a file into Export's 
   - [Inherited helpers](#inherited-helpers-2)
   - [Built-in destinations](#built-in-destinations)
   - [Example — S3 destination](#example--s3-destination)
+  - [CP Form Fields](#cp-form-fields-2)
 - [§8 Creating Field Handlers](#8-creating-field-handlers)
   - [Contract](#contract-4)
   - [Registering a handler](#registering-a-handler)
@@ -128,7 +131,7 @@ class Orders extends AbstractSource
         'source' => 'required',
     ];
 
-    public function compile(): static
+    public function compile(): AbstractSource
     {
         $status = $this->getOption('status', 'complete');
 
@@ -252,7 +255,7 @@ addon.setup.php declaration (Export built-in)
 Str::studly() namespace fallback          → lowest priority
 ```
 
-A third-party add-on can replace a built-in source, format, output, modifier, or field handler entirely by declaring the same key with a different class.
+A third-party add-on can replace a built-in source, format, output, modifier, or field handler entirely by declaring the same key with a different class. This also replaces its CP presence entirely — there's no per-field merge between the overridden class's `getCpFields()` and the original's; whichever class wins the key resolution is the one whose fields render.
 
 ### Namespace fallback
 
@@ -369,7 +372,7 @@ protected function getValidator(): Validator
 }
 ```
 
-> **CP inline validation.** Rules declared in `$rules` and custom rules registered via `$validator->defineRule()` inside `getValidator()` are automatically surfaced in the Export Control Panel Create/Edit form as inline fieldset errors — no extra wiring needed. `Services/CpValidationBridge` instantiates the active source, format, and output drivers on every form POST, calls `validate()` on each, and maps driver param names back to CP POST field names (e.g. `channel` → `src_entries_channel`, `path` → `output_path`).
+> **CP inline validation.** Rules declared in `$rules` and custom rules registered via `$validator->defineRule()` inside `getValidator()` are automatically surfaced in the Export Control Panel Create/Edit form as inline fieldset errors — no extra wiring needed. `Services/CpValidationBridge` instantiates the active source, format, and output drivers on every form POST, calls `validate()` on each, and maps driver param names back to CP POST field names. The prefix always includes the plugin's registered key (e.g. `channel` → `src_entries_channel`, `path` → `output_download_path` or `output_local_path` depending on which output driver is active, `root_name` → `fmt_xml_root_name`).
 
 ### Column selection — `fields` and `exclude`
 
@@ -395,7 +398,7 @@ Sources fetch data and return it as a flat 2-D array (rows × columns) for the r
 ### Contract
 
 ```php
-public function compile(): static
+public function compile(): AbstractSource
 ```
 
 Either populate the export data and return `$this`, or throw `NoDataException` when there is nothing to export (the tag produces no output rather than an error page).
@@ -424,7 +427,7 @@ class Orders extends AbstractSource
         'source' => 'required',
     ];
 
-    public function compile(): static
+    public function compile(): AbstractSource
     {
         $query = ee()->db
             ->select('order_id, customer_email, total, created_at')
@@ -477,7 +480,7 @@ class OrdersStream extends AbstractSource
     public function supportsStreaming(): bool { return true; }
 
     // Non-streaming fallback — drives the streaming methods
-    public function compile(): static
+    public function compile(): AbstractSource
     {
         $this->openStream();
         $rows = [];
@@ -530,6 +533,51 @@ class OrdersStream extends AbstractSource
 
 **Batch-loading within a chunk.** One main benefit of streaming is that you can batch-fetch supporting data (relationships, taxonomy, etc.) for all rows in a chunk with a single `WHERE id IN (...)` query instead of one query per row. Load the chunk's primary rows, collect the IDs you need, run the batch query, then merge before returning.
 
+### Supporting `search:` filters (optional)
+
+This only applies if your source streams entries from `channel_titles`, the way Export's own `Sources/Entries.php`, `Sources/Grid.php`, and `Sources/Fluid.php` do. It is not part of the required `AbstractSource` contract — a source like the `Orders` example above has no `channel_titles` query to filter and has no reason to use this.
+
+Those three built-in sources share `Traits/SearchFilterTrait`, which implements the `search:field_name="value"` template-tag param (documented in DOCUMENTATION.md) consistently across all three. `Sources/Members.php` is the exception — it has its own separate `applySearchFilters()` since it isn't channel/entry-based.
+
+To support `search:` in your own channel-entry-style source:
+
+```php
+use Mithra62\Export\Traits\SearchFilterTrait;
+
+class Orders extends AbstractSource
+{
+    use SearchFilterTrait;
+
+    protected array $channel_fields = [];
+
+    public function openStream(): void
+    {
+        $channel_id = ee('export:EntryService')->getChannelId((string) $this->getOption('channel', ''));
+        // ... your other openStream() setup ...
+
+        // Required: populates the field_id => field_info map the trait
+        // resolves search:your_custom_field against.
+        $this->channel_fields = ee('export:EntryService')->getChannelFields($channel_id);
+    }
+
+    public function nextChunk(): array
+    {
+        $query = ee()->db->select('channel_titles.entry_id, ...')->from('channel_titles');
+        // ... your other WHERE filters ...
+
+        $search = $this->getOption('search', []);
+        if (!empty($search)) {
+            $this->applySearchFilters($query, $search, $channel_id);
+        }
+
+        $result = $query->limit(...)->get();
+        // ...
+    }
+}
+```
+
+**Why this delegates to the `ChannelEntry` model instead of a manual SQL join.** A custom field's value can live in either the shared `channel_data` table or, under EE7 "split storage", its own `channel_data_field_X` table — and a source has no easy way to know which applies to a given field without replicating EE's own storage-resolution logic. `SearchFilterTrait` sidesteps this entirely: core `channel_titles` columns are filtered directly on your query, but a custom-field search is resolved via `ee('Model')->get('ChannelEntry')->filter('field_id_<id>', $value)`, which already knows how to join whichever table actually holds that field's data. Only the matching `entry_id`s come back, folded into your query with `where_in()` — never a join your query has to manage itself. (An earlier version of this trait *did* join `channel_data` manually; it broke with an ambiguous-column SQL error the moment any of the three sources' own unqualified `entry_id`/`channel_id` selects collided with `channel_data`'s columns of the same name, and it silently missed split-storage fields entirely. See `AUDIT.md` H-6 if you're curious about the failure mode.)
+
 ### Wiring a companion tag class
 
 Custom sources must be paired with a companion tag class in your add-on's `Tags/` directory. The companion tag sets the source key in PHP before calling Export's pipeline via `$this->compile()`.
@@ -570,6 +618,64 @@ Template usage:
     {if no_results}No orders to export.{/if}
 }
 ```
+
+### CP Form Fields
+
+Registering a source via `addon.setup.php` makes it usable from a template tag. It does not, by itself, put anything in the Export Control Panel's Create/Edit form — that form builds its Source dropdown and per-source fieldsets from the same provider map, but it needs to know what fields your source actually takes. You tell it by overriding `getCpFields()`:
+
+```php
+public function getCpFields(array $context = []): array
+{
+    return [
+        [
+            'name'  => 'status',
+            'type'  => 'select',
+            'label' => 'orders_field_status',
+            'choices' => ['pending' => 'Pending', 'complete' => 'Complete'],
+            'default' => 'complete',
+        ],
+        ['name' => 'limit', 'type' => 'text', 'label' => 'orders_field_limit'],
+    ];
+}
+```
+
+This is optional. A source with no `getCpFields()` override (the default on `AbstractPlugin` returns `[]`) still works fine via its companion tag — it just won't appear configurable in the CP, which is a reasonable choice for a source that's only ever used directly from templates.
+
+**Descriptor shape.** Each array in the returned list describes one field:
+
+| Key | Required | Meaning |
+|---|---|---|
+| `name` | yes | Bare param name, no prefix — what `getOption()` would read |
+| `type` | yes | `text`, `textarea`, `select`, `checkbox`, `radio`, `toggle`, or `html` |
+| `label` | yes | Lang key for the field's displayed title |
+| `desc` | no | Lang key for a description line under the title |
+| `required` | no | `true` calls the field's `setRequired(true)` |
+| `default` | no | Fallback value when nothing is stored yet |
+| `choices` | no | Static `[value => label]` array for `select`/`checkbox`/`radio` |
+| `choices_callback` | no | `callable(array $context): array` — use this instead of `choices` when the list depends on a lookup, like a channel list |
+| `value_callback` | no | `callable(array $context): mixed` — overrides the plain settings lookup, e.g. for date normalization |
+| `content` / `content_callback` | `html` type only | Static or dynamic raw HTML string |
+| `maxlength`, `placeholder` | no | Passed straight through to the field |
+| `group` | no | Override the auto-assigned fieldset group, if you need a different show/hide scope than your own |
+| `scoped` | no | `true` stores this field under `{your_key}:{name}` instead of `source:{name}` — see below |
+
+`$context` is passed to every callback and always contains `settings` (the stored settings for this source, already stripped to bare names), `cp` (the `CpService` instance, useful for lookups like `getChannelList()`), `source_key` (your registered key), and `field_name` (the field's actual rendered `name=""` attribute, set just before the callback runs — handy for `html`-type fields that need to reference their own name).
+
+**Why `scoped` exists.** Two sources both rendering a field called `channel` would otherwise collide: switching the Source dropdown in the editor from one to the other would pre-fill the second source's channel field with the first one's stored value, because both are stored at the same key (`source:channel`). Setting `'scoped' => true` stores the value at `{your_key}:channel` instead, so each source keeps its own independent value no matter how many times someone flips the Source dropdown while editing. Export's own Grid and Fluid sources both use this for their `channel` and `field` descriptors — copy that pattern if your source has a field whose name might collide with another source's field of the same name.
+
+**What you cannot express this way.** A field whose choices depend on another field's *live* value, the way Grid and Fluid's field selector depends on which channel was just chosen, needs actual JavaScript — `choices_callback` only runs once, at page render. For that case, use the same AJAX endpoint Grid and Fluid already use, via the exposed global helper:
+
+```js
+jQuery(function ($) {
+    window.Export.wireChannelToField(
+        '[name="src_orders_warehouse_id"]', // your channel-like select
+        '[name="src_orders_bin_id"]',       // the select it should repopulate
+        'your_field_type'                   // passed through to the AJAX endpoint
+    );
+});
+```
+
+`Export.wireChannelToField()` is defined in Export's own `javascript/export.js` and posts to the same `action=fields` endpoint Export's CP already exposes (`Ajax.php`) — it isn't source-key aware, it just needs a channel ID and a field type, so it works for any source's cascading select pair. Load your own JS file via `ee()->cp->load_package_js('your_addon')` from wherever your add-on builds its own CP pages, if it has any; Export's Create/Edit form loads `export.js` (and therefore this helper) on its own pages already.
 
 ---
 
@@ -717,6 +823,30 @@ Once registered, the `tsv` key is available in any Export template tag:
     filename="products.tsv"
 }
 ```
+
+### CP Form Fields
+
+Same contract as Sources (see [§4 CP Form Fields](#cp-form-fields)): override `getCpFields()` and the Tsv key shows up with its own fieldset wherever the Format dropdown is shown, with zero changes to Export's own form code.
+
+```php
+public function getCpFields(array $context = []): array
+{
+    return [
+        ['name' => 'delimiter', 'type' => 'text', 'label' => 'tsv_field_delimiter', 'default' => "\t", 'maxlength' => 1],
+    ];
+}
+```
+
+One difference from Sources: format choice labels in the dropdown aren't lang-keyed by default the way source/output choices are (`CSV`, `Excel (XLSX)` are literal strings, not translated). If you want full control over how your format's label renders in the dropdown rather than a humanized fallback of its key, override `getCpLabel()` too:
+
+```php
+public function getCpLabel(): ?string
+{
+    return 'TSV';
+}
+```
+
+Leave it unoverridden (it returns `null` by default) and the dropdown falls back to `lang('export_format_' . $key)` if that resolves to something, or a humanized version of the key otherwise.
 
 ---
 
@@ -917,6 +1047,22 @@ Once registered, `s3` is available in any Export template tag:
     filename="members-export.csv"
 }
 ```
+
+### CP Form Fields
+
+Same contract as Sources and Formats: override `getCpFields()` and the `s3` key gets its own fieldset in the Output section.
+
+```php
+public function getCpFields(array $context = []): array
+{
+    return [
+        ['name' => 'bucket', 'type' => 'text', 'label' => 'export_field_s3_bucket', 'required' => true],
+        ['name' => 'prefix', 'type' => 'text', 'label' => 'export_field_s3_prefix'],
+    ];
+}
+```
+
+`filename` is the one exception: it's a field every output destination needs, so Export's own form renders it once, outside any per-output fieldset, rather than asking every Output class (built-in or third-party) to declare it independently. Don't declare a `filename` field in your own `getCpFields()` — it would just be a second, redundant field with the same stored key.
 
 ---
 

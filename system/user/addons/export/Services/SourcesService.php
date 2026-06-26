@@ -12,6 +12,16 @@ class SourcesService extends AbstractService
     use ParamsTrait;
 
     /**
+     * Every registered source key, built-in and third-party, keyed by class name.
+     *
+     * @return array<string, class-string>
+     */
+    public function getAvailable(): array
+    {
+        return $this->getProviderMap('sources');
+    }
+
+    /**
      * @return AbstractSource
      * @throws SourcesServiceException
      */
@@ -25,7 +35,7 @@ class SourcesService extends AbstractService
         $name = $params['source'];
 
         // Provider map takes precedence; namespace resolution is the fallback.
-        $map   = $this->getProviderMap('sources');
+        $map = $this->getProviderMap('sources');
         $class = $map[$name] ?? ("\\Mithra62\\Export\\Sources\\" . Str::studly($name));
 
         if (class_exists($class)) {

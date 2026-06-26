@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit backupGlobals="false"
+         backupStaticAttributes="false"
+         bootstrap="bootstrap.php"
+         colors="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         processIsolation="false"
+         stopOnFailure="false"
+         stopOnError="false"
+         stopOnSkipped="false"
+         printerClass="PHPUnit\TextUI\DefaultResultPrinter">
+    <testsuites>
+        <testsuite name="Export Add-on Test Suite">
+            <directory suffix="Test.php">./</directory>
+        </testsuite>
+    </testsuites>
+    <coverage cacheDirectory="coverage"
+              includeUncoveredFiles="true"
+              processUncoveredFiles="true"
+              pathCoverage="false"
+              ignoreDeprecatedCodeUnits="true"
+              disableCodeCoverageIgnore="true">
+        <include>
+            <directory suffix=".php">../ControlPanel</directory>
+            <directory suffix=".php">../Exceptions</directory>
+            <directory suffix=".php">../Fields</directory>
+            <directory suffix=".php">../Formats</directory>
+            <directory suffix=".php">../Models</directory>
+            <directory suffix=".php">../Modifiers</directory>
+            <directory suffix=".php">../Output</directory>
+            <directory suffix=".php">../Plugins</directory>
+            <directory suffix=".php">../Services</directory>
+            <directory suffix=".php">../Sources</directory>
+            <directory suffix=".php">../Tags</directory>
+            <directory suffix=".php">../Traits</directory>
+        </include>
+        <exclude>
+            <directory suffix=".php">../vendor</directory>
+        </exclude>
+        <report>
+            <clover outputFile="reports/clover.xml"/>
+            <cobertura outputFile="reports/cobertura.xml"/>
+            <crap4j outputFile="reports/crap4j.xml" threshold="50"/>
+            <html outputDirectory="reports/html-coverage" lowUpperBound="50" highLowerBound="90"/>
+            <php outputFile="coverage.php"/>
+            <text outputFile="reports/coverage.txt" showUncoveredFiles="false" showOnlySummary="true"/>
+            <xml outputDirectory="xml-coverage"/>
+        </report>
+    </coverage>
+    <logging>
+        <junit outputFile="logs/junit.xml"/>
+        <teamcity outputFile="logs/teamcity.txt"/>
+        <testdoxHtml outputFile="logs/testdox.html"/>
+        <testdoxText outputFile="logs/testdox.txt"/>
+        <testdoxXml outputFile="logs/testdox.xml"/>
+        <text outputFile="logs/logfile.txt"/>
+    </logging>
+</phpunit>

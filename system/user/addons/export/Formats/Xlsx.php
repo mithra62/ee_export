@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Formats;
 
 use Mithra62\Export\Plugins\AbstractFormat;
@@ -13,6 +14,25 @@ class Xlsx extends AbstractFormat
     protected string $stream_path = '';
     protected ?Writer $writer = null;
 
+    public function getCpLabel(): ?string
+    {
+        return 'Excel (XLSX)';
+    }
+
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            [
+                'name' => 'bold_cols', 'type' => 'toggle', 'label' => 'export_format_bold_cols',
+                'desc' => 'export_format_bold_cols_desc', 'default' => 'y',
+            ],
+            [
+                'name' => 'sheet_name', 'type' => 'text', 'label' => 'export_format_sheet_name',
+                'desc' => 'export_format_sheet_name_desc',
+            ],
+        ];
+    }
+
     public function compile(AbstractSource $source): string
     {
         $rows = $source->getExportData();
@@ -21,18 +41,20 @@ class Xlsx extends AbstractFormat
         return $this->finalizeFile();
     }
 
-    public function supportsStreaming(): bool { return true; }
+    public function supportsStreaming(): bool
+    {
+        return true;
+    }
 
     public function openFile(array $first_row = []): void
     {
         $this->stream_path = $this->getCacheDirPath() . $this->getCacheFilename() . '.xlsx';
-        $this->writer      = new Writer(new Options());
+        $this->writer = new Writer(new Options());
         $this->writer->openToFile($this->stream_path);
 
         if (!empty($first_row)) {
-            $style = $this->getOption('bold_cols') === true
-                ? (new Style())->setFontBold()
-                : new Style();
+            $bold = in_array($this->getOption('bold_cols'), [true, 'y', '1', 1], true);
+            $style = $bold ? (new Style())->setFontBold() : new Style();
 
             $this->writer->addRow(Row::fromValues(array_keys($first_row), $style));
         }
@@ -55,7 +77,7 @@ class Xlsx extends AbstractFormat
             return empty($value) ? '' : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
 
-        return (string) ($value ?? '');
+        return (string)($value ?? '');
     }
 
     public function finalizeFile(): string

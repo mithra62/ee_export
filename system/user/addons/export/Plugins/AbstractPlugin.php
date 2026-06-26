@@ -66,13 +66,7 @@ abstract class AbstractPlugin implements ValidationAware
      */
     public function toArray(): array
     {
-        $data = [];
-
-        foreach ($this->options as $key => $value) {
-            $data[$key] = $this->{$key};
-        }
-
-        return $data;
+        return $this->options;
     }
 
     /**
@@ -84,6 +78,40 @@ abstract class AbstractPlugin implements ValidationAware
     }
 
     /**
+     * Describe this plugin's Control Panel form fields declaratively.
+     *
+     * Returns an empty array by default — plugins with no CP presence (or that
+     * only support template-tag usage) need not override this method.
+     *
+     * Each descriptor: ['name', 'type', 'label', 'desc'?, 'required'?, 'default'?,
+     * 'choices'?, 'choices_callback'?, 'value_callback'?, 'content'?,
+     * 'content_callback'?, 'maxlength'?, 'placeholder'?, 'group'?, 'scoped'?].
+     * See EXTENDING.md "CP Form Fields" for the full contract.
+     *
+     * @param array $context Always contains: 'settings' (bare-name-stripped settings
+     *                       for this plugin instance), 'cp' (CpService), 'source_key'
+     *                       (the registered key this instance was resolved from), and
+     *                       'field_name' (populated by the renderer per-field, for
+     *                       callbacks that need to self-reference their rendered name).
+     * @return array<int, array>
+     */
+    public function getCpFields(array $context = []): array
+    {
+        return [];
+    }
+
+    /**
+     * Optional CP choice-list label override for this plugin's registered key.
+     * Null falls back to a humanized version of the key.
+     *
+     * @return string|null
+     */
+    public function getCpLabel(): ?string
+    {
+        return null;
+    }
+
+    /**
      * @return string
      */
     public function generateCachePath(): string
@@ -91,7 +119,8 @@ abstract class AbstractPlugin implements ValidationAware
         if (!$this->cache_path) {
             $cache_path = PATH_CACHE . 'export/';
             if (!is_dir($cache_path)) {
-                mkdir($cache_path, 0777, true);
+                mkdir($cache_path, 0755, true);
+                @file_put_contents($cache_path . 'index.html', '');
             }
 
             $this->cache_path = $cache_path;

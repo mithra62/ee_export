@@ -1,0 +1,299 @@
+Abstract Source Clean Fields (Mithra62\Export\Tests\AbstractSourceCleanFields)
+ [x] Returns all when no whitelist or blacklist
+ [x] Whitelist from array
+ [x] Whitelist from pipe string
+ [x] Whitelist preserves declaration order
+ [x] Whitelist silently ignores missing columns
+ [x] Exclude from array
+ [x] Exclude from pipe string
+ [x] Whitelist takes priority over exclude
+ [x] Empty array whitelist is ignored
+ [x] Trims spaces in pipe string
+
+Addon Setup (Mithra62\Export\Tests\AddonSetup)
+ [x] File exists
+ [x] Author value
+ [x] Name value
+ [x] Namespace value
+ [x] Version value
+ [x] Settings exist value
+ [x] Tests path declared
+ [x] Export layer sources registered
+ [x] Export layer formats registered
+ [x] Export layer modifiers registered
+ [x] Export layer outputs registered
+ [x] Export layer fields registered
+ [x] Model registered
+
+Composer (Mithra62\Export\Tests\Composer)
+ [x] Composer file exists
+ [x] Composer is valid json
+ [x] Open spout required
+ [x] Vendor directory exists
+ [x] Autoload file exists
+
+Cp Validation Bridge (Mithra62\Export\Tests\CpValidationBridge)
+ [x] Get errors empty when all valid
+ [x] Get errors returns missing query error
+ [x] Get errors returns missing filename error
+ [x] Get errors xml missing root name
+ [x] Get errors returns empty for unknown source
+
+Csv Format (Mithra62\Export\Tests\CsvFormat)
+ [x] Open file write chunk finalize produces file
+ [x] Finalize file returns path ending in csv
+ [x] Header row written once
+ [x] Column values appear in output
+ [x] Array values flattened to json
+ [x] Null value produces empty cell
+ [x] Custom separator appears in output
+
+Download Output Validation (Mithra62\Export\Tests\DownloadOutputValidation)
+ [x] Should die is true
+ [x] Validation passes when filename set
+ [x] Validation fails when filename empty
+ [x] Validation fails when filename absent
+
+Export Configuration Model (Mithra62\Export\Tests\ExportConfigurationModel)
+ [x] Make returns model
+ [x] Get settings returns empty array when settings is null
+ [x] Get settings decodes json
+ [x] Set settings round trip
+ [x] Set settings nested array
+ [x] Get formatted created at returns empty string when null
+ [x] Get formatted created at default format
+ [x] Get formatted created at custom format
+
+Export Service Integration (Mithra62\Export\Tests\ExportServiceIntegration)
+ [x] Validate returns true with valid sql download params
+ [x] Validate returns false for invalid sql
+ [x] Validate returns false when xml missing root name
+ [x] Get errors populated after failed validation
+ [x] Get errors empty after successful validation
+ [x] Build produces local output file
+ [x] Build output file contains data
+
+Field Handlers (Mithra62\Export\Tests\FieldHandlers)
+ [x] Date process returns int
+ [x] Date process null returns zero
+ [x] Date process empty string returns zero
+ [x] Date process integer passthrough
+ [x] Relationship returns empty array with no context
+ [x] Relationship returns empty array when no child ids
+ [x] Relationship returns entry id when not cached
+ [x] Relationship returns title when cached
+ [x] Relationship handles multiple related
+ [x] Grid returns empty array with no context
+ [x] Grid returns empty array when no rows
+ [x] Grid maps column names to values
+ [x] Grid resolves relationship column
+ [x] Grid handles multiple rows
+
+Fields Service (Mithra62\Export\Tests\FieldsService)
+ [x] Get all returns array
+ [x] Get all contains date key
+ [x] Get field returns date handler
+ [x] Get field returns null for unknown type
+ [x] Get field is cached between calls
+
+Formats Service (Mithra62\Export\Tests\FormatsService)
+ [x] Throws when format param missing
+ [x] Get format returns csv
+ [x] Get format returns json
+ [x] Get format returns xlsx
+ [x] Get format returns xml
+ [x] Throws for unknown format
+
+Json Format (Mithra62\Export\Tests\JsonFormat)
+ [x] Finalize file returns path ending in json
+ [x] Output is valid json array
+ [x] Single row written
+ [x] Multiple chunks accumulate
+ [x] Empty chunk produces empty array
+ [x] Output wrapped in json array
+
+Lang (Mithra62\Export\Tests\Lang)
+ [x] Lang file exists
+ [x] Lang format
+ [x] Module name key exists
+ [x] Module description key exists
+ [x] Cp heading key exists
+ [x] Source entries key exists
+ [x] Source members key exists
+ [x] Source sql key exists
+ [x] Output download key exists
+ [x] Output local key exists
+ [x] Err heading key exists
+ [x] Settings key exists
+
+Local Output Validation (Mithra62\Export\Tests\LocalOutputValidation)
+ [x] Should die is false
+ [x] Validation passes with valid dir and filename
+ [x] Validation fails when filename missing
+ [x] Validation fails when path missing
+ [x] Validation fails for non existent dir
+ [x] Basename prevents directory traversal
+
+Logger Service (Mithra62\Export\Tests\LoggerService)
+ [x] Instantiates
+ [x] Format contains level
+ [x] Format contains message
+ [x] Format is non empty string
+ [x] Format with context includes json
+ [x] Format without context omits json brace
+ [x] Should log returns true for error
+ [x] Should log returns true for notice
+ [x] Should log returns true for warning
+ [x] Should log returns false for debug
+ [x] Should log returns false for info
+
+Mcp (Mithra62\Export\Tests\Mcp)
+ [x] Mcp file exists
+ [x] Mcp object exists
+ [x] Mcp is mcp instance
+
+Mod (Mithra62\Export\Tests\Mod)
+ [x] Mod file exists
+ [x] Module object exists
+ [x] Module is module instance
+
+Modifiers Service (Mithra62\Export\Tests\ModifiersService)
+ [x] Returns rows unchanged when no modify params
+ [x] Applies uc first
+ [x] Applies uc words
+ [x] Applies replace with
+ [x] Chains multiple modifiers
+ [x] Skips field not present in row
+ [x] Applies modifier to all rows
+
+Modifiers (Mithra62\Export\Tests\Modifiers)
+ [x] Uc first lowercase string
+ [x] Uc first empty string
+ [x] Uc first already capitalized
+ [x] Uc first single word
+ [x] Uc words lowercase string
+ [x] Uc words empty string
+ [x] Uc words multiple words
+ [x] Replace with default returns na
+ [x] Replace with default on empty string
+ [x] Replace with default on null
+ [x] Replace with custom param
+ [x] Replace with custom param ignores input
+ [x] Ee date returns value unchanged when no format
+ [x] Ee date returns value unchanged when value is zero
+ [x] Ee date formats timestamp
+
+Output Service (Mithra62\Export\Tests\OutputService)
+ [x] Throws when output param missing
+ [x] Get destination returns download
+ [x] Get destination returns local
+ [x] Throws for unknown output
+
+Params Service (Mithra62\Export\Tests\ParamsService)
+ [x] Instantiates
+ [x] Get returns null default when key missing
+ [x] Get returns provided default when key missing
+ [x] Set and get
+ [x] Set returns fluent
+ [x] Set params
+ [x] Set params returns fluent
+ [x] Get all params
+ [x] Get domain params strips prefix
+ [x] Get domain params excludes non prefixed when false
+ [x] Get domain params includes all when true
+ [x] Get domain params returns empty when no prefixed keys
+ [x] Set params replaces existing params
+
+Provider Map (Mithra62\Export\Tests\ProviderMap)
+ [x] Sources map contains entries
+ [x] Sources map contains members
+ [x] Sources map contains sql
+ [x] Formats map contains csv
+ [x] Formats map contains json
+ [x] Formats map contains xlsx
+ [x] Formats map contains xml
+ [x] Outputs map contains download
+ [x] Outputs map contains local
+ [x] Modifiers map contains uc first
+ [x] Fields map contains date
+
+Search Filter Trait (Mithra62\Export\Tests\SearchFilterTrait)
+ [x] Get channel titles columns returns real columns
+ [x] Apply search filters matches core column
+ [x] Apply search filters skips empty values
+ [x] Apply search filters ignores unknown field name
+ [x] Apply search filters combines core filters with and
+ [x] Apply search filters resolves custom field via channel entry model
+ [x] Apply search filters does not join channel data directly
+
+Service Resolution (Mithra62\Export\Tests\ServiceResolution)
+ [x] Params service resolves
+ [x] Sources service resolves
+ [x] Formats service resolves
+ [x] Output service resolves
+ [x] Modifiers service resolves
+ [x] Xml service resolves
+ [x] Excel service resolves
+ [x] Logger service resolves
+ [x] Export service resolves
+ [x] Actions service resolves
+ [x] Entry service resolves
+ [x] Fields service resolves
+ [x] Member service resolves
+ [x] Cp service resolves
+
+Sources Service (Mithra62\Export\Tests\SourcesService)
+ [x] Throws when source param missing
+ [x] Get source returns sql source
+ [x] Get source returns entries source
+ [x] Get source returns members source
+ [x] Throws for unknown source
+ [x] Get source sets options on returned object
+
+Sql Source Validation (Mithra62\Export\Tests\SqlSourceValidation)
+ [x] Valid select passes
+ [x] Valid select with column alias
+ [x] Update keyword fails
+ [x] Insert keyword fails
+ [x] Delete keyword fails
+ [x] Drop keyword fails
+ [x] Truncate keyword fails
+ [x] Semicolon fails
+ [x] Line comment stripped before analysis
+ [x] Block comment stripped before analysis
+ [x] Missing query fails required
+ [x] Not a select fails
+
+Upd (Mithra62\Export\Tests\Upd)
+ [x] Upd file exists
+ [x] Upd object exists
+ [x] Has cp backend property exists
+ [x] Cp backend property value
+ [x] Publish fields property exists
+ [x] Publish fields property value
+ [x] Is installer instance
+ [x] Install method exists
+ [x] Uninstall method exists
+ [x] Update method exists
+
+Xml Format (Mithra62\Export\Tests\XmlFormat)
+ [x] Validation fails when root name missing
+ [x] Validation fails when branch name missing
+ [x] Validation passes with both names
+ [x] Finalize file returns path ending in xml
+ [x] Write chunk produces valid xml
+ [x] Field values appear in xml output
+
+Xml Service (Mithra62\Export\Tests\XmlService)
+ [x] Instantiates
+ [x] Set root name returns fluent
+ [x] Initiate produces xml declaration
+ [x] Initiate produces root element
+ [x] Start and end branch creates child element
+ [x] Add node writes scalar value
+ [x] Add xml nodes scalar value
+ [x] Add xml nodes numeric key uses item with index
+ [x] Add xml nodes nested array creates child elements
+ [x] Set char set appears in xml declaration
+ [x] Initiate file writes to disk
+

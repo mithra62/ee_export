@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Output;
 
 use Mithra62\Export\Plugins\AbstractDestination;
@@ -26,7 +27,7 @@ class Download extends AbstractDestination
         // Sanitize filename before embedding in the Content-Disposition header.
         // Strip double-quotes, CR, LF, and backslashes — all of which can be used
         // for header injection or break the quoted-string RFC syntax.
-        $raw      = $this->getOption('filename') ?: 'export';
+        $raw = $this->getOption('filename') ?: 'export';
         $filename = preg_replace('/["\r\n\\\\]/', '', $raw);
         if (trim($filename) === '') {
             $filename = 'export';
@@ -35,9 +36,10 @@ class Download extends AbstractDestination
         header('Content-Type: application/octet-stream');
         header('Content-Transfer-Encoding: Binary');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
-        ob_clean(); flush();
+        ob_clean();
+        flush();
         $return = false;
-        if(readfile($finished_export)) {
+        if (readfile($finished_export)) {
             $return = true;
         }
 

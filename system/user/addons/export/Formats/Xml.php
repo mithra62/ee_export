@@ -9,12 +9,31 @@ use Mithra62\Export\Services\XmlService;
 class Xml extends AbstractFormat
 {
     protected array $rules = [
-        'root_name'   => 'required',
+        'root_name' => 'required',
         'branch_name' => 'required',
     ];
 
     protected string $stream_path = '';
     protected ?XmlService $xml = null;
+
+    public function getCpLabel(): ?string
+    {
+        return 'XML';
+    }
+
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            [
+                'name' => 'root_name', 'type' => 'text', 'label' => 'export_format_root_name',
+                'desc' => 'export_format_root_name_desc', 'default' => 'export',
+            ],
+            [
+                'name' => 'branch_name', 'type' => 'text', 'label' => 'export_format_branch_name',
+                'desc' => 'export_format_branch_name_desc', 'default' => 'row',
+            ],
+        ];
+    }
 
     public function compile(AbstractSource $source): string
     {
@@ -23,12 +42,15 @@ class Xml extends AbstractFormat
         return $this->finalizeFile();
     }
 
-    public function supportsStreaming(): bool { return true; }
+    public function supportsStreaming(): bool
+    {
+        return true;
+    }
 
     public function openFile(array $first_row = []): void
     {
         $this->stream_path = $this->getCacheDirPath() . $this->getCacheFilename() . '.xml';
-        $this->xml         = new XmlService();
+        $this->xml = new XmlService();
         $this->xml->setRootName($this->getOption('root_name'));
         $this->xml->initiateFile($this->stream_path);
     }

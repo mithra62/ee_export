@@ -1,0 +1,30 @@
+{!-- ============================================================
+     Export: Fluid — CSV download with field-level search filters
+     ============================================================
+     Prefix any channel_titles core column or custom channel field
+     name (on the parent entry, not a Fluid sub-field) with search:
+     to filter which entries' Fluid blocks are included. Multiple
+     search: params are combined with AND logic. Matching is exact
+     (=), not partial/LIKE.
+
+     Standard columns you can search on:
+       title, url_title, status, author_id
+
+     Custom channel fields use their field short name.
+
+     Customise before use:
+       channel               → your channel short name or numeric ID
+       field                 → Fluid field short name or numeric field_id
+       search:my_custom_field → replace with your actual field short name
+                                and the value you want to match
+       output:filename        → desired download filename
+     ============================================================ --}
+
+{exp:export:fluid
+    channel="blog"
+    field="page_builder"
+    search:my_custom_field="featured"
+    format="csv"
+    output="download"
+    output:filename="filtered-page-builder.csv"
+}

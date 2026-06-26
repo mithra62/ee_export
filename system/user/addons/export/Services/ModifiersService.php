@@ -25,7 +25,7 @@ class ModifiersService extends AbstractService
     protected function getModifier($processor, array $params = []): ?AbstractModifier
     {
         // Provider map takes precedence; namespace resolution is the fallback.
-        $map   = $this->getProviderMap('modifiers');
+        $map = $this->getProviderMap('modifiers');
         $class = $map[$processor] ?? ("\\Mithra62\\Export\\Modifiers\\" . Str::studly($processor));
 
         if (class_exists($class)) {

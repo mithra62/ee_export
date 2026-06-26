@@ -1,4 +1,5 @@
 <?php
+
 namespace Mithra62\Export\Plugins;
 
 use Mithra62\Export\Exceptions\Sources\NoDataException;

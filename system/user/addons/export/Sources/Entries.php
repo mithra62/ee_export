@@ -6,9 +6,13 @@ use CI_DB_result;
 use ExpressionEngine\Service\Validation\Validator;
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
+use Mithra62\Export\Traits\SearchFilterTrait;
 
 class Entries extends AbstractSource
 {
+    use SearchFilterTrait;
+
+
     protected array $rules = [
         'source' => 'required',
         'channel' => 'required|validChannel',
@@ -22,6 +26,39 @@ class Entries extends AbstractSource
     protected array $rel_field_ids = [];   // field_ids that are relationship type
     protected array $grid_field_ids = [];   // field_ids that are grid type
     protected array $fluid_field_ids = [];   // field_ids that are fluid_field type
+
+    // -------------------------------------------------------------------------
+    // CP form fields
+    // -------------------------------------------------------------------------
+
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            [
+                'name' => 'channel', 'type' => 'select', 'label' => 'export_field_channel',
+                'choices_callback' => fn($c) => $c['cp']->getChannelList(),
+            ],
+            [
+                'name' => 'status', 'type' => 'select', 'label' => 'export_field_status',
+                'choices' => static::statusChoices(), 'default' => 'open',
+            ],
+            ['name' => 'author_id', 'type' => 'text', 'label' => 'export_field_author_id'],
+            [
+                'name' => 'entry_id', 'type' => 'text', 'label' => 'export_field_entry_id',
+                'desc' => 'export_hint_pipe_sep',
+            ],
+            static::dateFieldDescriptor('entry_date_start', 'export_field_entry_date_start'),
+            static::dateFieldDescriptor('entry_date_end', 'export_field_entry_date_end'),
+            ['name' => 'limit', 'type' => 'text', 'label' => 'export_field_limit'],
+            ['name' => 'offset', 'type' => 'text', 'label' => 'export_field_offset', 'default' => '0'],
+            ['name' => 'chunk_size', 'type' => 'text', 'label' => 'export_field_chunk_size', 'default' => '500'],
+            [
+                'name' => 'relationship_fields', 'type' => 'text',
+                'label' => 'export_field_relationship_fields', 'desc' => 'export_hint_pipe_sep',
+                'default' => 'title',
+            ],
+        ];
+    }
 
     // -------------------------------------------------------------------------
     // AbstractSource contract
@@ -114,10 +151,33 @@ class Entries extends AbstractSource
             )
             ->from('channel_titles')
             ->where('channel_id', $channel_id)
-            ->where('status', $this->getOption('status', 'open'));
+            ->where('status', $this->getOption('status', 'open'))
+            ->order_by('entry_id', 'asc');
 
         if ($this->getOption('author_id')) {
             $query->where('author_id', (int)$this->getOption('author_id'));
+        }
+
+        $entry_id_filter = array_filter(array_map('intval', explode('|', (string)$this->getOption('entry_id', ''))));
+        if (count($entry_id_filter) === 1) {
+            $query->where('entry_id', reset($entry_id_filter));
+        } elseif (count($entry_id_filter) > 1) {
+            $query->where_in('entry_id', $entry_id_filter);
+        }
+
+        // entry_date is stored as a Unix timestamp, same as exp_members.join_date.
+        // Each bound applies independently — setting only one filters an
+        // open-ended range rather than requiring both to activate.
+        if ($start = $this->getOption('entry_date_start')) {
+            $query->where('entry_date >=', strtotime($start));
+        }
+        if ($end = $this->getOption('entry_date_end')) {
+            $query->where('entry_date <=', strtotime($end));
+        }
+
+        $search = $this->getOption('search', []);
+        if (!empty($search)) {
+            $this->applySearchFilters($query, $search, $channel_id);
         }
 
         $result = $query->limit($limit, $this->stream_offset)->get();
@@ -131,7 +191,15 @@ class Entries extends AbstractSource
         $entry_ids = array_map('intval', $entry_ids);
 
         // Batch-load supporting data
-        $field_data = ee('export:EntryService')->batchFieldData($entry_ids);
+        $field_data  = ee('export:EntryService')->batchFieldData($entry_ids);
+        $split_data  = ee('export:EntryService')->batchSplitFieldData($entry_ids, array_keys($this->channel_fields));
+        foreach ($split_data as $entry_id => $fields) {
+            if (!isset($field_data[$entry_id])) {
+                $field_data[$entry_id] = [];
+            }
+            // += preserves channel_data values; only fills in what's missing
+            $field_data[$entry_id] += $fields;
+        }
         $cat_data = ee('export:EntryService')->batchCategoryNames($entry_ids);
 
         $rel_data = [];
@@ -224,7 +292,7 @@ class Entries extends AbstractSource
 
     protected function buildRow(
         array $entry,
-        int $entry_id,
+        int   $entry_id,
         array $field_data,
         array $cat_data,
         array $rel_data,
@@ -238,8 +306,8 @@ class Entries extends AbstractSource
         // Spread all channel_titles columns fetched by nextChunk() so the row
         // always contains exactly the columns the SELECT returns.  categories is
         // appended after so it follows the core columns in default output order.
-        $row                = $entry;
-        $row['categories']  = $cat_data[$entry_id] ?? '';
+        $row = $entry;
+        $row['categories'] = $cat_data[$entry_id] ?? '';
 
         $raw_fields = $field_data[$entry_id] ?? [];
 
@@ -260,7 +328,7 @@ class Entries extends AbstractSource
     protected function processFieldValue(
         mixed $raw_value,
         array $field_info,
-        int $entry_id,
+        int   $entry_id,
         array $rel_data,
         array $rel_cache,
         array $grid_data,

@@ -29,7 +29,7 @@ class CpService
 
         $list = [];
         foreach ($channels as $channel) {
-            $list[(int) $channel->channel_id] = $channel->channel_title;
+            $list[(int)$channel->channel_id] = $channel->channel_title;
         }
 
         return $list;
@@ -42,8 +42,8 @@ class CpService
      * of that type are returned, making this suitable for the AJAX field-
      * selector used by the Grid and Fluid form sections.
      *
-     * @param int         $channel_id
-     * @param string|null $field_type  EE field type slug, or null for all
+     * @param int $channel_id
+     * @param string|null $field_type EE field type slug, or null for all
      *
      * @return array  [field_id => field_label]
      */
@@ -55,7 +55,7 @@ class CpService
                 ->filter('channel_id', $channel_id)
                 ->first();
 
-            if (! $channel) {
+            if (!$channel) {
                 return [];
             }
 
@@ -64,7 +64,7 @@ class CpService
             // the CustomFields relationship alone, which misses group-assigned fields.
             $all_fields = $channel->getAllCustomFields();
 
-            if (! $all_fields || ! count($all_fields)) {
+            if (!$all_fields || !count($all_fields)) {
                 return [];
             }
 
@@ -73,7 +73,7 @@ class CpService
                 if ($field_type && $field->field_type !== $field_type) {
                     continue;
                 }
-                $list[(int) $field->field_id] = $field->field_label ?: $field->field_name;
+                $list[(int)$field->field_id] = $field->field_label ?: $field->field_name;
             }
 
             return $list;
@@ -88,9 +88,9 @@ class CpService
     public function getMemberRoles(): array
     {
         $roles = ee('Model')->get('Role')->order('name', 'asc')->all();
-        $list  = [];
+        $list = [];
         foreach ($roles as $role) {
-            $list[(int) $role->role_id] = $role->name;
+            $list[(int)$role->role_id] = $role->name;
         }
         return $list;
     }
@@ -103,8 +103,8 @@ class CpService
      * Used by the AJAX 'columns' endpoint to populate the whitelist/blacklist
      * checkbox UI. Returns an empty array when the source/channel is ambiguous.
      *
-     * @param string $source  Source key: entries|members|grid|fluid|sql
-     * @param array  $params  Raw POST params from the form
+     * @param string $source Source key: entries|members|grid|fluid|sql
+     * @param array $params Raw POST params from the form
      *
      * @return string[]
      */
@@ -112,14 +112,14 @@ class CpService
     {
         switch ($source) {
             case 'entries':
-                return $this->columnsForEntries((int) ($params['channel_id'] ?? 0));
+                return $this->columnsForEntries((int)($params['channel_id'] ?? 0));
 
             case 'members':
                 return $this->columnsForMembers();
 
             case 'grid':
-                $channel_id = (int) ($params['channel_id'] ?? 0);
-                $field_id   = (int) ($params['field_id'] ?? 0);
+                $channel_id = (int)($params['channel_id'] ?? 0);
+                $field_id = (int)($params['field_id'] ?? 0);
                 return $this->columnsForGrid($channel_id, $field_id);
 
             case 'fluid':
@@ -222,14 +222,14 @@ class CpService
      * modify:* keys. This method just stitches the 'source' key back in and
      * converts any array-valued 'fields' or 'exclude' back to pipe strings.
      *
-     * @param string $source   The top-level source key (e.g. 'entries')
-     * @param array  $settings Decoded settings from ExportConfiguration::getSettings()
+     * @param string $source The top-level source key (e.g. 'entries')
+     * @param array $settings Decoded settings from ExportConfiguration::getSettings()
      *
      * @return array
      */
     public function buildParamsFromSettings(string $source, array $settings): array
     {
-        $params           = $settings;
+        $params = $settings;
         $params['source'] = $source;
 
         // Re-join arrays that were serialised as JSON arrays for storage
@@ -241,7 +241,71 @@ class CpService
             $params['exclude'] = implode('|', array_filter($params['exclude']));
         }
 
+        // Any field a source/format/output marks 'scoped' => true stores under
+        // its own key ({key}:{name}) to avoid cross-contamination in the editor.
+        // Remap each back to the plain domain key (source:/format:/output:) so
+        // the pipeline receives the keys it expects, regardless of which plugin
+        // declared the field — built-in or third-party.
+        $active = [
+            'sources' => $source,
+            'formats' => $params['format'] ?? null,
+            'outputs' => $params['output'] ?? null,
+        ];
+        $domains = ['sources' => 'source', 'formats' => 'format', 'outputs' => 'output'];
+        foreach ($active as $layer => $key) {
+            if (!$key) {
+                continue;
+            }
+            foreach ($this->getScopedFieldNames($layer, $key) as $field_name) {
+                $scoped_key = $key . ':' . $field_name;
+                if (isset($params[$scoped_key])) {
+                    $params[$domains[$layer] . ':' . $field_name] = $params[$scoped_key];
+                }
+            }
+        }
+
         return $params;
+    }
+
+    /**
+     * Return the field names a source/format/output's getCpFields() marks
+     * 'scoped' => true.
+     *
+     * Scoped fields store under '{key}:{name}' instead of '{domain}:{name}' so
+     * switching source/format/output in the editor never cross-populates the
+     * wrong value for that field (e.g. Grid and Fluid both have a 'channel'
+     * field but each needs its own stored channel).
+     *
+     * @param string $layer 'sources'|'formats'|'outputs'
+     * @param string $key   The registered key (e.g. 'grid')
+     * @return string[]
+     */
+    private function getScopedFieldNames(string $layer, string $key): array
+    {
+        $map = match ($layer) {
+            'sources' => ee('export:SourcesService')->getAvailable(),
+            'formats' => ee('export:FormatsService')->getAvailable(),
+            'outputs' => ee('export:OutputService')->getAvailable(),
+            default => [],
+        };
+
+        $class = $map[$key] ?? null;
+        if (!$class || !class_exists($class)) {
+            return [];
+        }
+
+        $plugin = new $class();
+        if (!($plugin instanceof \Mithra62\Export\Plugins\AbstractPlugin)) {
+            return [];
+        }
+
+        $scoped = [];
+        foreach ($plugin->getCpFields() as $descriptor) {
+            if (!empty($descriptor['scoped'])) {
+                $scoped[] = $descriptor['name'];
+            }
+        }
+        return $scoped;
     }
 
     // ── POST → settings conversion ────────────────────────────────────────────
@@ -250,7 +314,7 @@ class CpService
      * Convert raw POST data from the Create/Edit form into a settings array
      * ready to be stored as JSON in ExportConfiguration::$settings.
      *
-     * @param array  $post   Raw $_POST
+     * @param array $post Raw $_POST
      * @param string $source The selected source key
      *
      * @return array
@@ -264,12 +328,25 @@ class CpService
         // Edit both call postToSettings() then pass the result to renderForm()).
         $settings['name'] = trim($post['name'] ?? '');
 
-        // Source-specific params — strip the `src_{source}_` prefix
+        // Template tag access roles — top-level setting, not source-prefixed
+        $raw_roles = $post['allowed_roles'] ?? [];
+        $settings['allowed_roles'] = array_values(array_filter(
+            array_map('intval', is_array($raw_roles) ? $raw_roles : explode('|', (string)$raw_roles))
+        ));
+
+        // Source-specific params — strip the `src_{source}_` prefix. Any field
+        // whose getCpFields() descriptor sets 'scoped' => true (e.g. Grid/Fluid's
+        // channel/field) is stored under its own key so switching source type in
+        // the editor never cross-populates the wrong value on another source.
         $prefix = 'src_' . $source . '_';
+        $scoped_params = $this->getScopedFieldNames('sources', $source);
         foreach ($post as $key => $value) {
             if (str_starts_with($key, $prefix)) {
-                $param_key = 'source:' . substr($key, strlen($prefix));
-                $settings[$param_key] = is_array($value) ? implode('|', $value) : $value;
+                $param_name = substr($key, strlen($prefix));
+                $storage_key = in_array($param_name, $scoped_params, true)
+                    ? $source . ':' . $param_name
+                    : 'source:' . $param_name;
+                $settings[$storage_key] = is_array($value) ? implode('|', $value) : $value;
             }
         }
 
@@ -277,42 +354,57 @@ class CpService
         $col_mode = $post['col_mode'] ?? 'all';
         if ($col_mode === 'whitelist') {
             $raw = trim($post['fields'] ?? '');
-            $settings['fields']  = $raw ? array_filter(explode('|', $raw)) : [];
+            $settings['fields'] = $raw ? array_filter(explode('|', $raw)) : [];
             $settings['exclude'] = [];
         } elseif ($col_mode === 'blacklist') {
             $raw = trim($post['exclude'] ?? '');
-            $settings['fields']  = [];
+            $settings['fields'] = [];
             $settings['exclude'] = $raw ? array_filter(explode('|', $raw)) : [];
         } else {
-            $settings['fields']  = [];
+            $settings['fields'] = [];
             $settings['exclude'] = [];
         }
 
-        // Format
-        $settings['format'] = $post['format'] ?? 'csv';
-
-        // Single-char fields stored verbatim; all others trimmed
-        $char_fields   = ['separator', 'enclosure', 'escape'];
-        $format_keys   = ['separator', 'enclosure', 'escape', 'newline', 'bold_cols', 'sheet_name', 'root_name', 'branch_name'];
-        foreach ($format_keys as $fk) {
-            $field_name = 'fmt_' . $fk;
-            if (! isset($post[$field_name])) { continue; }
-            $val = in_array($fk, $char_fields, true) ? $post[$field_name] : trim($post[$field_name]);
-            if ($val !== '') {
-                $settings['format:' . $fk] = $val;
+        // Format-specific params — strip the `fmt_{format}_` prefix, matching
+        // the sources pattern above. Any field a format's getCpFields() declares
+        // (built-in or third-party) is captured automatically.
+        $format = $settings['format'] = $post['format'] ?? 'csv';
+        $fmt_prefix = 'fmt_' . $format . '_';
+        $scoped_fmt = $this->getScopedFieldNames('formats', $format);
+        foreach ($post as $key => $value) {
+            if (str_starts_with($key, $fmt_prefix)) {
+                $param_name = substr($key, strlen($fmt_prefix));
+                $storage_key = in_array($param_name, $scoped_fmt, true)
+                    ? $format . ':' . $param_name
+                    : 'format:' . $param_name;
+                $settings[$storage_key] = is_array($value) ? implode('|', $value) : $value;
             }
         }
 
-        // bold_cols is a checkbox — absent from POST means unchecked
-        if ($settings['format'] === 'xlsx' && ! isset($post['fmt_bold_cols'])) {
+        // bold_cols is a checkbox/toggle — absent from POST means unchecked.
+        // This is a known limitation: only XLSX's bold_cols is handled this way
+        // today. A third-party format's own toggle fields don't get this same
+        // absent-means-unchecked treatment (see EXTENDING.md "CP Form Fields").
+        if ($format === 'xlsx' && !isset($post['fmt_xlsx_bold_cols'])) {
             $settings['format:bold_cols'] = 'n';
         }
 
-        // Output
-        $settings['output']          = $post['output']          ?? 'download';
+        // Output-specific params — same generic pattern. output_filename is a
+        // cross-cutting field rendered outside any output's own getCpFields()
+        // (every destination needs a delivered filename), so it's set explicitly
+        // first; the generic loop below captures output-specific fields like `path`.
+        $output = $settings['output'] = $post['output'] ?? 'download';
         $settings['output:filename'] = $post['output_filename'] ?? '';
-        if (!empty($post['output_path'])) {
-            $settings['output:path'] = $post['output_path'];
+        $output_prefix = 'output_' . $output . '_';
+        $scoped_out = $this->getScopedFieldNames('outputs', $output);
+        foreach ($post as $key => $value) {
+            if (str_starts_with($key, $output_prefix)) {
+                $param_name = substr($key, strlen($output_prefix));
+                $storage_key = in_array($param_name, $scoped_out, true)
+                    ? $output . ':' . $param_name
+                    : 'output:' . $param_name;
+                $settings[$storage_key] = is_array($value) ? implode('|', $value) : $value;
+            }
         }
 
         // Modifiers — MiniGridInput posts as modify[rows][row_id_N | new_row_N][col]
@@ -320,8 +412,8 @@ class CpService
         // values; skipping empty column/chain naturally filters it out.
         $modifier_rows = $post['modify']['rows'] ?? [];
         foreach ($modifier_rows as $row) {
-            $col   = trim($row['column'] ?? '');
-            $chain = trim($row['chain']  ?? '');
+            $col = trim($row['column'] ?? '');
+            $chain = trim($row['chain'] ?? '');
             if ($col !== '' && $chain !== '') {
                 $settings['modify:' . $col] = $chain;
             }

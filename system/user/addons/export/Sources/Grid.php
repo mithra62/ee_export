@@ -6,6 +6,7 @@ use CI_DB_result;
 use ExpressionEngine\Service\Validation\Validator;
 use Mithra62\Export\Exceptions\Sources\NoDataException;
 use Mithra62\Export\Plugins\AbstractSource;
+use Mithra62\Export\Traits\SearchFilterTrait;
 
 /**
  * Grid source — exports EE Grid field rows as a flat tabular dataset.
@@ -26,24 +27,67 @@ use Mithra62\Export\Plugins\AbstractSource;
  */
 class Grid extends AbstractSource
 {
+    use SearchFilterTrait;
+
     protected array $rules = [
-        'source'  => 'required',
+        'source' => 'required',
         'channel' => 'required|validChannel',
-        'field'   => 'required|validGridField',
+        'field' => 'required|validGridField',
     ];
 
     // ── Streaming state ──────────────────────────────────────────────────────
 
-    protected int   $stream_offset     = 0;
-    protected int   $stream_chunk_size = 500;
-    protected int   $stream_channel_id = 0;
-    protected int   $stream_field_id   = 0;
+    protected int $stream_offset = 0;
+    protected int $stream_chunk_size = 500;
+    protected int $stream_channel_id = 0;
+    protected int $stream_field_id = 0;
 
     /** @var array<int, array>  column definitions keyed by col_id */
     protected array $grid_columns = [];
 
     /** @var int[]  col_ids whose col_type is 'relationship' */
     protected array $rel_col_ids = [];
+
+    /** @var array<int, array>  channel field definitions keyed by field_id, used by SearchFilterTrait */
+    protected array $channel_fields = [];
+
+    // ── CP form fields ────────────────────────────────────────────────────────
+
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            [
+                'name' => 'channel', 'type' => 'select', 'label' => 'export_field_channel',
+                'scoped' => true,
+                'choices_callback' => fn($c) => $c['cp']->getChannelList(),
+            ],
+            [
+                'name' => 'field', 'type' => 'select', 'label' => 'export_field_field',
+                'scoped' => true,
+                'choices_callback' => fn($c) => $c['cp']->getChannelFields((int) ($c['settings']['channel'] ?? 0), 'grid'),
+            ],
+            [
+                'name' => 'status', 'type' => 'select', 'label' => 'export_field_status',
+                'choices' => static::statusChoices(), 'default' => 'open',
+            ],
+            ['name' => 'author_id', 'type' => 'text', 'label' => 'export_field_author_id'],
+            [
+                'name' => 'entry_id', 'type' => 'text', 'label' => 'export_field_entry_id',
+                'desc' => 'export_hint_pipe_sep',
+            ],
+            [
+                'name' => 'limit', 'type' => 'text', 'label' => 'export_field_limit',
+                'desc' => 'export_field_limit_grid_desc',
+            ],
+            ['name' => 'offset', 'type' => 'text', 'label' => 'export_field_offset', 'default' => '0'],
+            ['name' => 'chunk_size', 'type' => 'text', 'label' => 'export_field_chunk_size', 'default' => '500'],
+            [
+                'name' => 'relationship_fields', 'type' => 'text',
+                'label' => 'export_field_relationship_fields', 'desc' => 'export_hint_pipe_sep',
+                'default' => 'title',
+            ],
+        ];
+    }
 
     // ── AbstractSource contract ───────────────────────────────────────────────
 
@@ -79,15 +123,15 @@ class Grid extends AbstractSource
 
     public function openStream(): void
     {
-        $this->stream_offset     = (int) $this->getOption('offset', 0);
-        $this->stream_chunk_size = (int) $this->getOption('chunk_size', 500);
+        $this->stream_offset = (int)$this->getOption('offset', 0);
+        $this->stream_chunk_size = (int)$this->getOption('chunk_size', 500);
 
         $channel_id = ee('export:EntryService')
-            ->getChannelId((string) $this->getOption('channel', ''));
+            ->getChannelId((string)$this->getOption('channel', ''));
         $this->stream_channel_id = $channel_id;
 
         $field_id = ee('export:EntryService')
-            ->getGridFieldId((string) $this->getOption('field', ''), $channel_id);
+            ->getGridFieldId((string)$this->getOption('field', ''), $channel_id);
         $this->stream_field_id = $field_id;
 
         $this->grid_columns = ee('export:EntryService')->getGridColumns($field_id);
@@ -98,17 +142,21 @@ class Grid extends AbstractSource
                 $this->rel_col_ids[] = $col_id;
             }
         }
+
+        // Loaded so SearchFilterTrait can resolve search:field_name to a channel
+        // custom field on the parent entry (distinct from the grid's own columns).
+        $this->channel_fields = ee('export:EntryService')->getChannelFields($channel_id);
     }
 
     public function nextChunk(): array
     {
         $channel_id = $this->stream_channel_id;
-        $limit      = $this->stream_chunk_size;
+        $limit = $this->stream_chunk_size;
 
         // Respect hard limit (applies to entries, not grid rows)
         if ($this->getOption('limit')) {
-            $hard_limit = (int) $this->getOption('limit') + (int) $this->getOption('offset', 0);
-            $remaining  = $hard_limit - $this->stream_offset;
+            $hard_limit = (int)$this->getOption('limit') + (int)$this->getOption('offset', 0);
+            $remaining = $hard_limit - $this->stream_offset;
             if ($remaining <= 0) {
                 return [];
             }
@@ -123,11 +171,19 @@ class Grid extends AbstractSource
             ->where('status', $this->getOption('status', 'open'));
 
         if ($this->getOption('author_id')) {
-            $query->where('author_id', (int) $this->getOption('author_id'));
+            $query->where('author_id', (int)$this->getOption('author_id'));
         }
 
-        if ($this->getOption('entry_id')) {
-            $query->where('entry_id', (int) $this->getOption('entry_id'));
+        $entry_id_filter = array_filter(array_map('intval', explode('|', (string)$this->getOption('entry_id', ''))));
+        if (count($entry_id_filter) === 1) {
+            $query->where('entry_id', reset($entry_id_filter));
+        } elseif (count($entry_id_filter) > 1) {
+            $query->where_in('entry_id', $entry_id_filter);
+        }
+
+        $search = $this->getOption('search', []);
+        if (!empty($search)) {
+            $this->applySearchFilters($query, $search, $channel_id);
         }
 
         $result = $query->limit($limit, $this->stream_offset)->get();
@@ -137,12 +193,12 @@ class Grid extends AbstractSource
         }
 
         $entry_rows = $result->result_array();
-        $entry_ids  = array_map('intval', array_column($entry_rows, 'entry_id'));
+        $entry_ids = array_map('intval', array_column($entry_rows, 'entry_id'));
 
         // Index entries by ID for fast lookup during row building
         $entry_map = [];
         foreach ($entry_rows as $entry) {
-            $entry_map[(int) $entry['entry_id']] = $entry;
+            $entry_map[(int)$entry['entry_id']] = $entry;
         }
 
         // ── 2. Batch-load grid rows ───────────────────────────────────────────
@@ -161,15 +217,15 @@ class Grid extends AbstractSource
         //   rel_data  [row_id][col_id][] = child_entry_id
         //   rel_cache [child_entry_id]   = ['title' => ..., ...]
         //
-        $rel_data  = [];
+        $rel_data = [];
         $rel_cache = [];
 
         if ($this->rel_col_ids) {
             foreach ($all_grid_rows as $entry_grid_rows) {
                 foreach ($entry_grid_rows as $grid_row) {
-                    $row_id = (int) $grid_row['row_id'];
+                    $row_id = (int)$grid_row['row_id'];
                     foreach ($this->rel_col_ids as $col_id) {
-                        $child_id = (int) ($grid_row['col_id_' . $col_id] ?? 0);
+                        $child_id = (int)($grid_row['col_id_' . $col_id] ?? 0);
                         if ($child_id > 0) {
                             $rel_data[$row_id][$col_id][] = $child_id;
                         }
@@ -189,7 +245,7 @@ class Grid extends AbstractSource
 
             if ($all_child_ids) {
                 $rel_fields = $this->parseRelationshipFields();
-                $rel_cache  = ee('export:EntryService')
+                $rel_cache = ee('export:EntryService')
                     ->resolveRelatedEntries(array_values($all_child_ids), $rel_fields);
             }
         }
@@ -197,21 +253,21 @@ class Grid extends AbstractSource
         // ── 4. Flatten: one export row per grid row ───────────────────────────
         $rows = [];
         foreach ($entry_ids as $entry_id) {
-            $entry           = $entry_map[$entry_id];
+            $entry = $entry_map[$entry_id];
             $entry_grid_rows = $all_grid_rows[$entry_id] ?? [];
 
             foreach ($entry_grid_rows as $grid_row) {
-                $row_id = (int) $grid_row['row_id'];
+                $row_id = (int)$grid_row['row_id'];
 
                 $row = [
-                    'entry_id'    => $entry_id,
+                    'entry_id' => $entry_id,
                     'entry_title' => $entry['title'],
-                    'row_order'   => (int) $grid_row['row_order'],
+                    'row_order' => (int)$grid_row['row_order'],
                 ];
 
                 foreach ($this->grid_columns as $col_id => $col_info) {
                     $col_key = 'col_id_' . $col_id;
-                    $raw     = $grid_row[$col_key] ?? null;
+                    $raw = $grid_row[$col_key] ?? null;
 
                     $row[$col_info['col_name']] = $this->processColumnValue(
                         $raw, $col_info, $row_id, $entry_id, $rel_data, $rel_cache
@@ -278,12 +334,13 @@ class Grid extends AbstractSource
         int   $entry_id,
         array $rel_data,
         array $rel_cache
-    ): mixed {
+    ): mixed
+    {
         $field_info = [
-            'field_id'       => (int) $col_info['col_id'],
-            'field_name'     => $col_info['col_name'],
-            'field_type'     => $col_info['col_type'],
-            'field_label'    => $col_info['col_label'] ?? $col_info['col_name'],
+            'field_id' => (int)$col_info['col_id'],
+            'field_name' => $col_info['col_name'],
+            'field_type' => $col_info['col_type'],
+            'field_label' => $col_info['col_label'] ?? $col_info['col_name'],
             'field_settings' => $col_info['col_settings'] ?? [],
         ];
 
@@ -291,13 +348,13 @@ class Grid extends AbstractSource
 
         if ($field) {
             return $field->process($raw, $field_info, $row_id, [
-                'rel_data'    => $rel_data,
-                'rel_cache'   => $rel_cache,
+                'rel_data' => $rel_data,
+                'rel_cache' => $rel_cache,
                 // Disambiguation keys for third-party handlers
                 'source_type' => 'grid',
-                'row_id'      => $row_id,
-                'entry_id'    => $entry_id,
-                'col_id'      => (int) $col_info['col_id'],
+                'row_id' => $row_id,
+                'entry_id' => $entry_id,
+                'col_id' => (int)$col_info['col_id'],
             ]);
         }
 
@@ -319,15 +376,15 @@ class Grid extends AbstractSource
         $validator = parent::getValidator();
 
         $validator->defineRule('validChannel', function ($key, $value) {
-            return ee('export:EntryService')->getChannelId((string) $value) > 0
+            return ee('export:EntryService')->getChannelId((string)$value) > 0
                 ? true
                 : 'channel not found';
         });
 
         $validator->defineRule('validGridField', function ($key, $value) {
-            $channel    = (string) $this->getOption('channel', '');
+            $channel = (string)$this->getOption('channel', '');
             $channel_id = ee('export:EntryService')->getChannelId($channel);
-            return ee('export:EntryService')->getGridFieldId((string) $value, $channel_id) > 0
+            return ee('export:EntryService')->getGridFieldId((string)$value, $channel_id) > 0
                 ? true
                 : 'grid field not found on channel';
         });

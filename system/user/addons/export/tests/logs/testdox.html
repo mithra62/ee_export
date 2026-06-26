@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <title>Test Documentation</title>
+        <style>
+            body {
+                text-rendering: optimizeLegibility;
+                font-variant-ligatures: common-ligatures;
+                font-kerning: normal;
+                margin-left: 2em;
+                background-color: #ffffff;
+                color: #000000;
+            }
+
+            body > ul > li {
+                font-family: Source Serif Pro, PT Sans, Trebuchet MS, Helvetica, Arial;
+                font-size: 2em;
+            }
+
+            h2 {
+                font-family: Tahoma, Helvetica, Arial;
+                font-size: 3em;
+            }
+
+            ul {
+                list-style: none;
+                margin-bottom: 1em;
+            }
+        </style>
+    </head>
+    <body>
+        <h2 id="Mithra62\Export\Tests\AbstractSourceCleanFieldsTest">Abstract Source Clean Fields (Mithra62\Export\Tests\AbstractSourceCleanFields)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Returns all when no whitelist or blacklist</li>
+            <li style="color: #555753;">✓ Whitelist from array</li>
+            <li style="color: #555753;">✓ Whitelist from pipe string</li>
+            <li style="color: #555753;">✓ Whitelist preserves declaration order</li>
+            <li style="color: #555753;">✓ Whitelist silently ignores missing columns</li>
+            <li style="color: #555753;">✓ Exclude from array</li>
+            <li style="color: #555753;">✓ Exclude from pipe string</li>
+            <li style="color: #555753;">✓ Whitelist takes priority over exclude</li>
+            <li style="color: #555753;">✓ Empty array whitelist is ignored</li>
+            <li style="color: #555753;">✓ Trims spaces in pipe string</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\AddonSetupTest">Addon Setup (Mithra62\Export\Tests\AddonSetup)</h2>
+        <ul>
+            <li style="color: #555753;">✓ File exists</li>
+            <li style="color: #555753;">✓ Author value</li>
+            <li style="color: #555753;">✓ Name value</li>
+            <li style="color: #555753;">✓ Namespace value</li>
+            <li style="color: #555753;">✓ Version value</li>
+            <li style="color: #555753;">✓ Settings exist value</li>
+            <li style="color: #555753;">✓ Tests path declared</li>
+            <li style="color: #555753;">✓ Export layer sources registered</li>
+            <li style="color: #555753;">✓ Export layer formats registered</li>
+            <li style="color: #555753;">✓ Export layer modifiers registered</li>
+            <li style="color: #555753;">✓ Export layer outputs registered</li>
+            <li style="color: #555753;">✓ Export layer fields registered</li>
+            <li style="color: #555753;">✓ Model registered</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\ComposerTest">Composer (Mithra62\Export\Tests\Composer)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Composer file exists</li>
+            <li style="color: #555753;">✓ Composer is valid json</li>
+            <li style="color: #555753;">✓ Open spout required</li>
+            <li style="color: #555753;">✓ Vendor directory exists</li>
+            <li style="color: #555753;">✓ Autoload file exists</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\CpValidationBridgeTest">Cp Validation Bridge (Mithra62\Export\Tests\CpValidationBridge)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Get errors empty when all valid</li>
+            <li style="color: #555753;">✓ Get errors returns missing query error</li>
+            <li style="color: #555753;">✓ Get errors returns missing filename error</li>
+            <li style="color: #555753;">✓ Get errors xml missing root name</li>
+            <li style="color: #555753;">✓ Get errors returns empty for unknown source</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\CsvFormatTest">Csv Format (Mithra62\Export\Tests\CsvFormat)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Open file write chunk finalize produces file</li>
+            <li style="color: #555753;">✓ Finalize file returns path ending in csv</li>
+            <li style="color: #555753;">✓ Header row written once</li>
+            <li style="color: #555753;">✓ Column values appear in output</li>
+            <li style="color: #555753;">✓ Array values flattened to json</li>
+            <li style="color: #555753;">✓ Null value produces empty cell</li>
+            <li style="color: #555753;">✓ Custom separator appears in output</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\DownloadOutputValidationTest">Download Output Validation (Mithra62\Export\Tests\DownloadOutputValidation)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Should die is true</li>
+            <li style="color: #555753;">✓ Validation passes when filename set</li>
+            <li style="color: #555753;">✓ Validation fails when filename empty</li>
+            <li style="color: #555753;">✓ Validation fails when filename absent</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\ExportConfigurationModelTest">Export Configuration Model (Mithra62\Export\Tests\ExportConfigurationModel)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Make returns model</li>
+            <li style="color: #555753;">✓ Get settings returns empty array when settings is null</li>
+            <li style="color: #555753;">✓ Get settings decodes json</li>
+            <li style="color: #555753;">✓ Set settings round trip</li>
+            <li style="color: #555753;">✓ Set settings nested array</li>
+            <li style="color: #555753;">✓ Get formatted created at returns empty string when null</li>
+            <li style="color: #555753;">✓ Get formatted created at default format</li>
+            <li style="color: #555753;">✓ Get formatted created at custom format</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\ExportServiceIntegrationTest">Export Service Integration (Mithra62\Export\Tests\ExportServiceIntegration)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Validate returns true with valid sql download params</li>
+            <li style="color: #555753;">✓ Validate returns false for invalid sql</li>
+            <li style="color: #555753;">✓ Validate returns false when xml missing root name</li>
+            <li style="color: #555753;">✓ Get errors populated after failed validation</li>
+            <li style="color: #555753;">✓ Get errors empty after successful validation</li>
+            <li style="color: #555753;">✓ Build produces local output file</li>
+            <li style="color: #555753;">✓ Build output file contains data</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\FieldHandlersTest">Field Handlers (Mithra62\Export\Tests\FieldHandlers)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Date process returns int</li>
+            <li style="color: #555753;">✓ Date process null returns zero</li>
+            <li style="color: #555753;">✓ Date process empty string returns zero</li>
+            <li style="color: #555753;">✓ Date process integer passthrough</li>
+            <li style="color: #555753;">✓ Relationship returns empty array with no context</li>
+            <li style="color: #555753;">✓ Relationship returns empty array when no child ids</li>
+            <li style="color: #555753;">✓ Relationship returns entry id when not cached</li>
+            <li style="color: #555753;">✓ Relationship returns title when cached</li>
+            <li style="color: #555753;">✓ Relationship handles multiple related</li>
+            <li style="color: #555753;">✓ Grid returns empty array with no context</li>
+            <li style="color: #555753;">✓ Grid returns empty array when no rows</li>
+            <li style="color: #555753;">✓ Grid maps column names to values</li>
+            <li style="color: #555753;">✓ Grid resolves relationship column</li>
+            <li style="color: #555753;">✓ Grid handles multiple rows</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\FieldsServiceTest">Fields Service (Mithra62\Export\Tests\FieldsService)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Get all returns array</li>
+            <li style="color: #555753;">✓ Get all contains date key</li>
+            <li style="color: #555753;">✓ Get field returns date handler</li>
+            <li style="color: #555753;">✓ Get field returns null for unknown type</li>
+            <li style="color: #555753;">✓ Get field is cached between calls</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\FormatsServiceTest">Formats Service (Mithra62\Export\Tests\FormatsService)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Throws when format param missing</li>
+            <li style="color: #555753;">✓ Get format returns csv</li>
+            <li style="color: #555753;">✓ Get format returns json</li>
+            <li style="color: #555753;">✓ Get format returns xlsx</li>
+            <li style="color: #555753;">✓ Get format returns xml</li>
+            <li style="color: #555753;">✓ Throws for unknown format</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\JsonFormatTest">Json Format (Mithra62\Export\Tests\JsonFormat)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Finalize file returns path ending in json</li>
+            <li style="color: #555753;">✓ Output is valid json array</li>
+            <li style="color: #555753;">✓ Single row written</li>
+            <li style="color: #555753;">✓ Multiple chunks accumulate</li>
+            <li style="color: #555753;">✓ Empty chunk produces empty array</li>
+            <li style="color: #555753;">✓ Output wrapped in json array</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\LangTest">Lang (Mithra62\Export\Tests\Lang)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Lang file exists</li>
+            <li style="color: #555753;">✓ Lang format</li>
+            <li style="color: #555753;">✓ Module name key exists</li>
+            <li style="color: #555753;">✓ Module description key exists</li>
+            <li style="color: #555753;">✓ Cp heading key exists</li>
+            <li style="color: #555753;">✓ Source entries key exists</li>
+            <li style="color: #555753;">✓ Source members key exists</li>
+            <li style="color: #555753;">✓ Source sql key exists</li>
+            <li style="color: #555753;">✓ Output download key exists</li>
+            <li style="color: #555753;">✓ Output local key exists</li>
+            <li style="color: #555753;">✓ Err heading key exists</li>
+            <li style="color: #555753;">✓ Settings key exists</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\LocalOutputValidationTest">Local Output Validation (Mithra62\Export\Tests\LocalOutputValidation)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Should die is false</li>
+            <li style="color: #555753;">✓ Validation passes with valid dir and filename</li>
+            <li style="color: #555753;">✓ Validation fails when filename missing</li>
+            <li style="color: #555753;">✓ Validation fails when path missing</li>
+            <li style="color: #555753;">✓ Validation fails for non existent dir</li>
+            <li style="color: #555753;">✓ Basename prevents directory traversal</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\LoggerServiceTest">Logger Service (Mithra62\Export\Tests\LoggerService)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Instantiates</li>
+            <li style="color: #555753;">✓ Format contains level</li>
+            <li style="color: #555753;">✓ Format contains message</li>
+            <li style="color: #555753;">✓ Format is non empty string</li>
+            <li style="color: #555753;">✓ Format with context includes json</li>
+            <li style="color: #555753;">✓ Format without context omits json brace</li>
+            <li style="color: #555753;">✓ Should log returns true for error</li>
+            <li style="color: #555753;">✓ Should log returns true for notice</li>
+            <li style="color: #555753;">✓ Should log returns true for warning</li>
+            <li style="color: #555753;">✓ Should log returns false for debug</li>
+            <li style="color: #555753;">✓ Should log returns false for info</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\McpTest">Mcp (Mithra62\Export\Tests\Mcp)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Mcp file exists</li>
+            <li style="color: #555753;">✓ Mcp object exists</li>
+            <li style="color: #555753;">✓ Mcp is mcp instance</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\ModTest">Mod (Mithra62\Export\Tests\Mod)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Mod file exists</li>
+            <li style="color: #555753;">✓ Module object exists</li>
+            <li style="color: #555753;">✓ Module is module instance</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\ModifiersServiceTest">Modifiers Service (Mithra62\Export\Tests\ModifiersService)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Returns rows unchanged when no modify params</li>
+            <li style="color: #555753;">✓ Applies uc first</li>
+            <li style="color: #555753;">✓ Applies uc words</li>
+            <li style="color: #555753;">✓ Applies replace with</li>
+            <li style="color: #555753;">✓ Chains multiple modifiers</li>
+            <li style="color: #555753;">✓ Skips field not present in row</li>
+            <li style="color: #555753;">✓ Applies modifier to all rows</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\ModifiersTest">Modifiers (Mithra62\Export\Tests\Modifiers)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Uc first lowercase string</li>
+            <li style="color: #555753;">✓ Uc first empty string</li>
+            <li style="color: #555753;">✓ Uc first already capitalized</li>
+            <li style="color: #555753;">✓ Uc first single word</li>
+            <li style="color: #555753;">✓ Uc words lowercase string</li>
+            <li style="color: #555753;">✓ Uc words empty string</li>
+            <li style="color: #555753;">✓ Uc words multiple words</li>
+            <li style="color: #555753;">✓ Replace with default returns na</li>
+            <li style="color: #555753;">✓ Replace with default on empty string</li>
+            <li style="color: #555753;">✓ Replace with default on null</li>
+            <li style="color: #555753;">✓ Replace with custom param</li>
+            <li style="color: #555753;">✓ Replace with custom param ignores input</li>
+            <li style="color: #555753;">✓ Ee date returns value unchanged when no format</li>
+            <li style="color: #555753;">✓ Ee date returns value unchanged when value is zero</li>
+            <li style="color: #555753;">✓ Ee date formats timestamp</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\OutputServiceTest">Output Service (Mithra62\Export\Tests\OutputService)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Throws when output param missing</li>
+            <li style="color: #555753;">✓ Get destination returns download</li>
+            <li style="color: #555753;">✓ Get destination returns local</li>
+            <li style="color: #555753;">✓ Throws for unknown output</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\ParamsServiceTest">Params Service (Mithra62\Export\Tests\ParamsService)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Instantiates</li>
+            <li style="color: #555753;">✓ Get returns null default when key missing</li>
+            <li style="color: #555753;">✓ Get returns provided default when key missing</li>
+            <li style="color: #555753;">✓ Set and get</li>
+            <li style="color: #555753;">✓ Set returns fluent</li>
+            <li style="color: #555753;">✓ Set params</li>
+            <li style="color: #555753;">✓ Set params returns fluent</li>
+            <li style="color: #555753;">✓ Get all params</li>
+            <li style="color: #555753;">✓ Get domain params strips prefix</li>
+            <li style="color: #555753;">✓ Get domain params excludes non prefixed when false</li>
+            <li style="color: #555753;">✓ Get domain params includes all when true</li>
+            <li style="color: #555753;">✓ Get domain params returns empty when no prefixed keys</li>
+            <li style="color: #555753;">✓ Set params replaces existing params</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\ProviderMapTest">Provider Map (Mithra62\Export\Tests\ProviderMap)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Sources map contains entries</li>
+            <li style="color: #555753;">✓ Sources map contains members</li>
+            <li style="color: #555753;">✓ Sources map contains sql</li>
+            <li style="color: #555753;">✓ Formats map contains csv</li>
+            <li style="color: #555753;">✓ Formats map contains json</li>
+            <li style="color: #555753;">✓ Formats map contains xlsx</li>
+            <li style="color: #555753;">✓ Formats map contains xml</li>
+            <li style="color: #555753;">✓ Outputs map contains download</li>
+            <li style="color: #555753;">✓ Outputs map contains local</li>
+            <li style="color: #555753;">✓ Modifiers map contains uc first</li>
+            <li style="color: #555753;">✓ Fields map contains date</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\SearchFilterTraitTest">Search Filter Trait (Mithra62\Export\Tests\SearchFilterTrait)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Get channel titles columns returns real columns</li>
+            <li style="color: #555753;">✓ Apply search filters matches core column</li>
+            <li style="color: #555753;">✓ Apply search filters skips empty values</li>
+            <li style="color: #555753;">✓ Apply search filters ignores unknown field name</li>
+            <li style="color: #555753;">✓ Apply search filters combines core filters with and</li>
+            <li style="color: #555753;">✓ Apply search filters resolves custom field via channel entry model</li>
+            <li style="color: #555753;">✓ Apply search filters does not join channel data directly</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\ServiceResolutionTest">Service Resolution (Mithra62\Export\Tests\ServiceResolution)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Params service resolves</li>
+            <li style="color: #555753;">✓ Sources service resolves</li>
+            <li style="color: #555753;">✓ Formats service resolves</li>
+            <li style="color: #555753;">✓ Output service resolves</li>
+            <li style="color: #555753;">✓ Modifiers service resolves</li>
+            <li style="color: #555753;">✓ Xml service resolves</li>
+            <li style="color: #555753;">✓ Excel service resolves</li>
+            <li style="color: #555753;">✓ Logger service resolves</li>
+            <li style="color: #555753;">✓ Export service resolves</li>
+            <li style="color: #555753;">✓ Actions service resolves</li>
+            <li style="color: #555753;">✓ Entry service resolves</li>
+            <li style="color: #555753;">✓ Fields service resolves</li>
+            <li style="color: #555753;">✓ Member service resolves</li>
+            <li style="color: #555753;">✓ Cp service resolves</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\SourcesServiceTest">Sources Service (Mithra62\Export\Tests\SourcesService)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Throws when source param missing</li>
+            <li style="color: #555753;">✓ Get source returns sql source</li>
+            <li style="color: #555753;">✓ Get source returns entries source</li>
+            <li style="color: #555753;">✓ Get source returns members source</li>
+            <li style="color: #555753;">✓ Throws for unknown source</li>
+            <li style="color: #555753;">✓ Get source sets options on returned object</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\SqlSourceValidationTest">Sql Source Validation (Mithra62\Export\Tests\SqlSourceValidation)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Valid select passes</li>
+            <li style="color: #555753;">✓ Valid select with column alias</li>
+            <li style="color: #555753;">✓ Update keyword fails</li>
+            <li style="color: #555753;">✓ Insert keyword fails</li>
+            <li style="color: #555753;">✓ Delete keyword fails</li>
+            <li style="color: #555753;">✓ Drop keyword fails</li>
+            <li style="color: #555753;">✓ Truncate keyword fails</li>
+            <li style="color: #555753;">✓ Semicolon fails</li>
+            <li style="color: #555753;">✓ Line comment stripped before analysis</li>
+            <li style="color: #555753;">✓ Block comment stripped before analysis</li>
+            <li style="color: #555753;">✓ Missing query fails required</li>
+            <li style="color: #555753;">✓ Not a select fails</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\UpdTest">Upd (Mithra62\Export\Tests\Upd)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Upd file exists</li>
+            <li style="color: #555753;">✓ Upd object exists</li>
+            <li style="color: #555753;">✓ Has cp backend property exists</li>
+            <li style="color: #555753;">✓ Cp backend property value</li>
+            <li style="color: #555753;">✓ Publish fields property exists</li>
+            <li style="color: #555753;">✓ Publish fields property value</li>
+            <li style="color: #555753;">✓ Is installer instance</li>
+            <li style="color: #555753;">✓ Install method exists</li>
+            <li style="color: #555753;">✓ Uninstall method exists</li>
+            <li style="color: #555753;">✓ Update method exists</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\XmlFormatTest">Xml Format (Mithra62\Export\Tests\XmlFormat)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Validation fails when root name missing</li>
+            <li style="color: #555753;">✓ Validation fails when branch name missing</li>
+            <li style="color: #555753;">✓ Validation passes with both names</li>
+            <li style="color: #555753;">✓ Finalize file returns path ending in xml</li>
+            <li style="color: #555753;">✓ Write chunk produces valid xml</li>
+            <li style="color: #555753;">✓ Field values appear in xml output</li>
+        </ul>
+        <h2 id="Mithra62\Export\Tests\XmlServiceTest">Xml Service (Mithra62\Export\Tests\XmlService)</h2>
+        <ul>
+            <li style="color: #555753;">✓ Instantiates</li>
+            <li style="color: #555753;">✓ Set root name returns fluent</li>
+            <li style="color: #555753;">✓ Initiate produces xml declaration</li>
+            <li style="color: #555753;">✓ Initiate produces root element</li>
+            <li style="color: #555753;">✓ Start and end branch creates child element</li>
+            <li style="color: #555753;">✓ Add node writes scalar value</li>
+            <li style="color: #555753;">✓ Add xml nodes scalar value</li>
+            <li style="color: #555753;">✓ Add xml nodes numeric key uses item with index</li>
+            <li style="color: #555753;">✓ Add xml nodes nested array creates child elements</li>
+            <li style="color: #555753;">✓ Set char set appears in xml declaration</li>
+            <li style="color: #555753;">✓ Initiate file writes to disk</li>
+        </ul>
+    </body>
+</html>

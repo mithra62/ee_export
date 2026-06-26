@@ -35,15 +35,15 @@ class Members extends AbstractTag
     {
         $params = $this->params();
 
-        $params['source']                    = 'members';
-        $params['source:roles']              = $this->explodeParam('roles');
-        $params['source:limit']              = $this->param('limit');
-        $params['source:offset']             = $this->param('offset', 0);
-        $params['source:chunk_size']         = $this->param('chunk_size', 500);
-        $params['source:join_start']         = $this->param('join_start');
-        $params['source:join_end']           = $this->param('join_end');
-        $params['source:last_login_start']   = $this->param('last_login_start');
-        $params['source:last_login_end']     = $this->param('last_login_end');
+        $params['source'] = 'members';
+        $params['source:roles'] = $this->explodeParam('roles');
+        $params['source:limit'] = $this->param('limit');
+        $params['source:offset'] = $this->param('offset', 0);
+        $params['source:chunk_size'] = $this->param('chunk_size', 500);
+        $params['source:join_start'] = $this->param('join_start');
+        $params['source:join_end'] = $this->param('join_end');
+        $params['source:last_login_start'] = $this->param('last_login_start');
+        $params['source:last_login_end'] = $this->param('last_login_end');
 
         $this->compile($params);
     }

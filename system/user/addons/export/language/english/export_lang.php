@@ -51,6 +51,8 @@ $lang = [
     'export_field_status'               => 'Status',
     'export_field_author_id'            => 'Author ID',
     'export_field_entry_id'             => 'Entry ID(s)',
+    'export_field_entry_date_start'     => 'Entry Date From',
+    'export_field_entry_date_end'       => 'Entry Date To',
     'export_field_limit'                => 'Limit',
     'export_field_limit_grid_desc'      => 'Maximum number of <strong>entries</strong> to process. Each entry may have many grid rows — the total number of output rows can be much higher than this value.',
     'export_field_limit_fluid_desc'     => 'Maximum number of <strong>entries</strong> to process. Each entry may have many fluid instances — the total number of output rows can be much higher than this value.',
@@ -141,9 +143,14 @@ $lang = [
     'export_err_heading'             => 'Your submission has errors',
     'export_err_fix_below'           => 'Please correct the fields highlighted below.',
     'export_err_not_found'           => 'Export configuration not found.',
-    'export_err_sql_superadmin_only' => 'The SQL source is restricted to Super Admins.',
-    'export_err_numeric'             => 'Must be a positive whole number.',
-    'export_err_chunk_size'          => 'Chunk size must be at least 1.',
+    'export_err_sql_superadmin_only'  => 'The SQL source is restricted to Super Admins.',
+    'export_err_role_denied'          => 'You do not have permission to run this export.',
+    'export_err_numeric'              => 'Must be a positive whole number.',
+    'export_err_chunk_size'           => 'Chunk size must be at least 1.',
+
+    // ── Role-based access control ─────────────────────────────────────────────
+    'export_field_allowed_roles'      => 'Template Tag Access',
+    'export_field_allowed_roles_desc' => 'Roles permitted to invoke this export via template tags. Leave empty to allow all members. The SQL source requires Super Admin when left empty.',
 
 
 ];

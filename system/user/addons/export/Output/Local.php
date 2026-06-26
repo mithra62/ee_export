@@ -15,6 +15,13 @@ class Local extends AbstractDestination
         'path' => 'required|dirExists|dirWritable',
     ];
 
+    public function getCpFields(array $context = []): array
+    {
+        return [
+            ['name' => 'path', 'type' => 'text', 'label' => 'export_field_path', 'desc' => 'export_field_path_desc'],
+        ];
+    }
+
     /**
      * @param string $finished_export
      * @return bool|int
@@ -24,8 +31,8 @@ class Local extends AbstractDestination
         // basename() strips any directory components from the filename so that
         // a stored value like '../../config/database.php' cannot traverse outside
         // the approved destination directory.
-        $filename = basename((string) $this->getOption('filename'));
-        $path     = rtrim($this->getOption('path'), '/\\') . DIRECTORY_SEPARATOR . $filename;
+        $filename = basename((string)$this->getOption('filename'));
+        $path = rtrim($this->getOption('path'), '/\\') . DIRECTORY_SEPARATOR . $filename;
         return copy($finished_export, $path);
     }
 

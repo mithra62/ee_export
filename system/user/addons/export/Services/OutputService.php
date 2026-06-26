@@ -12,6 +12,16 @@ class OutputService extends AbstractService
     use ParamsTrait;
 
     /**
+     * Every registered output key, built-in and third-party, keyed by class name.
+     *
+     * @return array<string, class-string>
+     */
+    public function getAvailable(): array
+    {
+        return $this->getProviderMap('outputs');
+    }
+
+    /**
      * @return AbstractDestination
      * @throws OutputServiceException
      */
@@ -26,7 +36,7 @@ class OutputService extends AbstractService
         $name = $params['output'];
 
         // Provider map takes precedence; namespace resolution is the fallback.
-        $map   = $this->getProviderMap('outputs');
+        $map = $this->getProviderMap('outputs');
         $class = $map[$name] ?? ("\\Mithra62\\Export\\Output\\" . Str::studly($name));
 
         if (class_exists($class)) {

@@ -1,1 +1,5 @@
 vendor/*
+tests/coverage
+tests/.phpunit.*
+tests/reports*
+tests/xml-coverage/*

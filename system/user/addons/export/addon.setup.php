@@ -36,7 +36,7 @@ use Mithra62\Export\Sources\Grid as SourceGrid;
 use Mithra62\Export\Sources\Members;
 use Mithra62\Export\Sources\Sql;
 
-const EXPORT_VERSION = '1.0.0-beta.1';
+const EXPORT_VERSION = '1.0.0-beta.2';
 
 require_once __DIR__ . "/vendor/autoload.php";
 
@@ -103,21 +103,9 @@ return [
     'models' => [
         'ExportConfiguration' => 'Models\ExportConfiguration',
     ],
-
-    // ---------------------------------------------------------------------------
-    // Export extension registry
-    //
-    // All five layers are declared here so third-party addons can see Export's
-    // own built-ins and so the provider-map pattern is consistent across layers.
-    //
-    // Third-party addons add their own entries under the same 'export' key in
-    // their own addon.setup.php. Export's declarations form the baseline; any
-    // third-party entry with the same key overrides the built-in.
-    // ---------------------------------------------------------------------------
     'tests' => [
         'path' => 'tests',
     ],
-
     'export' => [
         'sources' => [
             'entries' => Entries::class,

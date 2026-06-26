@@ -1,6 +1,6 @@
 # Export — Complete Reference
 
-**Version:** 1.0.0-beta.1  
+**Version:** 1.0.0-beta.2  
 **Author:** mithra62  
 **Namespace:** `Mithra62\Export`
 
@@ -148,7 +148,7 @@ Prefix any `channel_titles` core column (`title`, `url_title`, `status`, `author
 
 #### Standard columns in every row
 
-`entry_id`, `title`, `url_title`, `status`, `entry_date`, `expiration_date`, `author_id`, `edit_date`, `categories`
+`entry_id`, `channel_id`, `author_id`, `forum_topic_id`, `ip_address`, `title`, `url_title`, `status`, `versioning_enabled`, `view_count_one`, `view_count_two`, `view_count_three`, `view_count_four`, `allow_comments`, `sticky`, `entry_date`, `year`, `month`, `day`, `expiration_date`, `comment_expiration_date`, `edit_date`, `recent_comment_date`, `comment_total`, `categories`
 
 All custom channel fields follow, keyed by `field_name`.
 

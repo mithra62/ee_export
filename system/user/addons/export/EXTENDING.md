@@ -131,7 +131,7 @@ class Orders extends AbstractSource
         'source' => 'required',
     ];
 
-    public function compile(): static
+    public function compile(): AbstractSource
     {
         $status = $this->getOption('status', 'complete');
 
@@ -372,7 +372,7 @@ protected function getValidator(): Validator
 }
 ```
 
-> **CP inline validation.** Rules declared in `$rules` and custom rules registered via `$validator->defineRule()` inside `getValidator()` are automatically surfaced in the Export Control Panel Create/Edit form as inline fieldset errors — no extra wiring needed. `Services/CpValidationBridge` instantiates the active source, format, and output drivers on every form POST, calls `validate()` on each, and maps driver param names back to CP POST field names (e.g. `channel` → `src_entries_channel`, `path` → `output_path`).
+> **CP inline validation.** Rules declared in `$rules` and custom rules registered via `$validator->defineRule()` inside `getValidator()` are automatically surfaced in the Export Control Panel Create/Edit form as inline fieldset errors — no extra wiring needed. `Services/CpValidationBridge` instantiates the active source, format, and output drivers on every form POST, calls `validate()` on each, and maps driver param names back to CP POST field names. The prefix always includes the plugin's registered key (e.g. `channel` → `src_entries_channel`, `path` → `output_download_path` or `output_local_path` depending on which output driver is active, `root_name` → `fmt_xml_root_name`).
 
 ### Column selection — `fields` and `exclude`
 
@@ -398,7 +398,7 @@ Sources fetch data and return it as a flat 2-D array (rows × columns) for the r
 ### Contract
 
 ```php
-public function compile(): static
+public function compile(): AbstractSource
 ```
 
 Either populate the export data and return `$this`, or throw `NoDataException` when there is nothing to export (the tag produces no output rather than an error page).
@@ -427,7 +427,7 @@ class Orders extends AbstractSource
         'source' => 'required',
     ];
 
-    public function compile(): static
+    public function compile(): AbstractSource
     {
         $query = ee()->db
             ->select('order_id, customer_email, total, created_at')
@@ -480,7 +480,7 @@ class OrdersStream extends AbstractSource
     public function supportsStreaming(): bool { return true; }
 
     // Non-streaming fallback — drives the streaming methods
-    public function compile(): static
+    public function compile(): AbstractSource
     {
         $this->openStream();
         $rows = [];
@@ -532,6 +532,51 @@ class OrdersStream extends AbstractSource
 ```
 
 **Batch-loading within a chunk.** One main benefit of streaming is that you can batch-fetch supporting data (relationships, taxonomy, etc.) for all rows in a chunk with a single `WHERE id IN (...)` query instead of one query per row. Load the chunk's primary rows, collect the IDs you need, run the batch query, then merge before returning.
+
+### Supporting `search:` filters (optional)
+
+This only applies if your source streams entries from `channel_titles`, the way Export's own `Sources/Entries.php`, `Sources/Grid.php`, and `Sources/Fluid.php` do. It is not part of the required `AbstractSource` contract — a source like the `Orders` example above has no `channel_titles` query to filter and has no reason to use this.
+
+Those three built-in sources share `Traits/SearchFilterTrait`, which implements the `search:field_name="value"` template-tag param (documented in DOCUMENTATION.md) consistently across all three. `Sources/Members.php` is the exception — it has its own separate `applySearchFilters()` since it isn't channel/entry-based.
+
+To support `search:` in your own channel-entry-style source:
+
+```php
+use Mithra62\Export\Traits\SearchFilterTrait;
+
+class Orders extends AbstractSource
+{
+    use SearchFilterTrait;
+
+    protected array $channel_fields = [];
+
+    public function openStream(): void
+    {
+        $channel_id = ee('export:EntryService')->getChannelId((string) $this->getOption('channel', ''));
+        // ... your other openStream() setup ...
+
+        // Required: populates the field_id => field_info map the trait
+        // resolves search:your_custom_field against.
+        $this->channel_fields = ee('export:EntryService')->getChannelFields($channel_id);
+    }
+
+    public function nextChunk(): array
+    {
+        $query = ee()->db->select('channel_titles.entry_id, ...')->from('channel_titles');
+        // ... your other WHERE filters ...
+
+        $search = $this->getOption('search', []);
+        if (!empty($search)) {
+            $this->applySearchFilters($query, $search, $channel_id);
+        }
+
+        $result = $query->limit(...)->get();
+        // ...
+    }
+}
+```
+
+**Why this delegates to the `ChannelEntry` model instead of a manual SQL join.** A custom field's value can live in either the shared `channel_data` table or, under EE7 "split storage", its own `channel_data_field_X` table — and a source has no easy way to know which applies to a given field without replicating EE's own storage-resolution logic. `SearchFilterTrait` sidesteps this entirely: core `channel_titles` columns are filtered directly on your query, but a custom-field search is resolved via `ee('Model')->get('ChannelEntry')->filter('field_id_<id>', $value)`, which already knows how to join whichever table actually holds that field's data. Only the matching `entry_id`s come back, folded into your query with `where_in()` — never a join your query has to manage itself. (An earlier version of this trait *did* join `channel_data` manually; it broke with an ambiguous-column SQL error the moment any of the three sources' own unqualified `entry_id`/`channel_id` selects collided with `channel_data`'s columns of the same name, and it silently missed split-storage fields entirely. See `AUDIT.md` H-6 if you're curious about the failure mode.)
 
 ### Wiring a companion tag class
 
